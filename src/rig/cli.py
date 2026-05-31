@@ -6,6 +6,7 @@ from rich.table import Table
 from rig.config.loader import load_rig
 from rig.config.errors import ConfigError
 from rig.engine.plan import compute_plan
+from rig.engine.apply import apply_plan
 
 app = typer.Typer(name="rig")
 console = Console()
@@ -74,27 +75,17 @@ def plan(config: str = _CONFIG_OPTION, scene: str | None = _SCENE_OPTION):
 
 
 @app.command()
-def apply(config: str = _CONFIG_OPTION):
-    """Apply changes to reach desired state."""
+def apply(config: str = _CONFIG_OPTION, dry_run: bool = typer.Option(False, "--dry-run", help="Show what would happen"), scene: str | None = _SCENE_OPTION):
+    """Apply changes — walks through each device with MIDI prompts."""
     try:
         rig = load_rig(config)
     except ConfigError as e:
         console.print(f"[red]✗[/red] {e}")
         raise typer.Exit(1)
-    console.print(f"[bold]Rig:[/bold] {rig.name}")
-    console.print("[yellow]apply: interactive sequencer coming in next feature[/yellow]")
 
-
-@app.command()
-def apply(config: str = _CONFIG_OPTION):
-    """Apply changes to reach desired state."""
-    try:
-        rig = load_rig(config)
-    except ConfigError as e:
-        console.print(f"[red]✗[/red] {e}")
-        raise typer.Exit(1)
-    console.print(f"[bold]Rig:[/bold] {rig.name}")
-    console.print("[yellow]apply: interactive sequencer coming in next feature[/yellow]")
+    config_path = str(Path(config).resolve())
+    plan = compute_plan(rig, root_path=config_path)
+    apply_plan(plan, config_path=config_path, dry_run=dry_run, scene=scene)
 
 
 @app.command()
