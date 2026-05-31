@@ -26,6 +26,27 @@ rig apply
 - Python 3.12, Pydantic v2, Typer, Rich
 - MIDI via Mido + python-rtmidi
 
+## Architecture
+
+### Models
+
+```
+PedalDefinition       — A pedal in the rig (digital, analog, modeler, controller)
+  ├── Control         — A knob, switch, or toggle on the pedal
+  │
+AnalogPreset          — Knob/switch positions for analog pedals
+DigitalPreset          — Preset number + parameters for digital pedals
+HXStompPreset          — HX Stomp preset with block-level detail
+  ├── HXBlock         — A block in the HX signal chain (amp, cab, delay, etc.)
+  │     └── settings  — Flexible KV pairs for any block parameter
+  ├── MIDICommand     — PC/CC/SysEx sent on preset load (Command Center)
+  └── FootswitchAssignment — Per-preset footswitch mapping
+
+Scene                  — A complete rig state (one button press)
+SignalChainPosition    — A pedal's position in the signal chain
+RigConfig              — Top-level config (imports all above)
+```
+
 ## Development
 
 ```bash
