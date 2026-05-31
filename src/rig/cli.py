@@ -18,25 +18,36 @@ console = Console()
 _CONFIG_OPTION = typer.Option(
     ".", "--config", "-c", help="Path to the rig config directory",
 )
+_FORMAT_OPTION = typer.Option(
+    "text", "--format", "-f", help="Output format: text or json",
+)
 _SCENE_OPTION = typer.Option(
     None, "--scene", "-s", help="Plan a single scene",
 )
 
 
 @app.command()
-def validate(config: str = _CONFIG_OPTION):
+def validate(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION):
     """Validate the rig configuration."""
     try:
         rig = load_rig(config)
-        console.print(f"[green]✓[/green] {rig.name} — {len(rig.pedals)} pedals, {len(rig.scenes)} scenes")
-        console.print("[green]✓[/green] All cross-references valid")
+        if format == "json":
+            import json
+            console.print(json.dumps({"status": "valid", "pedals": len(rig.pedals), "scenes": len(rig.scenes)}, indent=2))
+        else:
+            console.print(f"[green]✓[/green] {rig.name} — {len(rig.pedals)} pedals, {len(rig.scenes)} scenes")
+            console.print("[green]✓[/green] All cross-references valid")
     except ConfigError as e:
-        console.print(f"[red]✗[/red] {e}")
+        if format == "json":
+            import json
+            console.print(json.dumps({"status": "error", "error": str(e)}))
+        else:
+            console.print(f"[red]✗[/red] {e}")
         raise typer.Exit(1)
 
 
 @app.command()
-def plan(config: str = _CONFIG_OPTION, scene: str | None = _SCENE_OPTION):
+def plan(config: str = _CONFIG_OPTION, scene: str | None = _SCENE_OPTION, format: str = _FORMAT_OPTION):
     """Preview changes needed to reach desired state."""
     try:
         rig = load_rig(config)
@@ -45,6 +56,11 @@ def plan(config: str = _CONFIG_OPTION, scene: str | None = _SCENE_OPTION):
         raise typer.Exit(1)
 
     plan = compute_plan(rig, root_path=Path(config).resolve() if config else None)
+
+    if format == "json":
+        import json
+        console.print(plan.model_dump_json(indent=2))
+        return
 
     scene_names = [scene] if scene else plan.scenes.keys()
 
@@ -93,13 +109,23 @@ def apply(config: str = _CONFIG_OPTION, dry_run: bool = typer.Option(False, "--d
 
 
 @app.command()
-def status(config: str = _CONFIG_OPTION):
+def status(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION):
     """Show current rig state."""
     try:
         rig = load_rig(config)
     except ConfigError as e:
         console.print(f"[red]✗[/red] {e}")
         raise typer.Exit(1)
+
+    if format == "json":
+        import json
+        info = {
+            "name": rig.name,
+            "pedals": {pid: {"type": p.type.value, "midi_channel": p.midi_channel} for pid, p in rig.pedals.items()},
+            "scenes": list(rig.scenes.keys()),
+        }
+        console.print(json.dumps(info, indent=2))
+        return
 
     table = Table(title=f"Rig: {rig.name}")
     table.add_column("Pedal", style="cyan")
@@ -122,7 +148,7 @@ def status(config: str = _CONFIG_OPTION):
 
 
 @app.command()
-def diff(config: str = _CONFIG_OPTION):
+def diff(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION):
     """Show differences between config and last-known state."""
     try:
         rig = load_rig(config)
@@ -132,6 +158,10 @@ def diff(config: str = _CONFIG_OPTION):
 
     config_path = str(Path(config).resolve())
     changes = compute_diff(rig, root_path=config_path)
+    if format == "json":
+        import json
+        console.print(json.dumps(changes, indent=2))
+        return
     output = format_diff(changes)
     console.print(output)
 
