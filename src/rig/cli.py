@@ -7,6 +7,7 @@ from rig.config.loader import load_rig
 from rig.config.errors import ConfigError
 from rig.engine.plan import compute_plan
 from rig.engine.apply import apply_plan
+from rig.engine.diff import compute_diff, format_diff
 from rig.generators.mc6_presets import generate_mc6, write_mc6_config
 from rig.ingest.hx_stomp import ingest_hx_file
 from rig.ingest.mc6_config import ingest_mc6_config
@@ -122,8 +123,17 @@ def status(config: str = _CONFIG_OPTION):
 
 @app.command()
 def diff(config: str = _CONFIG_OPTION):
-    """Show differences between config versions."""
-    typer.echo("diff: not yet implemented")
+    """Show differences between config and last-known state."""
+    try:
+        rig = load_rig(config)
+    except ConfigError as e:
+        console.print(f"[red]✗[/red] {e}")
+        raise typer.Exit(1)
+
+    config_path = str(Path(config).resolve())
+    changes = compute_diff(rig, root_path=config_path)
+    output = format_diff(changes)
+    console.print(output)
 
 
 gen_app = typer.Typer(help="Generate artifacts from config")
