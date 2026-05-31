@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+import logging
 from pathlib import Path
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -11,6 +15,9 @@ from rig.engine.diff import compute_diff, format_diff
 from rig.generators.mc6_presets import generate_mc6, write_mc6_config
 from rig.ingest.hx_stomp import ingest_hx_file
 from rig.ingest.mc6_config import ingest_mc6_config
+from rig.log_setup import setup_logging
+
+logger = logging.getLogger(__name__)
 
 app = typer.Typer(name="rig")
 console = Console()
@@ -24,11 +31,17 @@ _FORMAT_OPTION = typer.Option(
 _SCENE_OPTION = typer.Option(
     None, "--scene", "-s", help="Plan a single scene",
 )
+_VERBOSE_OPTION = typer.Option(
+    0, "--verbose", "-v", count=True,
+    help="Increase verbosity: -v INFO, -vv DEBUG",
+)
 
 
 @app.command()
-def validate(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION):
+def validate(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION):
     """Validate the rig configuration."""
+    setup_logging(verbose)
+    logger.info("Validating config at: %s", config)
     try:
         rig = load_rig(config)
         if format == "json":
@@ -47,8 +60,10 @@ def validate(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION):
 
 
 @app.command()
-def plan(config: str = _CONFIG_OPTION, scene: str | None = _SCENE_OPTION, format: str = _FORMAT_OPTION):
+def plan(config: str = _CONFIG_OPTION, scene: str | None = _SCENE_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION):
     """Preview changes needed to reach desired state."""
+    setup_logging(verbose)
+    logger.info("Planning changes for config: %s", config)
     try:
         rig = load_rig(config)
     except ConfigError as e:
@@ -95,8 +110,10 @@ def plan(config: str = _CONFIG_OPTION, scene: str | None = _SCENE_OPTION, format
 
 
 @app.command()
-def apply(config: str = _CONFIG_OPTION, dry_run: bool = typer.Option(False, "--dry-run", help="Show what would happen"), scene: str | None = _SCENE_OPTION):
+def apply(config: str = _CONFIG_OPTION, dry_run: bool = typer.Option(False, "--dry-run", help="Show what would happen"), scene: str | None = _SCENE_OPTION, verbose: int = _VERBOSE_OPTION):
     """Apply changes — walks through each device with MIDI prompts."""
+    setup_logging(verbose)
+    logger.info("Applying plan for config: %s", config)
     try:
         rig = load_rig(config)
     except ConfigError as e:
@@ -109,8 +126,10 @@ def apply(config: str = _CONFIG_OPTION, dry_run: bool = typer.Option(False, "--d
 
 
 @app.command()
-def status(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION):
+def status(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION):
     """Show current rig state."""
+    setup_logging(verbose)
+    logger.info("Showing status for config: %s", config)
     try:
         rig = load_rig(config)
     except ConfigError as e:
@@ -148,8 +167,10 @@ def status(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION):
 
 
 @app.command()
-def diff(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION):
+def diff(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION):
     """Show differences between config and last-known state."""
+    setup_logging(verbose)
+    logger.info("Computing diff for config: %s", config)
     try:
         rig = load_rig(config)
     except ConfigError as e:
@@ -171,8 +192,10 @@ app.add_typer(gen_app, name="generate")
 
 
 @gen_app.command()
-def mc6(config: str = _CONFIG_OPTION):
+def mc6(config: str = _CONFIG_OPTION, verbose: int = _VERBOSE_OPTION):
     """Generate MC6 bank configs from scene definitions."""
+    setup_logging(verbose)
+    logger.info("Generating MC6 config from: %s", config)
     try:
         rig = load_rig(config)
     except ConfigError as e:
@@ -196,8 +219,11 @@ app.add_typer(in_app, name="ingest")
 
 @in_app.command()
 def hx(path: str = typer.Argument(..., help="Path to .hlx file"),
-      output: str = typer.Option(".", "--output", "-o", help="Output directory")):
+      output: str = typer.Option(".", "--output", "-o", help="Output directory"),
+      verbose: int = _VERBOSE_OPTION):
     """Ingest HX Stomp .hlx preset files."""
+    setup_logging(verbose)
+    logger.info("Ingesting HX file: %s", path)
     try:
         presets = ingest_hx_file(path)
     except FileNotFoundError as e:
@@ -223,8 +249,11 @@ def hx(path: str = typer.Argument(..., help="Path to .hlx file"),
 
 @in_app.command()
 def mc6(path: str = typer.Argument(..., help="Path to MC6 JSON config"),
-        output: str = typer.Option(".", "--output", "-o", help="Output directory")):
+        output: str = typer.Option(".", "--output", "-o", help="Output directory"),
+        verbose: int = _VERBOSE_OPTION):
     """Ingest Morningstar MC6 config as scene definitions."""
+    setup_logging(verbose)
+    logger.info("Ingesting MC6 config: %s", path)
     try:
         scenes = ingest_mc6_config(path)
     except FileNotFoundError as e:

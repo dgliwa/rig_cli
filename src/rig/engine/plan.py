@@ -1,8 +1,14 @@
+import logging
 from typing import Any, Literal
+
 from pydantic import BaseModel
+
 from rig.models.rig import RigConfig
 from rig.models.preset import HXBlock
 from rig.engine.state import read_state
+
+
+logger = logging.getLogger(__name__)
 
 
 class BlockDiff(BaseModel):
@@ -67,23 +73,28 @@ def _diff_blocks(desired_blocks: list[HXBlock], actual_preset_state: dict) -> li
 
 
 def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
+    logger.debug("Computing plan for %d scenes", len(rig.scenes))
     actual = {}
     if root_path:
         actual = read_state(root_path)
+        logger.debug("Read state for %d devices", len(actual.get("devices", {})))
 
     scenes_plan: dict[str, ScenePlan] = {}
     any_changes = False
 
     for scene_name, scene in rig.scenes.items():
+        logger.debug("Planning scene '%s' with %d pedal(s)", scene_name, len(scene.presets))
         device_actions: list[DeviceAction] = []
         scene_has_changes = False
 
         for pedal_id, preset_id in scene.presets.items():
             pedal = rig.pedals.get(pedal_id)
             if pedal is None:
+                logger.warning("Pedal '%s' referenced in scene '%s' not found", pedal_id, scene_name)
                 continue
 
             actual_preset = actual.get("devices", {}).get(pedal_id, {}).get("last_preset")
+            logger.debug("  Device '%s': actual='%s' desired='%s'", pedal_id, actual_preset, preset_id)
 
             if pedal.type.value == "analog":
                 device_actions.append(DeviceAction(
@@ -94,6 +105,7 @@ def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
                 ))
                 if actual_preset != preset_id:
                     scene_has_changes = True
+                    logger.debug("    → analog needs manual adjustment")
                 continue
 
             is_hx = pedal.type.value == "modeler"
@@ -106,12 +118,17 @@ def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
                         preset_number = hp.preset_number
                         block_diffs = _diff_blocks(hp.blocks, actual.get("devices", {}).get(pedal_id, {}))
                         break
+                logger.debug("    → HX preset #%s with %d block diff(s)", preset_number, len(block_diffs))
             else:
                 preset_number = _get_preset_number(rig, pedal_id, preset_id)
+                logger.debug("    → digital preset #%s", preset_number)
 
             needs_config = actual_preset != preset_id
             if needs_config:
                 scene_has_changes = True
+                logger.debug("    → needs configure")
+            else:
+                logger.debug("    → already correct")
 
             device_actions.append(DeviceAction(
                 device=pedal_id,
@@ -128,6 +145,7 @@ def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
             else "changed" if scene_has_changes
             else "unchanged"
         )
+        logger.debug("  Scene status: %s", scene_status)
         if scene_status != "unchanged":
             any_changes = True
 
@@ -137,7 +155,9 @@ def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
             device_actions=device_actions,
         )
 
+    plan_status = "changes_detected" if any_changes else "clean"
+    logger.info("Plan computed: %s (%d scene(s) with changes)", plan_status, sum(1 for s in scenes_plan.values() if s.status != "unchanged"))
     return Plan(
-        status="changes_detected" if any_changes else "clean",
+        status=plan_status,
         scenes=scenes_plan,
     )

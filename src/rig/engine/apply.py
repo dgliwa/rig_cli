@@ -1,10 +1,15 @@
 from __future__ import annotations
+import logging
 from typing import Literal
+
 from rich.console import Console
+
 from rig.engine.plan import Plan
 from rig.engine.state import read_state, write_state
 from rig.config.errors import ConfigError
 
+
+logger = logging.getLogger(__name__)
 console = Console()
 
 _ConfirmResult = Literal["confirm", "retry", "skip", "quit"]
@@ -44,24 +49,30 @@ def _prompt_analog(device: str, preset_name: str) -> _ConfirmResult:
 
 def apply_plan(plan: Plan, config_path: str | None = None, dry_run: bool = False, scene: str | None = None):
     if plan.status == "clean":
+        logger.info("No changes needed — state matches config")
         console.print("[green]✓[/green] No changes needed. State matches config.")
         return
 
+    logger.debug("Reading current state")
     state = {}
     if config_path:
         state = read_state(config_path)
 
     scene_names = [scene] if scene else list(plan.scenes.keys())
+    logger.info("Applying plan with %d scene(s)", len(scene_names))
 
     for name in scene_names:
         sp = plan.scenes.get(name)
         if sp is None:
+            logger.warning("Scene '%s' not found in plan", name)
             console.print(f"[yellow]Scene '{name}' not found[/yellow]")
             continue
         if sp.status == "unchanged":
+            logger.debug("Scene '%s': no changes needed", name)
             console.print(f"[green]  ✓[/green] {sp.scene_name}: no changes needed")
             continue
 
+        logger.info("Applying scene '%s' (status: %s)", sp.scene_name, sp.status)
         console.print(f"\n[bold]Scene: {sp.scene_name}[/bold] ({sp.status})")
 
         for action in sp.device_actions:
@@ -70,6 +81,7 @@ def apply_plan(plan: Plan, config_path: str | None = None, dry_run: bool = False
 
             if action.device_type == "analog":
                 if dry_run:
+                    logger.debug("Dry-run: would prompt analog '%s' → '%s'", action.device, action.preset_name)
                     console.print(f"  [yellow]⚠[/yellow] {action.device}: would prompt to set '{action.preset_name}'")
                     continue
                 result = _prompt_analog(action.device, action.preset_name)
@@ -83,18 +95,21 @@ def apply_plan(plan: Plan, config_path: str | None = None, dry_run: bool = False
             if dry_run:
                 pc_info = f" PC#{action.preset_number}" if action.preset_number else ""
                 ch_info = f" (ch {action.midi_channel})" if action.midi_channel else ""
-                console.print(f"  [cyan]→[/cyan] {action.device}{pc_info} '{action.preset_name}'{ch_info} [dim](dry-run)[/dim]")
+                logger.debug("Dry-run: %s%s '%s'%s", action.device, pc_info, action.preset_name, ch_info)
+                console.print(f"  [cyan]→[/cyan] {action.device}{pc_info} '{action.preset_name}'[dim] (dry-run)[/dim]")
                 continue
 
             while True:
                 result = _prompt_device(action.device, action.preset_name, action.preset_number, action.midi_channel)
                 if result == "confirm":
+                    logger.info("Device '%s' configured to preset '%s'", action.device, action.preset_name)
                     console.print(f"  [green]✓[/green] {action.device}: '{action.preset_name}' configured")
                     state.setdefault("devices", {})[action.device] = {"last_preset": action.preset_name}
                     break
                 if result == "retry":
                     continue
                 if result == "skip":
+                    logger.warning("Device '%s' skipped by user", action.device)
                     console.print(f"  [yellow]⚠[/yellow] {action.device}: skipped")
                     break
                 if result == "quit":
@@ -104,5 +119,6 @@ def apply_plan(plan: Plan, config_path: str | None = None, dry_run: bool = False
         state.setdefault("scenes", {})[sp.scene_name] = {}
 
     if config_path and not dry_run:
+        logger.info("Saving state to .rig/state.json")
         write_state(config_path, state)
         console.print(f"[green]✓[/green] State saved to .rig/state.json")
