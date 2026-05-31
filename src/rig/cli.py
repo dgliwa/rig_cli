@@ -11,6 +11,7 @@ from rig.engine.diff import compute_diff, format_diff
 from rig.generators.mc6_presets import generate_mc6, write_mc6_config
 from rig.ingest.hx_stomp import ingest_hx_file
 from rig.ingest.mc6_config import ingest_mc6_config
+from rig.ingest.scene import create_scene, add_device_to_scene, set_device_in_scene, IngestError
 
 app = typer.Typer(name="rig")
 console = Console()
@@ -246,6 +247,59 @@ def mc6(path: str = typer.Argument(..., help="Path to MC6 JSON config"),
         console.print(f"  [green]✓[/green] {scene_path}")
 
     console.print(f"[green]Ingested {len(scenes)} scene(s)")
+
+
+scene_app = typer.Typer(help="Manage scene definitions (create/add/set)")
+in_app.add_typer(scene_app, name="scene")
+
+
+@scene_app.command()
+def create(
+    name: str = typer.Argument(..., help="Scene name"),
+    device: str = typer.Option(..., "--device", "-d", help="Pedal ID"),
+    preset: str = typer.Option(..., "--preset", "-p", help="Preset ID"),
+    description: str = typer.Option(None, "--description", help="Scene description"),
+    config: str = _CONFIG_OPTION,
+):
+    """Create a new scene with a single device-preset mapping."""
+    try:
+        path = create_scene(config, name, device, preset, description)
+        console.print(f"[green]✓[/green] Created scene {path}")
+    except IngestError as e:
+        console.print(f"[red]✗[/red] {e.message}")
+        raise typer.Exit(1)
+
+
+@scene_app.command()
+def add(
+    name: str = typer.Argument(..., help="Scene name"),
+    device: str = typer.Option(..., "--device", "-d", help="Pedal ID"),
+    preset: str = typer.Option(..., "--preset", "-p", help="Preset ID"),
+    config: str = _CONFIG_OPTION,
+):
+    """Add a device-preset mapping to an existing scene."""
+    try:
+        path = add_device_to_scene(config, name, device, preset)
+        console.print(f"[green]✓[/green] Updated scene {path}")
+    except IngestError as e:
+        console.print(f"[red]✗[/red] {e.message}")
+        raise typer.Exit(1)
+
+
+@scene_app.command(name="set")
+def set_(
+    name: str = typer.Argument(..., help="Scene name"),
+    device: str = typer.Option(..., "--device", "-d", help="Pedal ID"),
+    preset: str = typer.Option(..., "--preset", "-p", help="Preset ID"),
+    config: str = _CONFIG_OPTION,
+):
+    """Overwrite a device's preset in an existing scene."""
+    try:
+        path = set_device_in_scene(config, name, device, preset)
+        console.print(f"[green]✓[/green] Updated scene {path}")
+    except IngestError as e:
+        console.print(f"[red]✗[/red] {e.message}")
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":
