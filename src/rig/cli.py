@@ -8,6 +8,8 @@ from rig.config.errors import ConfigError
 from rig.engine.plan import compute_plan
 from rig.engine.apply import apply_plan
 from rig.generators.mc6_presets import generate_mc6, write_mc6_config
+from rig.ingest.hx_stomp import ingest_hx_file
+from rig.ingest.mc6_config import ingest_mc6_config
 
 app = typer.Typer(name="rig")
 console = Console()
@@ -144,6 +146,66 @@ def mc6(config: str = _CONFIG_OPTION):
 
     out_dir = write_mc6_config(data, output_path=str(Path(config).resolve() / "generated" / "mc6"))
     console.print(f"[green]✓[/green] MC6 config written to {out_dir}")
+
+
+
+
+in_app = typer.Typer(help="Import presets from other formats")
+app.add_typer(in_app, name="ingest")
+
+
+@in_app.command()
+def hx(path: str = typer.Argument(..., help="Path to .hlx file"),
+      output: str = typer.Option(".", "--output", "-o", help="Output directory")):
+    """Ingest HX Stomp .hlx preset files."""
+    try:
+        presets = ingest_hx_file(path)
+    except FileNotFoundError as e:
+        console.print(f"[red]✗[/red] {e}")
+        raise typer.Exit(1)
+
+    if not presets:
+        console.print("[yellow]No presets found in file[/yellow]")
+        return
+
+    out_dir = Path(output) / "pedals" / "hx-stomp" / "presets"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    import yaml
+    for preset in presets:
+        preset_path = out_dir / f"{preset['id']}.yaml"
+        with open(preset_path, "w") as f:
+            yaml.dump(preset, f, default_flow_style=False, sort_keys=False)
+        console.print(f"  [green]✓[/green] {preset_path}")
+
+    console.print(f"[green]Ingested {len(presets)} preset(s)")
+
+
+@in_app.command()
+def mc6(path: str = typer.Argument(..., help="Path to MC6 JSON config"),
+        output: str = typer.Option(".", "--output", "-o", help="Output directory")):
+    """Ingest Morningstar MC6 config as scene definitions."""
+    try:
+        scenes = ingest_mc6_config(path)
+    except FileNotFoundError as e:
+        console.print(f"[red]✗[/red] {e}")
+        raise typer.Exit(1)
+
+    if not scenes:
+        console.print("[yellow]No scenes found in config[/yellow]")
+        return
+
+    out_dir = Path(output) / "scenes"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    import yaml
+    for scene in scenes:
+        scene_path = out_dir / f"{scene['name']}.yaml"
+        with open(scene_path, "w") as f:
+            yaml.dump(scene, f, default_flow_style=False, sort_keys=False)
+        console.print(f"  [green]✓[/green] {scene_path}")
+
+    console.print(f"[green]Ingested {len(scenes)} scene(s)")
 
 
 if __name__ == "__main__":
