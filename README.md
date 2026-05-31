@@ -15,7 +15,7 @@ rig apply
 
 | Command | Description |
 |---------|-------------|
-| `rig validate` | Validate the rig configuration |
+| `rig validate` | Validate rig config YAML (cross-references, types) |
 | `rig plan` | Preview changes needed to reach desired state |
 | `rig apply` | Apply changes to reach desired state |
 | `rig status` | Show current rig state |
@@ -25,6 +25,23 @@ rig apply
 
 - Python 3.12, Pydantic v2, Typer, Rich
 - MIDI via Mido + python-rtmidi
+
+## Config Loading
+
+`rig validate` reads all YAML configs from the rig repo and validates cross-references:
+
+| File | Purpose |
+|------|---------|
+| `rig.yaml` | Top-level name, MIDI channel |
+| `signal-chain.yaml` | Ordered pedal signal chain |
+| `pedals/*.yaml` | Pedal definitions |
+| `pedals/<id>/presets/*.yaml` | Presets per pedal |
+| `scenes/*.yaml` | Scene definitions |
+
+The loader checks:
+- Every pedal referenced in the signal chain exists
+- Every scene's preset references resolve to existing presets
+- Pedal types match preset types (analog presets for analog pedals, etc.)
 
 ## Architecture
 
