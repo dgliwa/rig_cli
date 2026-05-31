@@ -7,6 +7,7 @@ from rig.config.loader import load_rig
 from rig.config.errors import ConfigError
 from rig.engine.plan import compute_plan
 from rig.engine.apply import apply_plan
+from rig.generators.mc6_presets import generate_mc6, write_mc6_config
 
 app = typer.Typer(name="rig")
 console = Console()
@@ -121,6 +122,28 @@ def status(config: str = _CONFIG_OPTION):
 def diff(config: str = _CONFIG_OPTION):
     """Show differences between config versions."""
     typer.echo("diff: not yet implemented")
+
+
+gen_app = typer.Typer(help="Generate artifacts from config")
+app.add_typer(gen_app, name="generate")
+
+
+@gen_app.command()
+def mc6(config: str = _CONFIG_OPTION):
+    """Generate MC6 bank configs from scene definitions."""
+    try:
+        rig = load_rig(config)
+    except ConfigError as e:
+        console.print(f"[red]✗[/red] {e}")
+        raise typer.Exit(1)
+
+    data = generate_mc6(rig)
+    if not data:
+        console.print("[yellow]No MC6 configuration found (mc6.yaml missing or empty)[/yellow]")
+        return
+
+    out_dir = write_mc6_config(data, output_path=str(Path(config).resolve() / "generated" / "mc6"))
+    console.print(f"[green]✓[/green] MC6 config written to {out_dir}")
 
 
 if __name__ == "__main__":
