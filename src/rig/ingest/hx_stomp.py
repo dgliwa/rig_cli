@@ -87,11 +87,14 @@ def _parse_hx_json(data: dict[str, Any], source_name: str) -> HXStompPreset | No
             dsp = tone.get(dsp_key, {})
             if not dsp:
                 continue
+            # Include all DSP flow nodes: tone blocks (block#), split/join
+            # routing, and input/output blocks.
+            _flow_keys = {"split", "join", "inputA", "inputB", "outputA", "outputB"}
             for block_key in sorted(
                 dsp,
                 key=lambda k: dsp[k].get("@position", 999) if isinstance(dsp.get(k), dict) else 999,
             ):
-                if not block_key.startswith("block"):
+                if not (block_key.startswith("block") or block_key in _flow_keys):
                     continue
                 block_data = dsp[block_key]
                 if not isinstance(block_data, dict):
