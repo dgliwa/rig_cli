@@ -3,230 +3,56 @@ from __future__ import annotations
 import logging
 from typing import Literal
 
+from pydantic import BaseModel
 from rich.console import Console
 
-from rig.config.errors import ConfigError
 from rig.engine.plan import Plan
 from rig.engine.state import DeviceState, RigState, read_state, write_state
+from rig.interaction import (
+    collect_midi_devices,
+    prompt_analog,
+    prompt_cba_build_preset,
+    prompt_cba_channel,
+    prompt_cba_register,
+    prompt_device,
+    prompt_midi_connect,
+)
 from rig.midi.adapter import MidiManager
 from rig.models.rig import RigConfig
 
 logger = logging.getLogger(__name__)
 console = Console()
 
-_ConfirmResult = Literal["confirm", "retry", "skip", "quit"]
+
+class DeviceApplyResult(BaseModel):
+    """Result of applying one device action."""
+
+    device: str
+    status: Literal["confirmed", "skipped", "error"]
+    preset: str | None = None
+    error: str | None = None
 
 
-def _prompt_device(
-    device: str,
-    preset_name: str,
-    preset_number: int | None,
-    midi_channel: int | None,
-    midi_connected: bool = False,
-) -> _ConfirmResult:
-    pc_info = f" PC#{preset_number}" if preset_number else ""
-    ch_info = f" (ch {midi_channel})" if midi_channel else ""
-    console.print(f"\n[bold]Step:[/bold] {device}{pc_info} '{preset_name}'{ch_info}")
-    if midi_connected:
-        console.print(f"[green]✓[/green] Sent via MIDI — did {device} respond?")
-    else:
-        console.print(f"[dim]→ Connect MIDI to {device}[/dim]")
-    while True:
-        response = input("  [c] confirm  [r] retry  [s] skip  [q] quit: ").strip().lower()
-        if response in ("c", "confirm"):
-            return "confirm"
-        if response in ("r", "retry"):
-            return "retry"
-        if response in ("s", "skip"):
-            return "skip"
-        if response in ("q", "quit"):
-            return "quit"
-        console.print("[yellow]Invalid choice. Enter c, r, s, or q[/yellow]")
+class SceneApplyResult(BaseModel):
+    """Result of applying one scene."""
+
+    scene: str
+    status: Literal["new", "changed", "unchanged"]
+    devices: list[DeviceApplyResult] = []
 
 
-def _prompt_analog(device: str, preset_name: str) -> _ConfirmResult:
-    console.print(f"\n[bold]Analog:[/bold] {device} → set to '{preset_name}'")
-    console.print("[yellow]  ⚠ Adjust knobs/switches manually[/yellow]")
-    while True:
-        response = input("  [c] done  [s] skip  [q] quit: ").strip().lower()
-        if response in ("c", "done"):
-            return "confirm"
-        if response in ("s", "skip"):
-            return "skip"
-        if response in ("q", "quit"):
-            return "quit"
-        console.print("[yellow]Invalid choice. Enter c, s, or q[/yellow]")
+class ApplyResult(BaseModel):
+    """Overall result of an apply run."""
 
-
-def _prompt_cba_channel(device: str, midi_channel: int, midi_sent: bool = False) -> _ConfirmResult:
-    console.print(f"\n[bold]Chase Bliss Setup — {device}[/bold]")
-    console.print()
-    if midi_sent:
-        console.print(f"[green]✓[/green] PC#0 sent on channel {midi_channel}")
-        console.print("Now quickly hold BOTH footswitches to save the channel assignment")
-    else:
-        console.print("Establish MIDI Channel (one-time):")
-        console.print("  1. Disconnect power from the pedal")
-        console.print("  2. Hold BOTH footswitches")
-        console.print("  3. While holding, reconnect power (pedal enters learn mode)")
-        console.print(f"  4. I will send PC#0 on channel {midi_channel} to lock the channel")
-    while True:
-        label = "done — channel saved" if midi_sent else f"ready — send PC on ch {midi_channel}"
-        response = input(f"  [c] {label}  [r] show again  [s] skip  [q] quit: ").strip().lower()
-        if response in ("c", "confirm", "done"):
-            console.print(f"  [green]✓[/green] {device}: channel {midi_channel} established")
-            return "confirm"
-        if response in ("r", "retry"):
-            return "retry"
-        if response in ("s", "skip"):
-            console.print(f"  [yellow]⚠[/yellow] {device}: channel setup skipped")
-            return "skip"
-        if response in ("q", "quit"):
-            return "quit"
-        console.print("[yellow]Invalid choice. Enter c, r, s, or q[/yellow]")
-
-
-def _prompt_cba_build_preset(
-    device: str, preset_name: str, preset_number: int | None, midi_channel: int
-) -> _ConfirmResult:
-    pc_info = f" PC#{preset_number}" if preset_number else ""
-    console.print(f"\n[bold]Chase Bliss Preset Build — {device}[/bold]")
-    console.print()
-    console.print(f"Sent {pc_info} on channel {midi_channel} — '{preset_name}' loaded")
-    console.print()
-    console.print("Now hold BOTH footswitches to save as preset")
-    while True:
-        response = (
-            input("  [c] done — preset saved  [r] retry  [s] skip  [q] quit: ").strip().lower()
-        )
-        if response in ("c", "done"):
-            console.print(f"  [green]✓[/green] {device}: '{preset_name}' saved")
-            return "confirm"
-        if response in ("r", "retry"):
-            return "retry"
-        if response in ("s", "skip"):
-            console.print(f"  [yellow]⚠[/yellow] {device}: preset '{preset_name}' skipped")
-            return "skip"
-        if response in ("q", "quit"):
-            return "quit"
-        console.print("[yellow]Invalid choice. Enter c, r, s, or q[/yellow]")
-
-
-def _prompt_cba_register(device: str, scene_refs: list[str]) -> _ConfirmResult:
-    console.print(f"\n[bold]Chase Bliss Scene Registration — {device}[/bold]")
-    console.print()
-    console.print("The following scenes reference this pedal:")
-    for ref in scene_refs:
-        console.print(f"  • {ref}")
-    console.print()
-    console.print("Presets are built on the device. Confirm registration?")
-    while True:
-        response = input("  [c] confirm  [s] skip  [q] quit: ").strip().lower()
-        if response in ("c", "confirm"):
-            console.print(f"  [green]✓[/green] {device}: registered to {len(scene_refs)} scene(s)")
-            return "confirm"
-        if response in ("s", "skip"):
-            console.print(f"  [yellow]⚠[/yellow] {device}: registration skipped")
-            return "skip"
-        if response in ("q", "quit"):
-            return "quit"
-        console.print("[yellow]Invalid choice. Enter c, s, or q[/yellow]")
+    status: Literal["completed", "cancelled", "no_changes"]
+    cba_setup: list[DeviceApplyResult] = []
+    scenes: list[SceneApplyResult] = []
 
 
 def _update_device_state(state: RigState, device: str, **fields) -> None:
-    """Update a device's state fields in-place.
-
-    Creates a new ``DeviceState`` entry if *device* has no existing state.
-    Preserves any existing fields not listed in **fields*.
-    """
+    """Update a device's state fields in-place."""
     current = state.devices.get(device, DeviceState())
     state.devices[device] = current.model_copy(update=fields)
-
-
-def _prompt_midi_connect(
-    device: str,
-    midi_channel: int,
-    midi: MidiManager,
-    device_port: str | None,
-) -> tuple[_ConfirmResult, str | None]:
-    """Prompt the user to pick a MIDI output port for *device*.
-
-    Returns (result, port_name_or_None).
-    """
-    # If a port name is cached in state and still available, reconnect silently.
-    if device_port and device_port in midi.list_output_ports():
-        try:
-            midi.connect(device_port, device)
-            logger.info("Reconnected '%s' to cached port '%s'", device, device_port)
-            return ("confirm", device_port)
-        except Exception:
-            logger.warning("Cached port '%s' for '%s' failed to reopen", device_port, device)
-
-    console.print(f"\n[bold]MIDI Connection — {device}[/bold]")
-    console.print(
-        f"Plug MIDI cable connected to [cyan]{device}[/cyan] (MIDI channel {midi_channel})"
-    )
-
-    while True:
-        ports = midi.list_output_ports()
-        if not ports:
-            console.print("\n[yellow]No MIDI output ports detected.[/yellow]")
-            console.print("Make sure your MIDI interface is connected.")
-            response = input("  [r] refresh  [s] skip  [q] quit: ").strip().lower()
-            if response in ("r", "refresh"):
-                continue
-            if response in ("s", "skip"):
-                return ("skip", None)
-            if response in ("q", "quit"):
-                return ("quit", None)
-            console.print("[yellow]Enter r, s, or q[/yellow]")
-            continue
-
-        console.print("\nAvailable MIDI outputs:")
-        for i, name in enumerate(ports, 1):
-            marker = " (cached)" if name == device_port else ""
-            console.print(f"  {i}. {name}{marker}")
-
-        prompt = f"Select port (1-{len(ports)}) or [s]kip [q]uit: "
-        response = input(f"  {prompt}").strip().lower()
-
-        if response in ("s", "skip"):
-            return ("skip", None)
-        if response in ("q", "quit"):
-            return ("quit", None)
-
-        try:
-            idx = int(response) - 1
-            if idx < 0 or idx >= len(ports):
-                console.print(f"[yellow]Enter a number between 1 and {len(ports)}[/yellow]")
-                continue
-            port_name = ports[idx]
-            midi.connect(port_name, device)
-            console.print(f"  [green]✓[/green] Connected to '{port_name}'")
-            return ("confirm", port_name)
-        except ValueError:
-            console.print("[yellow]Enter a number, s, or q[/yellow]")
-        except (ConfigError, Exception) as e:
-            console.print(f"[red]✗[/red] Could not open '{ports[idx]}': {e}")
-            console.print("Try a different port or check the connection.")
-            continue
-
-
-def _collect_midi_devices(plan: Plan, rig: RigConfig) -> set[str]:
-    """Return the set of device IDs that need MIDI connections."""
-    devices: set[str] = set()
-    for sp in plan.scenes.values():
-        for action in sp.device_actions:
-            if (
-                action.device_type in ("digital", "modeler", "controller")
-                and action.status == "configure"
-            ):
-                if action.midi_channel is not None:
-                    devices.add(action.device)
-    for action in plan.cba_setup:
-        if action.type in ("establish_channel", "build_preset"):
-            devices.add(action.device)
-    return devices
 
 
 def apply_plan(
@@ -236,11 +62,11 @@ def apply_plan(
     dry_run: bool = False,
     scene: str | None = None,
     midi: MidiManager | None = None,
-):
+) -> ApplyResult:
     if plan.status == "clean":
         logger.info("No changes needed — state matches config")
         console.print("[green]✓[/green] No changes needed. State matches config.")
-        return
+        return ApplyResult(status="no_changes")
 
     logger.debug("Reading current state")
     state = RigState()
@@ -248,8 +74,11 @@ def apply_plan(
         state = read_state(config_path)
     state_modified = False
 
+    cba_results: list[DeviceApplyResult] = []
+    scene_results: list[SceneApplyResult] = []
+
     # --- Phase -1: MIDI connection per unique device ---
-    midi_devices = _collect_midi_devices(plan, rig) if midi else set()
+    midi_devices = collect_midi_devices(plan, rig) if midi else set()
     connected_devices: set[str] = set()
 
     if midi_devices and not dry_run:
@@ -275,11 +104,11 @@ def apply_plan(
             connected_devices.add(device_id)
             continue
 
-        result, port_name = _prompt_midi_connect(device_id, ch, midi, cached_port)
-        if result == "quit":
+        res, port_name = prompt_midi_connect(device_id, ch, midi, cached_port)
+        if res == "quit":
             console.print("[red]Apply cancelled by user[/red]")
-            return
-        if result == "confirm" and port_name:
+            return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
+        if res == "confirm" and port_name:
             _update_device_state(state, device_id, midi_port=port_name)
             state_modified = True
             connected_devices.add(device_id)
@@ -311,15 +140,22 @@ def apply_plan(
                     console.print(f"  [red]✗[/red] MIDI send failed: {e}")
                     midi_sent = False
 
-            result = _prompt_cba_channel(action.device, action.midi_channel, midi_sent=midi_sent)
-            if result == "quit":
+            res = prompt_cba_channel(action.device, action.midi_channel, midi_sent=midi_sent)
+            if res == "quit":
                 console.print("[red]Apply cancelled by user[/red]")
-                return
-            if result == "confirm":
+                return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
+            if res == "confirm":
                 _update_device_state(
                     state, action.device, channel_established=True, midi_channel=action.midi_channel
                 )
                 state_modified = True
+            cba_results.append(
+                DeviceApplyResult(
+                    device=action.device,
+                    status="confirmed" if res == "confirm" else "skipped",
+                    preset=action.preset_name if action.type == "build_preset" else None,
+                )
+            )
 
         elif action.type == "build_preset":
             if dry_run:
@@ -346,13 +182,13 @@ def apply_plan(
                     logger.error("Failed to send to %s: %s", action.device, e)
                     console.print(f"  [red]✗[/red] MIDI send failed: {e}")
 
-            result = _prompt_cba_build_preset(
+            res = prompt_cba_build_preset(
                 action.device, action.preset_name, action.preset_number, action.midi_channel
             )
-            if result == "quit":
+            if res == "quit":
                 console.print("[red]Apply cancelled by user[/red]")
-                return
-            if result == "confirm":
+                return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
+            if res == "confirm":
                 _update_device_state(state, action.device, last_preset=action.preset_name)
                 ds = state.devices.get(action.device, DeviceState())
                 ps = dict(ds.presets_saved)
@@ -367,11 +203,11 @@ def apply_plan(
                     f"  [cyan]🔧[/cyan] {action.device}: register presets to scenes[dim] (dry-run)[/dim]"
                 )
                 continue
-            result = _prompt_cba_register(action.device, action.scene_refs)
-            if result == "quit":
+            res = prompt_cba_register(action.device, action.scene_refs)
+            if res == "quit":
                 console.print("[red]Apply cancelled by user[/red]")
-                return
-            if result == "confirm":
+                return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
+            if res == "confirm":
                 _update_device_state(state, action.device, registration_done=True)
                 state_modified = True
 
@@ -408,11 +244,13 @@ def apply_plan(
                         f"  [yellow]⚠[/yellow] {action.device}: would prompt to set '{action.preset_name}'"
                     )
                     continue
-                result = _prompt_analog(action.device, action.preset_name)
-                if result == "quit":
+                res = prompt_analog(action.device, action.preset_name)
+                if res == "quit":
                     console.print("[red]Apply cancelled by user[/red]")
-                    return
-                if result == "confirm":
+                    return ApplyResult(
+                        status="cancelled", cba_setup=cba_results, scenes=scene_results
+                    )
+                if res == "confirm":
                     _update_device_state(state, action.device, last_preset=action.preset_name)
                     state_modified = True
                 continue
@@ -452,7 +290,7 @@ def apply_plan(
                     midi_connected = False
 
             while True:
-                result = _prompt_device(
+                result = prompt_device(
                     action.device,
                     action.preset_name,
                     action.preset_number,
@@ -489,7 +327,9 @@ def apply_plan(
                     break
                 if result == "quit":
                     console.print("[red]Apply cancelled by user[/red]")
-                    return
+                    return ApplyResult(
+                        status="cancelled", cba_setup=cba_results, scenes=scene_results
+                    )
 
         state.scenes[sp.scene_name] = {}
         state_modified = True
@@ -498,3 +338,5 @@ def apply_plan(
         logger.info("Saving state to .rig/state.json")
         write_state(config_path, state)
         console.print("[green]✓[/green] State saved to .rig/state.json")
+
+    return ApplyResult(status="completed", cba_setup=cba_results, scenes=scene_results)
