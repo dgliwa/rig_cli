@@ -11,7 +11,7 @@ from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
 from rig.models.rig import RigConfig
-from rig.config.errors import FileNotFoundError_, ParseError, MissingReferenceError
+from rig.config.errors import FileNotFoundError_, ParseError, MissingReferenceError, ValidationError
 
 
 def _resolve(root: Path, *parts: str) -> Path:
@@ -133,6 +133,14 @@ def _validate_references(
                 raise MissingReferenceError(
                     f"Scene '{scene_name}': pedal '{pedal_id}' has no preset '{preset_id}'"
                 )
+    # CBA pedals must specify a MIDI channel
+    for pid, pedal in config.pedals.items():
+        mfg = (pedal.manufacturer or "").lower()
+        if ("chase bliss" in mfg or "cba" in mfg) and pedal.midi_channel is None:
+            raise ValidationError(
+                f"Pedal '{pid}' ({pedal.manufacturer}) requires midi_channel"
+            )
+
     logger.debug("All cross-references valid")
 
 

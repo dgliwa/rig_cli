@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from rig.config.errors import FileNotFoundError_, ParseError, MissingReferenceError
+from rig.config.errors import FileNotFoundError_, ParseError, MissingReferenceError, ValidationError
 from rig.config.loader import load_rig
 
 
@@ -95,6 +95,18 @@ class TestLoadRig:
         shutil.rmtree(str(rig_dir / "scenes"))
         config = load_rig(str(rig_dir))
         assert config.scenes == {}
+
+    def test_cba_pedal_without_midi_channel_rejected(self, rig_dir):
+        _write(rig_dir, "pedals/brothers.yaml",
+               "id: brothers\nmanufacturer: Chase Bliss\nmodel: Brothers\ntype: digital\n")
+        with pytest.raises(ValidationError, match="requires midi_channel"):
+            load_rig(str(rig_dir))
+
+    def test_non_cba_pedal_without_midi_channel_accepted(self, rig_dir):
+        _write(rig_dir, "pedals/brothers.yaml",
+               "id: brothers\nmanufacturer: Some Brand\nmodel: Thing\ntype: digital\n")
+        config = load_rig(str(rig_dir))
+        assert "brothers" in config.pedals
 
     def test_hx_preset_loaded_as_hx_type(self, rig_dir):
         _write(rig_dir, "pedals/hx-stomp.yaml",

@@ -15,3 +15,4 @@ class RigConfig(BaseModel):
     hx_presets: dict[str, list[HXStompPreset]] = {}
     scenes: dict[str, Scene] = {}
     midi_channel: int | None = None
+    mc6: dict = {}
