@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from rig.models.rig import RigConfig
 from rig.models.pedal import PedalDefinition, PedalType
 from rig.models.preset import DigitalPreset, HXStompPreset, HXBlock
@@ -72,6 +72,139 @@ class TestApplyPlan:
             apply_plan(plan, config_path=str(tmp_path), dry_run=False)
         captured = capsys.readouterr()
         assert "cancelled" in captured.out.lower()
+
+
+class TestMidiApply:
+    def test_midi_connect_and_send(self, tmp_path):
+        """User selects a port, MIDI opens it, PC is sent, user confirms."""
+        rig = _make_config()
+        plan = compute_plan(rig)
+        fake_port = MagicMock()
+        inputs = ["1", "1", "done", "c", "c"]  # 2 MIDI connects, CBA confirm, 2 scene confirms
+        with (
+            patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
+            patch("rig.midi.adapter.mido.open_output", return_value=fake_port),
+            patch("builtins.input", side_effect=inputs),
+        ):
+            from rig.midi.adapter import MidiManager
+            midi = MidiManager()
+            apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False, midi=midi)
+            midi.disconnect_all()
+
+        # State written
+        state = json.loads((tmp_path / ".rig" / "state.json").read_text())
+        assert state["devices"]["brothers"]["midi_port"] == "USB Interface"
+        assert state["devices"]["hx-stomp"]["midi_port"] == "USB Interface"
+        assert state["devices"]["brothers"]["channel_established"] is True
+        # PC was sent on the port
+        assert fake_port.send.called
+
+    def test_midi_auto_reconnect_from_state(self, tmp_path):
+        """Cached midi_port reconnects without prompting."""
+        rig = _make_config()
+        _write_state(tmp_path, {
+            "devices": {
+                "hx-stomp": {"midi_port": "USB Interface", "last_preset": "clean-edge"},
+                "brothers": {"midi_port": "USB Interface", "last_preset": "low-gain"},
+            },
+            "scenes": {"test-scene": {}},
+        })
+        plan = compute_plan(rig, root_path=str(tmp_path))
+        fake_port = MagicMock()
+        # No MIDI connect prompts needed (auto-reconnect), just scene confirms
+        # CBA is skipped because brothers already has channel_established=false
+        # Scene loop: hx-stomp already verified, brothers needs config
+        inputs = ["c"]  # just confirm brothers send
+        with (
+            patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
+            patch("rig.midi.adapter.mido.open_output", return_value=fake_port),
+            patch("builtins.input", side_effect=inputs),
+        ):
+            from rig.midi.adapter import MidiManager
+            midi = MidiManager()
+            apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False, midi=midi)
+            midi.disconnect_all()
+
+        state = json.loads((tmp_path / ".rig" / "state.json").read_text())
+        assert state["devices"]["brothers"]["midi_port"] == "USB Interface"
+
+    def test_midi_skip_falls_back_to_manual(self, tmp_path):
+        """Skipping MIDI connect falls back to old instructional prompts."""
+        rig = _make_config()
+        plan = compute_plan(rig)
+        # Skip MIDI connect for both devices, then manual confirms
+        inputs = ["s", "s", "c", "c", "c"]
+        with (
+            patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
+            patch("rig.midi.adapter.mido.open_output", return_value=MagicMock()),
+            patch("builtins.input", side_effect=inputs),
+        ):
+            from rig.midi.adapter import MidiManager
+            midi = MidiManager()
+            apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False, midi=midi)
+            midi.disconnect_all()
+
+        state = json.loads((tmp_path / ".rig" / "state.json").read_text())
+        # No midi_port saved
+        assert "midi_port" not in state.get("devices", {}).get("brothers", {})
+        # But manual config still works
+        assert state["devices"]["brothers"]["last_preset"] == "low-gain"
+
+    def test_midi_dry_run_skips_connection(self, tmp_path, capsys):
+        """Dry run shows connection instruction but does not prompt."""
+        rig = _make_config()
+        plan = compute_plan(rig)
+        with (
+            patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
+            patch("rig.midi.adapter.mido.open_output", return_value=MagicMock()),
+        ):
+            from rig.midi.adapter import MidiManager
+            midi = MidiManager()
+            apply_plan(plan, rig=rig, dry_run=True, midi=midi)
+            midi.disconnect_all()
+
+        captured = capsys.readouterr()
+        assert "connect MIDI" in captured.out
+        assert "dry-run" in captured.out
+
+    def test_midi_quit_aborts_apply(self, tmp_path, capsys):
+        """Quitting MIDI connect aborts the entire apply."""
+        rig = _make_config()
+        plan = compute_plan(rig)
+        inputs = ["q"]  # quit during first MIDI connect prompt
+        with (
+            patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
+            patch("rig.midi.adapter.mido.open_output", return_value=MagicMock()),
+            patch("builtins.input", side_effect=inputs),
+        ):
+            from rig.midi.adapter import MidiManager
+            midi = MidiManager()
+            apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False, midi=midi)
+            midi.disconnect_all()
+
+        captured = capsys.readouterr()
+        assert "cancelled" in captured.out.lower()
+        # No state written
+        state_file = tmp_path / ".rig" / "state.json"
+        assert not state_file.exists()
+
+    def test_midi_connect_without_ports_shows_message(self, tmp_path, capsys):
+        """When no MIDI ports detected, show message and allow skip/refresh."""
+        rig = _make_config()
+        plan = compute_plan(rig)
+        # No ports → "r" (refresh, still none) → "s" (skip first device) → "s" (skip second) → manual prompts
+        inputs = ["r", "s", "s", "c", "c", "c"]
+        with (
+            patch("rig.midi.adapter.mido.get_output_names", return_value=[]),
+            patch("builtins.input", side_effect=inputs),
+        ):
+            from rig.midi.adapter import MidiManager
+            midi = MidiManager()
+            apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False, midi=midi)
+            midi.disconnect_all()
+
+        captured = capsys.readouterr()
+        assert "No MIDI output ports" in captured.out
 
 
 class TestCbaApply:

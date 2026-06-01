@@ -16,6 +16,7 @@ from rig.generators.mc6_presets import generate_mc6, write_mc6_config
 from rig.ingest.hx_stomp import ingest_hx_file
 from rig.ingest.mc6_config import ingest_mc6_config
 from rig.ingest.scene import create_scene, add_device_to_scene, set_device_in_scene, IngestError
+from rig.midi.adapter import MidiManager
 from rig.log_setup import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -131,9 +132,13 @@ def apply(config: str = _CONFIG_OPTION, dry_run: bool = typer.Option(False, "--d
         console.print(f"[red]✗[/red] {e}")
         raise typer.Exit(1)
 
+    midi = MidiManager()
     config_path = str(Path(config).resolve())
     plan = compute_plan(rig, root_path=config_path)
-    apply_plan(plan, rig=rig, config_path=config_path, dry_run=dry_run, scene=scene)
+    try:
+        apply_plan(plan, rig=rig, config_path=config_path, dry_run=dry_run, scene=scene, midi=midi)
+    finally:
+        midi.disconnect_all()
 
 
 @app.command()
