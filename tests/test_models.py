@@ -55,8 +55,8 @@ class TestPresetModels:
         assert "rhythm" in preset.tags
 
     def test_digital_preset_minimal(self):
-        preset = DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain")
-        assert preset.preset_number is None
+        preset = DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)
+        assert preset.preset_number == 4
 
     def test_digital_preset_with_parameters(self):
         preset = DigitalPreset(
@@ -100,7 +100,7 @@ class TestPresetModels:
         assert preset.footswitch_assignments[0].switch == "FS1"
 
     def test_hx_stomp_preset_defaults(self):
-        preset = HXStompPreset(id="test", pedal="hx-stomp", name="Test")
+        preset = HXStompPreset(id="test", pedal="hx-stomp", name="Test", preset_number=1)
         assert preset.blocks == []
         assert preset.midi_commands == []
 

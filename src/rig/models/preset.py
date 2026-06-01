@@ -16,7 +16,7 @@ class DigitalPreset(BaseModel):
     id: str
     pedal: str
     name: str
-    preset_number: int | None = None
+    preset_number: int
     parameters: dict[str, float | str | bool] = {}
     notes: str | None = None
     tags: list[str] = []
@@ -49,7 +49,7 @@ class HXStompPreset(BaseModel):
     id: str
     pedal: str
     name: str
-    preset_number: int | None = None
+    preset_number: int
     blocks: list[HXBlock] = []
     midi_commands: list[MIDICommand] = []
     footswitch_assignments: list[FootswitchAssignment] = []
