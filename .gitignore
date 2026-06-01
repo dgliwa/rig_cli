@@ -8,3 +8,4 @@ build/
 .rig/
 .venv/
 *.egg/
+.DS_Store
