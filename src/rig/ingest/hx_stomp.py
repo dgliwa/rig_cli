@@ -1,3 +1,10 @@
+"""HX Stomp .hlx file ingest — parses both new-style JSON and old-style zip archives.
+
+Usage::
+
+    presets = ingest_hx_file("path/to/preset.hlx")
+"""
+
 from __future__ import annotations
 
 import json
@@ -6,14 +13,17 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
+from rig.models.preset import HXBlock, HXStompPreset
+
 logger = logging.getLogger(__name__)
 
 
-def ingest_hx_file(path: str) -> list[dict[str, Any]]:
+def ingest_hx_file(path: str) -> list[HXStompPreset]:
     """Extract preset data from an HX Stomp .hlx bundle file.
 
-    .hlx files are zip archives containing JSON preset definitions.
-    Returns a list of preset dicts suitable for writing as YAML.
+    .hlx files from newer firmware are plain JSON. Older exports are zip
+    archives containing JSON entries.  Returns a list of typed
+    :class:`HXStompPreset` objects.
     """
     path = Path(path)
     if not path.exists():
@@ -21,10 +31,9 @@ def ingest_hx_file(path: str) -> list[dict[str, Any]]:
         raise FileNotFoundError(f"HX file not found: {path}")
 
     logger.info("Ingesting HX file: %s", path)
-    presets: list[dict[str, Any]] = []
+    presets: list[HXStompPreset] = []
 
     # Newer HX firmware exports as plain JSON; older as zip archives.
-    # Try JSON first, then fall back to zip.
     raw_data = _try_read_json(path)
     if raw_data is not None:
         preset = _parse_hx_json(raw_data, path.name)
@@ -54,7 +63,7 @@ def ingest_hx_file(path: str) -> list[dict[str, Any]]:
 
 
 def _try_read_json(path: Path) -> dict[str, Any] | None:
-    """Try to read *path* as plain JSON. Returns None on failure."""
+    """Try to read *path* as plain JSON. Returns ``None`` on failure."""
     try:
         with open(path) as f:
             return json.loads(f.read())
@@ -62,15 +71,14 @@ def _try_read_json(path: Path) -> dict[str, Any] | None:
         return None
 
 
-def _parse_hx_json(data: dict[str, Any], source_name: str) -> dict[str, Any] | None:
-    """Convert HX JSON preset structure to our YAML preset format."""
-    # Handle both new-style (plain JSON with dsp blocks) and old-style (zip with chain array).
+def _parse_hx_json(data: dict[str, Any], source_name: str) -> HXStompPreset | None:
+    """Convert HX JSON preset structure to a typed :class:`HXStompPreset`."""
     inner = data.get("data", data)
     meta = inner.get("meta", {})
     preset_name = meta.get("name") or inner.get("name", "") or Path(source_name).stem
     logger.debug("Parsing HX preset '%s'", preset_name)
 
-    blocks: list[dict[str, Any]] = []
+    blocks: list[HXBlock] = []
 
     # New-style: blocks live under tone.dsp0 / tone.dsp1 with @model keys
     tone = inner.get("tone", {})
@@ -92,20 +100,24 @@ def _parse_hx_json(data: dict[str, Any], source_name: str) -> dict[str, Any] | N
                 model = block_data.get("@model", "unknown")
                 enabled = block_data.get("@enabled", True)
                 stereo = block_data.get("@stereo", False)
-                path = block_data.get("@path", 0)
+                path_val = block_data.get("@path", 0)
+                # New-style type comes as an integer; store as string
+                btype = str(block_data.get("@type", "unknown"))
 
-                # Everything not prefixed with @ is a parameter
-                settings = {k: v for k, v in block_data.items() if not k.startswith("@")}
+                settings: dict[str, float | str | bool] = {
+                    k: v for k, v in block_data.items() if not k.startswith("@")
+                }
 
                 blocks.append(
-                    {
-                        "name": model,
-                        "model": model,
-                        "enabled": enabled,
-                        "stereo": stereo,
-                        "path": path,
-                        "settings": settings,
-                    }
+                    HXBlock(
+                        name=model,
+                        type=btype,
+                        model=model,
+                        enabled=enabled,
+                        stereo=stereo,
+                        path=path_val,
+                        settings=settings,
+                    )
                 )
                 logger.debug("  Block %s: %s — %d parameter(s)", block_key, model, len(settings))
 
@@ -117,18 +129,19 @@ def _parse_hx_json(data: dict[str, Any], source_name: str) -> dict[str, Any] | N
             for block_data in chain:
                 settings = dict(block_data.get("parameters", {}))
                 blocks.append(
-                    {
-                        "name": block_data.get("name", "Untitled"),
-                        "type": block_data.get("type"),
-                        "model": block_data.get("model", ""),
-                        "enabled": block_data.get("enabled", True),
-                        "settings": settings,
-                    }
+                    HXBlock(
+                        name=block_data.get("name", "Untitled"),
+                        type=block_data.get("type", "unknown"),
+                        model=block_data.get("model", ""),
+                        enabled=block_data.get("enabled", True),
+                        settings=settings,
+                    )
                 )
 
-    return {
-        "id": preset_name.lower().replace(" ", "-"),
-        "pedal": "hx-stomp",
-        "name": preset_name,
-        "blocks": blocks,
-    }
+    return HXStompPreset(
+        id=preset_name.lower().replace(" ", "-"),
+        pedal="hx-stomp",
+        name=preset_name,
+        preset_number=0,
+        blocks=blocks,
+    )

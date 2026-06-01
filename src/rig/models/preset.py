@@ -34,9 +34,11 @@ class MIDICommand(BaseModel):
 
 class HXBlock(BaseModel):
     name: str
-    type: str
+    type: str = "unknown"
     model: str
     enabled: bool = True
+    stereo: bool = False
+    path: int = 0
     settings: dict[str, float | str | bool] = {}
 
 

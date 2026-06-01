@@ -317,9 +317,9 @@ def hx(
     import yaml
 
     for preset in presets:
-        preset_path = out_dir / f"{preset['id']}.yaml"
+        preset_path = out_dir / f"{preset.id}.yaml"
         with open(preset_path, "w") as f:
-            yaml.dump(preset, f, default_flow_style=False, sort_keys=False)
+            yaml.dump(preset.model_dump(), f, default_flow_style=False, sort_keys=False)
         console.print(f"  [green]✓[/green] {preset_path}")
 
     console.print(f"[green]Ingested {len(presets)} preset(s)")

@@ -36,16 +36,16 @@ class TestIngestHx:
         hlx_path = _make_test_hlx(tmp_path / "test.hlx")
         presets = ingest_hx_file(str(hlx_path))
         assert len(presets) == 1
-        assert presets[0]["name"] == "Clean Edge"
-        assert len(presets[0]["blocks"]) == 2
+        assert presets[0].name == "Clean Edge"
+        assert len(presets[0].blocks) == 2
 
     def test_ingest_hlx_parses_blocks(self, tmp_path):
         hlx_path = _make_test_hlx(tmp_path / "test.hlx")
         presets = ingest_hx_file(str(hlx_path))
-        block = presets[0]["blocks"][0]
-        assert block["name"] == "Amp"
-        assert block["type"] == "amp"
-        assert block["settings"]["Drive"] == 4.5
+        block = presets[0].blocks[0]
+        assert block.name == "Amp"
+        assert block.type == "amp"
+        assert block.settings["Drive"] == 4.5
 
     def test_ingest_hlx_missing_file(self):
         try:
@@ -60,3 +60,13 @@ class TestIngestHx:
             pass
         presets = ingest_hx_file(str(path))
         assert presets == []
+
+    def test_ingest_hlx_model_type(self, tmp_path):
+        hlx_path = _make_test_hlx(tmp_path / "test.hlx")
+        presets = ingest_hx_file(str(hlx_path))
+        from rig.models.preset import HXStompPreset
+
+        assert isinstance(presets[0], HXStompPreset)
+        assert presets[0].id == "clean-edge"
+        assert presets[0].pedal == "hx-stomp"
+        assert presets[0].preset_number == 0
