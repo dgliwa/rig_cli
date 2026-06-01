@@ -34,9 +34,19 @@ class ScenePlan(BaseModel):
     device_actions: list[DeviceAction] = []
 
 
+class CbaSetupAction(BaseModel):
+    device: str
+    midi_channel: int
+    type: Literal["establish_channel", "build_preset", "register_scenes"]
+    preset_id: str | None = None
+    preset_name: str | None = None
+    preset_number: int | None = None
+
+
 class Plan(BaseModel):
     status: Literal["clean", "changes_detected"]
     scenes: dict[str, ScenePlan] = {}
+    cba_setup: list[CbaSetupAction] = []
 
 
 def _hx_preset_number(rig: RigConfig, hx_preset_id: str) -> int | None:
@@ -52,6 +62,64 @@ def _get_preset_number(rig: RigConfig, pedal_id: str, preset_id: str) -> int | N
         if presets.id == preset_id:
             return presets.preset_number
     return None
+
+
+def _is_cba(pedal) -> bool:
+    """Check if a pedal is a Chase Bliss Audio device."""
+    mfg = (pedal.manufacturer or "").lower()
+    return "chase bliss" in mfg or "cba" in mfg
+
+
+def _detect_cba_setup(rig: RigConfig, state: dict) -> list[CbaSetupAction]:
+    """Detect CBA setup actions needed based on current state."""
+    actions: list[CbaSetupAction] = []
+    device_state = state.get("devices", {})
+
+    for pedal_id, pedal in rig.pedals.items():
+        if not _is_cba(pedal):
+            continue
+
+        ch = pedal.midi_channel or 1
+        ds = device_state.get(pedal_id, {})
+
+        # Phase 1: Channel establishment
+        if not ds.get("channel_established"):
+            actions.append(CbaSetupAction(
+                device=pedal_id,
+                midi_channel=ch,
+                type="establish_channel",
+            ))
+            # Channel not established → skip rest until it is
+            continue
+
+        # Phase 2: Preset building
+        presets_saved = ds.get("presets_saved", {})
+        has_unsaved = False
+        for preset in rig.digital_presets.get(pedal_id, []):
+            if not presets_saved.get(preset.id):
+                actions.append(CbaSetupAction(
+                    device=pedal_id,
+                    midi_channel=ch,
+                    type="build_preset",
+                    preset_id=preset.id,
+                    preset_name=preset.name,
+                    preset_number=preset.preset_number,
+                ))
+                has_unsaved = True
+
+        # Phase 3: Scene registration (only if channel + presets done, but not yet registered)
+        if not ds.get("registration_done") and not has_unsaved:
+            # Check if any scene references this pedal
+            for scene in rig.scenes.values():
+                if pedal_id in scene.presets:
+                    actions.append(CbaSetupAction(
+                        device=pedal_id,
+                        midi_channel=ch,
+                        type="register_scenes",
+                    ))
+                    break
+
+    return actions
 
 
 def _diff_blocks(desired_blocks: list[HXBlock], actual_preset_state: dict) -> list[BlockDiff]:
@@ -155,9 +223,15 @@ def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
             device_actions=device_actions,
         )
 
+    cba_setup = _detect_cba_setup(rig, actual)
+    if cba_setup:
+        any_changes = True
+        logger.debug("CBA setup actions: %d", len(cba_setup))
+
     plan_status = "changes_detected" if any_changes else "clean"
-    logger.info("Plan computed: %s (%d scene(s) with changes)", plan_status, sum(1 for s in scenes_plan.values() if s.status != "unchanged"))
+    logger.info("Plan computed: %s (%d scene(s) with changes, %d CBA action(s))", plan_status, sum(1 for s in scenes_plan.values() if s.status != "unchanged"), len(cba_setup))
     return Plan(
         status=plan_status,
         scenes=scenes_plan,
+        cba_setup=cba_setup,
     )
