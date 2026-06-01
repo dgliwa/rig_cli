@@ -1,7 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
 [project]
 name = "rig-cli"
 version = "0.1.0"
 description = "Infrastructure-as-Code CLI for guitar rigs"
+readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "typer>=0.12",
@@ -13,8 +19,16 @@ dependencies = [
 ]
 optional-dependencies = { dev = ["pytest", "pytest-cov", "ruff"] }
 
+[project.urls]
+Homepage = "https://github.com/dgliwa/rig_cli"
+Source = "https://github.com/dgliwa/rig_cli"
+
 [project.scripts]
 rig = "rig.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rig"]
+
 
 [tool.ruff]
 line-length = 100

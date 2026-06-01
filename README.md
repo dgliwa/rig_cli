@@ -5,10 +5,21 @@ Infrastructure-as-Code CLI for guitar rigs. Declare your pedals, presets, and sc
 ## Quick Start
 
 ```bash
-pip install -e .
-rig validate
-rig plan
-rig apply
+# Install globally via uv
+make tool-install
+rig validate --config ~/dev/rig
+
+# Or run directly without installing
+uv run rig validate --config ~/dev/rig
+```
+
+### Prerequisites
+
+- **Python 3.12+**
+- **[uv](https://docs.astral.sh/uv/)** — fast Python package & project manager
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 ## Commands
@@ -67,6 +78,35 @@ RigConfig              — Top-level config (imports all above)
 ## Development
 
 ```bash
-pip install -e ".[dev]"
-pytest
+# Clone + install
+cd rig-cli
+uv sync
+
+# Run tests
+make test
+
+# Lint
+make lint
+make format
+
+# Build distributable
+make build
+
+# Install as global CLI tool (one-time)
+make tool-install
 ```
+
+### Available targets
+
+| Target | Description |
+|--------|-------------|
+| `make install` | Install deps + package (editable) via `uv sync` |
+| `make test` | Run test suite |
+| `make lint` | Ruff check |
+| `make format` | Ruff format |
+| `make build` | Build wheel + sdist |
+| `make tool-install` | Install as global CLI via `uv tool install .` |
+| `make lock` | Re-lock dependencies |
+| `make clean` | Remove build artifacts |
+
+
