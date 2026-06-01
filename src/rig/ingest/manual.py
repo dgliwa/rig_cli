@@ -9,11 +9,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import typer
 from rich.console import Console
 from rich.prompt import Confirm, IntPrompt, Prompt
 
-from rig.models.pedal import ControlType, ManualConfig, PedalDefinition, PedalType
+from rig.models.pedal import ManualConfig, PedalDefinition, PedalType
 
 console = Console()
 
@@ -44,10 +43,16 @@ def _prompt_controls() -> list[dict]:
             max_val = IntPrompt.ask("  Max value", default=10)
             control["min"] = min_val
             control["max"] = max_val
+            current_raw = Prompt.ask(f"  Current value ({min_val}-{max_val})", default="")
+            if current_raw:
+                control["value"] = int(current_raw)
         else:
             positions_raw = Prompt.ask("  Positions (comma-separated, e.g. on,off)")
             if positions_raw:
                 control["positions"] = [p.strip() for p in positions_raw.split(",")]
+            current_raw = Prompt.ask("  Current position", default="")
+            if current_raw:
+                control["value"] = current_raw
 
         midi_cc_raw = Prompt.ask("  MIDI CC (optional, press Enter to skip)", default="")
         if midi_cc_raw:
@@ -109,6 +114,7 @@ def ingest_manual_pedal(config_dir: Path) -> PedalDefinition | None:
             return None
 
     import yaml
+
     dest.write_text(yaml.dump(pedal.model_dump(), default_flow_style=False, sort_keys=False))
 
     console.print(f"\n[green]Wrote {dest}[/green]")

@@ -24,6 +24,7 @@ class Control(BaseModel):
     min: float | None = None
     max: float | None = None
     positions: list[str] | None = None
+    value: str | float | int | None = None
     midi_cc: int | None = None
     expression_assignable: bool = False
 
