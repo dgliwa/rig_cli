@@ -1,8 +1,12 @@
 from __future__ import annotations
+import logging
 from typing import Any
 
 from rig.models.rig import RigConfig
 from rig.engine.state import read_state
+
+
+logger = logging.getLogger(__name__)
 
 
 def compute_diff(config: RigConfig, root_path: str | None = None) -> dict[str, Any]:
@@ -10,12 +14,14 @@ def compute_diff(config: RigConfig, root_path: str | None = None) -> dict[str, A
     actual = {}
     if root_path:
         actual = read_state(root_path)
+        logger.debug("Read state from %s for diff", root_path)
 
     changes: dict[str, Any] = {
         "scenes": {},
         "pedals": {},
     }
 
+    logger.debug("Computing diff for %d scenes", len(config.scenes))
     for scene_name, scene in config.scenes.items():
         actual_scenes = actual.get("scenes", {})
         actual_devices = actual.get("devices", {})
