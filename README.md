@@ -124,5 +124,3 @@ make tool-install
 | `make tool-install` | Install as global CLI via `uv tool install .` |
 | `make lock` | Re-lock dependencies |
 | `make clean` | Remove build artifacts |
-
-

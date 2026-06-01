@@ -1,15 +1,15 @@
 from __future__ import annotations
+
 import logging
 from typing import Literal
 
 from rich.console import Console
 
-from rig.models.rig import RigConfig
+from rig.config.errors import ConfigError
 from rig.engine.plan import Plan
 from rig.engine.state import read_state, write_state
-from rig.config.errors import ConfigError
 from rig.midi.adapter import MidiManager
-
+from rig.models.rig import RigConfig
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -86,7 +86,9 @@ def _prompt_cba_channel(device: str, midi_channel: int, midi_sent: bool = False)
         console.print("[yellow]Invalid choice. Enter c, r, s, or q[/yellow]")
 
 
-def _prompt_cba_build_preset(device: str, preset_name: str, preset_number: int | None, midi_channel: int) -> _ConfirmResult:
+def _prompt_cba_build_preset(
+    device: str, preset_name: str, preset_number: int | None, midi_channel: int
+) -> _ConfirmResult:
     pc_info = f" PC#{preset_number}" if preset_number else ""
     console.print(f"\n[bold]Chase Bliss Preset Build — {device}[/bold]")
     console.print()
@@ -94,7 +96,9 @@ def _prompt_cba_build_preset(device: str, preset_name: str, preset_number: int |
     console.print()
     console.print("Now hold BOTH footswitches to save as preset")
     while True:
-        response = input(f"  [c] done — preset saved  [r] retry  [s] skip  [q] quit: ").strip().lower()
+        response = (
+            input("  [c] done — preset saved  [r] retry  [s] skip  [q] quit: ").strip().lower()
+        )
         if response in ("c", "done"):
             console.print(f"  [green]✓[/green] {device}: '{preset_name}' saved")
             return "confirm"
@@ -156,7 +160,9 @@ def _prompt_midi_connect(
             logger.warning("Cached port '%s' for '%s' failed to reopen", device_port, device)
 
     console.print(f"\n[bold]MIDI Connection — {device}[/bold]")
-    console.print(f"Plug MIDI cable connected to [cyan]{device}[/cyan] (MIDI channel {midi_channel})")
+    console.print(
+        f"Plug MIDI cable connected to [cyan]{device}[/cyan] (MIDI channel {midi_channel})"
+    )
 
     while True:
         ports = midi.list_output_ports()
@@ -208,7 +214,10 @@ def _collect_midi_devices(plan: Plan, rig: RigConfig) -> set[str]:
     devices: set[str] = set()
     for sp in plan.scenes.values():
         for action in sp.device_actions:
-            if action.device_type in ("digital", "modeler", "controller") and action.status == "configure":
+            if (
+                action.device_type in ("digital", "modeler", "controller")
+                and action.status == "configure"
+            ):
                 if action.midi_channel is not None:
                     devices.add(action.device)
     for action in plan.cba_setup:
@@ -257,7 +266,9 @@ def apply_plan(
         cached_port = state.get("devices", {}).get(device_id, {}).get("midi_port")
 
         if dry_run:
-            console.print(f"  [cyan]🔌[/cyan] {device_id}: connect MIDI (ch {ch})[dim] (dry-run)[/dim]")
+            console.print(
+                f"  [cyan]🔌[/cyan] {device_id}: connect MIDI (ch {ch})[dim] (dry-run)[/dim]"
+            )
             connected_devices.add(device_id)
             continue
 
@@ -279,8 +290,12 @@ def apply_plan(
     for action in plan.cba_setup:
         if action.type == "establish_channel":
             if dry_run:
-                logger.debug("Dry-run: CB establish channel %d on %s", action.midi_channel, action.device)
-                console.print(f"  [cyan]🔧[/cyan] {action.device}: establish MIDI channel {action.midi_channel}[dim] (dry-run)[/dim]")
+                logger.debug(
+                    "Dry-run: CB establish channel %d on %s", action.midi_channel, action.device
+                )
+                console.print(
+                    f"  [cyan]🔧[/cyan] {action.device}: establish MIDI channel {action.midi_channel}[dim] (dry-run)[/dim]"
+                )
                 continue
 
             midi_sent = action.device in connected_devices
@@ -298,36 +313,55 @@ def apply_plan(
                 console.print("[red]Apply cancelled by user[/red]")
                 return
             if result == "confirm":
-                _merge_device_state(state, action.device, channel_established=True, midi_channel=action.midi_channel)
+                _merge_device_state(
+                    state, action.device, channel_established=True, midi_channel=action.midi_channel
+                )
                 state_modified = True
 
         elif action.type == "build_preset":
             if dry_run:
-                logger.debug("Dry-run: CB build preset '%s' on %s", action.preset_name, action.device)
-                console.print(f"  [cyan]🔧[/cyan] {action.device}: build preset #{action.preset_number} '{action.preset_name}'[dim] (dry-run)[/dim]")
+                logger.debug(
+                    "Dry-run: CB build preset '%s' on %s", action.preset_name, action.device
+                )
+                console.print(
+                    f"  [cyan]🔧[/cyan] {action.device}: build preset #{action.preset_number} '{action.preset_name}'[dim] (dry-run)[/dim]"
+                )
                 continue
 
             if action.device in connected_devices and action.preset_number is not None:
                 try:
-                    midi.send_program_change(action.device, action.preset_number, action.midi_channel)
-                    logger.info("Sent PC#%d on ch %d to %s", action.preset_number, action.midi_channel, action.device)
+                    midi.send_program_change(
+                        action.device, action.preset_number, action.midi_channel
+                    )
+                    logger.info(
+                        "Sent PC#%d on ch %d to %s",
+                        action.preset_number,
+                        action.midi_channel,
+                        action.device,
+                    )
                 except Exception as e:
                     logger.error("Failed to send to %s: %s", action.device, e)
                     console.print(f"  [red]✗[/red] MIDI send failed: {e}")
 
-            result = _prompt_cba_build_preset(action.device, action.preset_name, action.preset_number, action.midi_channel)
+            result = _prompt_cba_build_preset(
+                action.device, action.preset_name, action.preset_number, action.midi_channel
+            )
             if result == "quit":
                 console.print("[red]Apply cancelled by user[/red]")
                 return
             if result == "confirm":
                 _merge_device_state(state, action.device, last_preset=action.preset_name)
-                state.setdefault("devices", {}).setdefault(action.device, {}).setdefault("presets_saved", {})[action.preset_id] = True
+                state.setdefault("devices", {}).setdefault(action.device, {}).setdefault(
+                    "presets_saved", {}
+                )[action.preset_id] = True
                 state_modified = True
 
         elif action.type == "register_scenes":
             if dry_run:
                 logger.debug("Dry-run: CB register %s scenes", action.device)
-                console.print(f"  [cyan]🔧[/cyan] {action.device}: register presets to scenes[dim] (dry-run)[/dim]")
+                console.print(
+                    f"  [cyan]🔧[/cyan] {action.device}: register presets to scenes[dim] (dry-run)[/dim]"
+                )
                 continue
             result = _prompt_cba_register(action.device, action.scene_refs)
             if result == "quit":
@@ -361,8 +395,14 @@ def apply_plan(
 
             if action.device_type == "analog":
                 if dry_run:
-                    logger.debug("Dry-run: would prompt analog '%s' → '%s'", action.device, action.preset_name)
-                    console.print(f"  [yellow]⚠[/yellow] {action.device}: would prompt to set '{action.preset_name}'")
+                    logger.debug(
+                        "Dry-run: would prompt analog '%s' → '%s'",
+                        action.device,
+                        action.preset_name,
+                    )
+                    console.print(
+                        f"  [yellow]⚠[/yellow] {action.device}: would prompt to set '{action.preset_name}'"
+                    )
                     continue
                 result = _prompt_analog(action.device, action.preset_name)
                 if result == "quit":
@@ -376,17 +416,32 @@ def apply_plan(
             if dry_run:
                 pc_info = f" PC#{action.preset_number}" if action.preset_number else ""
                 ch_info = f" (ch {action.midi_channel})" if action.midi_channel else ""
-                logger.debug("Dry-run: %s%s '%s'%s", action.device, pc_info, action.preset_name, ch_info)
-                console.print(f"  [cyan]→[/cyan] {action.device}{pc_info} '{action.preset_name}'[dim] (dry-run)[/dim]")
+                logger.debug(
+                    "Dry-run: %s%s '%s'%s", action.device, pc_info, action.preset_name, ch_info
+                )
+                console.print(
+                    f"  [cyan]→[/cyan] {action.device}{pc_info} '{action.preset_name}'[dim] (dry-run)[/dim]"
+                )
                 continue
 
             midi_connected = action.device in connected_devices
 
             # Send via MIDI when connected
-            if midi_connected and action.preset_number is not None and action.midi_channel is not None:
+            if (
+                midi_connected
+                and action.preset_number is not None
+                and action.midi_channel is not None
+            ):
                 try:
-                    midi.send_program_change(action.device, action.preset_number, action.midi_channel)
-                    logger.info("Sent PC#%d on ch %d to %s", action.preset_number, action.midi_channel, action.device)
+                    midi.send_program_change(
+                        action.device, action.preset_number, action.midi_channel
+                    )
+                    logger.info(
+                        "Sent PC#%d on ch %d to %s",
+                        action.preset_number,
+                        action.midi_channel,
+                        action.device,
+                    )
                 except Exception as e:
                     logger.error("Failed to send to %s: %s", action.device, e)
                     console.print(f"  [red]✗[/red] MIDI send failed: {e}")
@@ -401,16 +456,26 @@ def apply_plan(
                     midi_connected=midi_connected,
                 )
                 if result == "confirm":
-                    logger.info("Device '%s' configured to preset '%s'", action.device, action.preset_name)
-                    console.print(f"  [green]✓[/green] {action.device}: '{action.preset_name}' configured")
+                    logger.info(
+                        "Device '%s' configured to preset '%s'", action.device, action.preset_name
+                    )
+                    console.print(
+                        f"  [green]✓[/green] {action.device}: '{action.preset_name}' configured"
+                    )
                     _merge_device_state(state, action.device, last_preset=action.preset_name)
                     state_modified = True
                     break
                 if result == "retry":
                     # Re-send on retry when MIDI is connected
-                    if midi_connected and action.preset_number is not None and action.midi_channel is not None:
+                    if (
+                        midi_connected
+                        and action.preset_number is not None
+                        and action.midi_channel is not None
+                    ):
                         try:
-                            midi.send_program_change(action.device, action.preset_number, action.midi_channel)
+                            midi.send_program_change(
+                                action.device, action.preset_number, action.midi_channel
+                            )
                         except Exception:
                             pass
                     continue
@@ -428,4 +493,4 @@ def apply_plan(
     if config_path and not dry_run and state_modified:
         logger.info("Saving state to .rig/state.json")
         write_state(config_path, state)
-        console.print(f"[green]✓[/green] State saved to .rig/state.json")
+        console.print("[green]✓[/green] State saved to .rig/state.json")

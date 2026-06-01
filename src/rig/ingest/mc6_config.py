@@ -1,16 +1,16 @@
 from __future__ import annotations
+
 import json
 import logging
 from pathlib import Path
 from typing import Any
-
 
 logger = logging.getLogger(__name__)
 
 
 def ingest_mc6_config(path: str) -> list[dict[str, Any]]:
     """Extract scene definitions from an MC6 JSON config file.
-    
+
     MC6 config files map bank/switch positions to MIDI commands.
     Returns a list of scene dicts suitable for writing as YAML.
     """

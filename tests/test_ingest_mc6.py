@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+
 from rig.ingest.mc6_config import ingest_mc6_config
 
 

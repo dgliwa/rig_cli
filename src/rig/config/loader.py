@@ -3,13 +3,12 @@ from pathlib import Path
 
 import yaml
 
+from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError
 from rig.models.pedal import PedalDefinition
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
+from rig.models.rig import RigConfig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
-from rig.models.rig import RigConfig
-from rig.config.errors import FileNotFoundError_, ParseError, MissingReferenceError
-
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +48,9 @@ def _load_pedal_definitions(pedals_dir: Path) -> dict[str, PedalDefinition]:
 
 def _load_presets(
     pedals_dir: Path, definitions: dict[str, PedalDefinition]
-) -> tuple[dict[str, list[DigitalPreset]], dict[str, list[AnalogPreset]], dict[str, list[HXStompPreset]]]:
+) -> tuple[
+    dict[str, list[DigitalPreset]], dict[str, list[AnalogPreset]], dict[str, list[HXStompPreset]]
+]:
     digital: dict[str, list[DigitalPreset]] = {}
     analog: dict[str, list[AnalogPreset]] = {}
     hx: dict[str, list[HXStompPreset]] = {}
@@ -116,9 +117,7 @@ def _validate_references(
     for pos in config.signal_chain:
         if pos.pedal_ref not in pedal_ids:
             logger.error("Signal chain references unknown pedal '%s'", pos.pedal_ref)
-            raise MissingReferenceError(
-                f"Signal chain references unknown pedal '{pos.pedal_ref}'"
-            )
+            raise MissingReferenceError(f"Signal chain references unknown pedal '{pos.pedal_ref}'")
 
     logger.debug("Validating scene preset references")
     for scene_name, scene in config.scenes.items():
@@ -129,7 +128,9 @@ def _validate_references(
                     f"Scene '{scene_name}' references unknown pedal '{pedal_id}'"
                 )
             if preset_id not in known_presets.get(pedal_id, set()):
-                logger.error("Scene '%s': pedal '%s' has no preset '%s'", scene_name, pedal_id, preset_id)
+                logger.error(
+                    "Scene '%s': pedal '%s' has no preset '%s'", scene_name, pedal_id, preset_id
+                )
                 raise MissingReferenceError(
                     f"Scene '{scene_name}': pedal '{pedal_id}' has no preset '{preset_id}'"
                 )
@@ -171,6 +172,10 @@ def load_rig(root_path: str) -> RigConfig:
     )
 
     _validate_references(config, set(pedal_defs.keys()), digital, analog, hx)
-    logger.info("Rig '%s' loaded successfully (%d pedals, %d scenes)",
-                config.name, len(config.pedals), len(config.scenes))
+    logger.info(
+        "Rig '%s' loaded successfully (%d pedals, %d scenes)",
+        config.name,
+        len(config.pedals),
+        len(config.scenes),
+    )
     return config

@@ -1,14 +1,21 @@
 import json
+
+from rig.generators.mc6_presets import generate_mc6, write_mc6_config
+from rig.models.pedal import MidiConfig, PedalDefinition, PedalType
+from rig.models.preset import HXBlock, HXStompPreset
 from rig.models.rig import RigConfig
-from rig.models.pedal import PedalDefinition, PedalType, MidiConfig
-from rig.models.preset import HXStompPreset, HXBlock
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
-from rig.generators.mc6_presets import generate_mc6, write_mc6_config
 
 
 def _make_rig() -> RigConfig:
-    hx = PedalDefinition(id="hx-stomp", manufacturer="Line6", model="HX Stomp", type=PedalType.MODELER, config=MidiConfig(midi_channel=1))
+    hx = PedalDefinition(
+        id="hx-stomp",
+        manufacturer="Line6",
+        model="HX Stomp",
+        type=PedalType.MODELER,
+        config=MidiConfig(midi_channel=1),
+    )
     block = HXBlock(name="Amp", type="amp", model="US Double Nrm")
     return RigConfig(
         name="test",
@@ -16,8 +23,16 @@ def _make_rig() -> RigConfig:
         pedals={"hx-stomp": hx},
         hx_presets={
             "hx-stomp": [
-                HXStompPreset(id="clean-edge", pedal="hx-stomp", name="Clean Edge", preset_number=12, blocks=[block]),
-                HXStompPreset(id="lead", pedal="hx-stomp", name="Lead", preset_number=5, blocks=[block]),
+                HXStompPreset(
+                    id="clean-edge",
+                    pedal="hx-stomp",
+                    name="Clean Edge",
+                    preset_number=12,
+                    blocks=[block],
+                ),
+                HXStompPreset(
+                    id="lead", pedal="hx-stomp", name="Lead", preset_number=5, blocks=[block]
+                ),
             ],
         },
         scenes={
@@ -26,11 +41,15 @@ def _make_rig() -> RigConfig:
         },
         mc6={
             "banks": [
-                {"bank": 1, "name": "Scenes", "switches": {
-                    "A": {"scene": "billy-clean"},
-                    "B": {"scene": "lead"},
-                    "C": {"scene": "nonexistent"},
-                }},
+                {
+                    "bank": 1,
+                    "name": "Scenes",
+                    "switches": {
+                        "A": {"scene": "billy-clean"},
+                        "B": {"scene": "lead"},
+                        "C": {"scene": "nonexistent"},
+                    },
+                },
             ],
         },
     )
@@ -58,7 +77,7 @@ class TestMc6Generator:
 
     def test_write_mc6_config_creates_files(self, tmp_path):
         data = generate_mc6(_make_rig())
-        out = write_mc6_config(data, output_path=str(tmp_path / "mc6"))
+        write_mc6_config(data, output_path=str(tmp_path / "mc6"))
         assert (tmp_path / "mc6" / "bank1.json").exists()
         with open(tmp_path / "mc6" / "bank1.json") as f:
             parsed = json.load(f)

@@ -1,12 +1,13 @@
-import yaml
 from pathlib import Path
+
 import pytest
+import yaml
 
 from rig.ingest.scene import (
-    create_scene,
-    add_device_to_scene,
-    set_device_in_scene,
     IngestError,
+    add_device_to_scene,
+    create_scene,
+    set_device_in_scene,
 )
 
 
@@ -134,9 +135,7 @@ class TestAddDevice:
         root, pedals_dir, scenes_dir = _make_rig_repo(tmp_path)
         _add_pedal(pedals_dir, "hx-stomp")
         _add_preset(pedals_dir, "hx-stomp", "clean-edge")
-        (scenes_dir / "test.yaml").write_text(
-            "name: test\npresets:\n  hx-stomp: clean-edge\n"
-        )
+        (scenes_dir / "test.yaml").write_text("name: test\npresets:\n  hx-stomp: clean-edge\n")
         with pytest.raises(IngestError, match="already in scene"):
             add_device_to_scene(str(root), "test", "hx-stomp", "clean-edge")
 
@@ -147,9 +146,7 @@ class TestSetDevice:
         _add_pedal(pedals_dir, "hx-stomp")
         _add_preset(pedals_dir, "hx-stomp", "clean-edge")
         _add_preset(pedals_dir, "hx-stomp", "crunch")
-        (scenes_dir / "test.yaml").write_text(
-            "name: test\npresets:\n  hx-stomp: clean-edge\n"
-        )
+        (scenes_dir / "test.yaml").write_text("name: test\npresets:\n  hx-stomp: clean-edge\n")
 
         result = set_device_in_scene(str(root), "test", "hx-stomp", "crunch")
         with open(result) as f:

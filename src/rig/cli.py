@@ -7,17 +7,17 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from rig.config.loader import load_rig
 from rig.config.errors import ConfigError
-from rig.engine.plan import compute_plan
+from rig.config.loader import load_rig
 from rig.engine.apply import apply_plan
 from rig.engine.diff import compute_diff, format_diff
+from rig.engine.plan import compute_plan
 from rig.generators.mc6_presets import generate_mc6, write_mc6_config
 from rig.ingest.hx_stomp import ingest_hx_file
 from rig.ingest.mc6_config import ingest_mc6_config
-from rig.ingest.scene import create_scene, add_device_to_scene, set_device_in_scene, IngestError
-from rig.midi.adapter import MidiManager
+from rig.ingest.scene import IngestError, add_device_to_scene, create_scene, set_device_in_scene
 from rig.log_setup import setup_logging
+from rig.midi.adapter import MidiManager
 
 logger = logging.getLogger(__name__)
 
@@ -25,22 +25,36 @@ app = typer.Typer(name="rig")
 console = Console()
 
 _CONFIG_OPTION = typer.Option(
-    ".", "--config", "-c", help="Path to the rig config directory",
+    ".",
+    "--config",
+    "-c",
+    help="Path to the rig config directory",
 )
 _FORMAT_OPTION = typer.Option(
-    "text", "--format", "-f", help="Output format: text or json",
+    "text",
+    "--format",
+    "-f",
+    help="Output format: text or json",
 )
 _SCENE_OPTION = typer.Option(
-    None, "--scene", "-s", help="Plan a single scene",
+    None,
+    "--scene",
+    "-s",
+    help="Plan a single scene",
 )
 _VERBOSE_OPTION = typer.Option(
-    0, "--verbose", "-v", count=True,
+    0,
+    "--verbose",
+    "-v",
+    count=True,
     help="Increase verbosity: -v INFO, -vv DEBUG",
 )
 
 
 @app.command()
-def validate(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION):
+def validate(
+    config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION
+):
     """Validate the rig configuration."""
     setup_logging(verbose)
     logger.info("Validating config at: %s", config)
@@ -48,13 +62,22 @@ def validate(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose
         rig = load_rig(config)
         if format == "json":
             import json
-            console.print(json.dumps({"status": "valid", "pedals": len(rig.pedals), "scenes": len(rig.scenes)}, indent=2))
+
+            console.print(
+                json.dumps(
+                    {"status": "valid", "pedals": len(rig.pedals), "scenes": len(rig.scenes)},
+                    indent=2,
+                )
+            )
         else:
-            console.print(f"[green]✓[/green] {rig.name} — {len(rig.pedals)} pedals, {len(rig.scenes)} scenes")
+            console.print(
+                f"[green]✓[/green] {rig.name} — {len(rig.pedals)} pedals, {len(rig.scenes)} scenes"
+            )
             console.print("[green]✓[/green] All cross-references valid")
     except ConfigError as e:
         if format == "json":
             import json
+
             console.print(json.dumps({"status": "error", "error": str(e)}))
         else:
             console.print(f"[red]✗[/red] {e}")
@@ -62,7 +85,12 @@ def validate(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose
 
 
 @app.command()
-def plan(config: str = _CONFIG_OPTION, scene: str | None = _SCENE_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION):
+def plan(
+    config: str = _CONFIG_OPTION,
+    scene: str | None = _SCENE_OPTION,
+    format: str = _FORMAT_OPTION,
+    verbose: int = _VERBOSE_OPTION,
+):
     """Preview changes needed to reach desired state."""
     setup_logging(verbose)
     logger.info("Planning changes for config: %s", config)
@@ -75,7 +103,6 @@ def plan(config: str = _CONFIG_OPTION, scene: str | None = _SCENE_OPTION, format
     plan = compute_plan(rig, root_path=Path(config).resolve() if config else None)
 
     if format == "json":
-        import json
         console.print(plan.model_dump_json(indent=2))
         return
 
@@ -87,29 +114,41 @@ def plan(config: str = _CONFIG_OPTION, scene: str | None = _SCENE_OPTION, format
             console.print(f"[yellow]Scene '{name}' not found[/yellow]")
             continue
 
-        status_icon = {"new": "[cyan]+   ", "changed": "[yellow]~   ", "unchanged": "[green]    "}[sp.status]
+        status_icon = {"new": "[cyan]+   ", "changed": "[yellow]~   ", "unchanged": "[green]    "}[
+            sp.status
+        ]
         console.print(f"\n{status_icon}[bold]{sp.scene_name}[/bold] ({sp.status})")
 
         for action in sp.device_actions:
             if action.device_type == "analog":
-                console.print(f"  [yellow]⚠[/yellow] {action.device}: set to '{action.preset_name}' (manual)")
+                console.print(
+                    f"  [yellow]⚠[/yellow] {action.device}: set to '{action.preset_name}' (manual)"
+                )
             elif action.status == "configure":
                 pc_info = f" PC#{action.preset_number}" if action.preset_number else ""
                 ch_info = f" (ch {action.midi_channel})" if action.midi_channel else ""
-                console.print(f"  [cyan]→[/cyan] {action.device}:{pc_info} '{action.preset_name}'{ch_info}")
+                console.print(
+                    f"  [cyan]→[/cyan] {action.device}:{pc_info} '{action.preset_name}'{ch_info}"
+                )
                 for bd in action.block_diffs:
                     if bd.status == "added":
                         console.print(f"    [green]+[/green] block: {bd.name}")
             elif action.status == "verify":
-                console.print(f"  [green]✓[/green] {action.device}: '{action.preset_name}' (already set)")
+                console.print(
+                    f"  [green]✓[/green] {action.device}: '{action.preset_name}' (already set)"
+                )
 
     if plan.cba_setup:
         console.print("\n[bold]CBA Setup Required:[/bold]")
         for action in plan.cba_setup:
             if action.type == "establish_channel":
-                console.print(f"  [cyan]🔧[/cyan] {action.device}: establish MIDI channel {action.midi_channel}")
+                console.print(
+                    f"  [cyan]🔧[/cyan] {action.device}: establish MIDI channel {action.midi_channel}"
+                )
             elif action.type == "build_preset":
-                console.print(f"  [cyan]🔧[/cyan] {action.device}: build preset #{action.preset_number} '{action.preset_name}'")
+                console.print(
+                    f"  [cyan]🔧[/cyan] {action.device}: build preset #{action.preset_number} '{action.preset_name}'"
+                )
             elif action.type == "register_scenes":
                 console.print(f"  [cyan]🔧[/cyan] {action.device}: register presets to scenes")
 
@@ -118,11 +157,16 @@ def plan(config: str = _CONFIG_OPTION, scene: str | None = _SCENE_OPTION, format
 
     unknown = config and Path(config).exists()
     if unknown:
-        console.print(f"\n[dim]State source: .rig/state.json[/dim]")
+        console.print("\n[dim]State source: .rig/state.json[/dim]")
 
 
 @app.command()
-def apply(config: str = _CONFIG_OPTION, dry_run: bool = typer.Option(False, "--dry-run", help="Show what would happen"), scene: str | None = _SCENE_OPTION, verbose: int = _VERBOSE_OPTION):
+def apply(
+    config: str = _CONFIG_OPTION,
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would happen"),
+    scene: str | None = _SCENE_OPTION,
+    verbose: int = _VERBOSE_OPTION,
+):
     """Apply changes — walks through each device with MIDI prompts."""
     setup_logging(verbose)
     logger.info("Applying plan for config: %s", config)
@@ -142,7 +186,9 @@ def apply(config: str = _CONFIG_OPTION, dry_run: bool = typer.Option(False, "--d
 
 
 @app.command()
-def status(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION):
+def status(
+    config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION
+):
     """Show current rig state."""
     setup_logging(verbose)
     logger.info("Showing status for config: %s", config)
@@ -154,9 +200,13 @@ def status(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: 
 
     if format == "json":
         import json
+
         info = {
             "name": rig.name,
-            "pedals": {pid: {"type": p.type.value, "midi_channel": p.config.midi_channel} for pid, p in rig.pedals.items()},
+            "pedals": {
+                pid: {"type": p.type.value, "midi_channel": p.config.midi_channel}
+                for pid, p in rig.pedals.items()
+            },
             "scenes": list(rig.scenes.keys()),
         }
         console.print(json.dumps(info, indent=2))
@@ -183,7 +233,9 @@ def status(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: 
 
 
 @app.command()
-def diff(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION):
+def diff(
+    config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION
+):
     """Show differences between config and last-known state."""
     setup_logging(verbose)
     logger.info("Computing diff for config: %s", config)
@@ -197,6 +249,7 @@ def diff(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: in
     changes = compute_diff(rig, root_path=config_path)
     if format == "json":
         import json
+
         console.print(json.dumps(changes, indent=2))
         return
     output = format_diff(changes)
@@ -227,16 +280,16 @@ def mc6(config: str = _CONFIG_OPTION, verbose: int = _VERBOSE_OPTION):
     console.print(f"[green]✓[/green] MC6 config written to {out_dir}")
 
 
-
-
 in_app = typer.Typer(help="Import presets from other formats")
 app.add_typer(in_app, name="ingest")
 
 
 @in_app.command()
-def hx(path: str = typer.Argument(..., help="Path to .hlx file"),
-      output: str = typer.Option(".", "--output", "-o", help="Output directory"),
-      verbose: int = _VERBOSE_OPTION):
+def hx(
+    path: str = typer.Argument(..., help="Path to .hlx file"),
+    output: str = typer.Option(".", "--output", "-o", help="Output directory"),
+    verbose: int = _VERBOSE_OPTION,
+):
     """Ingest HX Stomp .hlx preset files."""
     setup_logging(verbose)
     logger.info("Ingesting HX file: %s", path)
@@ -254,6 +307,7 @@ def hx(path: str = typer.Argument(..., help="Path to .hlx file"),
     out_dir.mkdir(parents=True, exist_ok=True)
 
     import yaml
+
     for preset in presets:
         preset_path = out_dir / f"{preset['id']}.yaml"
         with open(preset_path, "w") as f:
@@ -263,10 +317,12 @@ def hx(path: str = typer.Argument(..., help="Path to .hlx file"),
     console.print(f"[green]Ingested {len(presets)} preset(s)")
 
 
-@in_app.command()
-def mc6(path: str = typer.Argument(..., help="Path to MC6 JSON config"),
-        output: str = typer.Option(".", "--output", "-o", help="Output directory"),
-        verbose: int = _VERBOSE_OPTION):
+@in_app.command("mc6")
+def ingest_mc6(
+    path: str = typer.Argument(..., help="Path to MC6 JSON config"),
+    output: str = typer.Option(".", "--output", "-o", help="Output directory"),
+    verbose: int = _VERBOSE_OPTION,
+):
     """Ingest Morningstar MC6 config as scene definitions."""
     setup_logging(verbose)
     logger.info("Ingesting MC6 config: %s", path)
@@ -284,6 +340,7 @@ def mc6(path: str = typer.Argument(..., help="Path to MC6 JSON config"),
     out_dir.mkdir(parents=True, exist_ok=True)
 
     import yaml
+
     for scene in scenes:
         scene_path = out_dir / f"{scene['name']}.yaml"
         with open(scene_path, "w") as f:

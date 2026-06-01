@@ -33,6 +33,25 @@ packages = ["src/rig"]
 
 [tool.ruff]
 line-length = 100
+target-version = "py312"
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (import order)
+    "UP",  # pyupgrade (3.12+ idioms)
+]
+ignore = [
+    "E501",  # line-too-long — handled by ruff format
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.0",
+]

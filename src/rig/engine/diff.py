@@ -1,10 +1,10 @@
 from __future__ import annotations
+
 import logging
 from typing import Any
 
-from rig.models.rig import RigConfig
 from rig.engine.state import read_state
-
+from rig.models.rig import RigConfig
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,9 @@ def compute_diff(config: RigConfig, root_path: str | None = None) -> dict[str, A
 
         if scene_name not in actual_scenes:
             scene_diffs["_status"] = "new"
-            scene_diffs["presets"] = {k: {"_status": "added", "new": v} for k, v in scene.presets.items()}
+            scene_diffs["presets"] = {
+                k: {"_status": "added", "new": v} for k, v in scene.presets.items()
+            }
         else:
             scene_diffs["_status"] = "changed"
             scene_diffs["presets"] = {}

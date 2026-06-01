@@ -1,23 +1,54 @@
 import json
+
+from rig.engine.diff import compute_diff, format_diff
+from rig.models.pedal import ChaseBlissConfig, MidiConfig, PedalDefinition, PedalType
+from rig.models.preset import DigitalPreset, HXBlock, HXStompPreset
 from rig.models.rig import RigConfig
-from rig.models.pedal import PedalDefinition, PedalType, MidiConfig, ChaseBlissConfig
-from rig.models.preset import DigitalPreset, HXStompPreset, HXBlock
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
-from rig.engine.diff import compute_diff, format_diff
 
 
 def _make_rig() -> RigConfig:
-    hx = PedalDefinition(id="hx-stomp", manufacturer="Line6", model="HX Stomp", type=PedalType.MODELER, config=MidiConfig(midi_channel=1))
-    bro = PedalDefinition(id="brothers", manufacturer="CBA", model="Brothers", type=PedalType.DIGITAL, config=ChaseBlissConfig(midi_channel=3))
+    hx = PedalDefinition(
+        id="hx-stomp",
+        manufacturer="Line6",
+        model="HX Stomp",
+        type=PedalType.MODELER,
+        config=MidiConfig(midi_channel=1),
+    )
+    bro = PedalDefinition(
+        id="brothers",
+        manufacturer="CBA",
+        model="Brothers",
+        type=PedalType.DIGITAL,
+        config=ChaseBlissConfig(midi_channel=3),
+    )
     block = HXBlock(name="Amp", type="amp", model="US Double Nrm")
     return RigConfig(
         name="test",
         signal_chain=[SignalChainPosition(pedal_ref="hx-stomp", position=1)],
         pedals={"hx-stomp": hx, "brothers": bro},
-        hx_presets={"hx-stomp": [HXStompPreset(id="clean-edge", pedal="hx-stomp", name="Clean Edge", preset_number=12, blocks=[block])]},
-        digital_presets={"brothers": [DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)]},
-        scenes={"test-scene": Scene(name="test-scene", presets={"hx-stomp": "clean-edge", "brothers": "low-gain"})},
+        hx_presets={
+            "hx-stomp": [
+                HXStompPreset(
+                    id="clean-edge",
+                    pedal="hx-stomp",
+                    name="Clean Edge",
+                    preset_number=12,
+                    blocks=[block],
+                )
+            ]
+        },
+        digital_presets={
+            "brothers": [
+                DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)
+            ]
+        },
+        scenes={
+            "test-scene": Scene(
+                name="test-scene", presets={"hx-stomp": "clean-edge", "brothers": "low-gain"}
+            )
+        },
     )
 
 
@@ -33,10 +64,17 @@ class TestDiff:
         rig = _make_rig()
         state = tmp_path / ".rig" / "state.json"
         state.parent.mkdir(parents=True)
-        state.write_text(json.dumps({
-            "devices": {"hx-stomp": {"last_preset": "clean-edge"}, "brothers": {"last_preset": "low-gain"}},
-            "scenes": {"test-scene": {}},
-        }))
+        state.write_text(
+            json.dumps(
+                {
+                    "devices": {
+                        "hx-stomp": {"last_preset": "clean-edge"},
+                        "brothers": {"last_preset": "low-gain"},
+                    },
+                    "scenes": {"test-scene": {}},
+                }
+            )
+        )
         diff = compute_diff(rig, root_path=str(tmp_path))
         assert "test-scene" not in diff["scenes"]
 
@@ -44,10 +82,17 @@ class TestDiff:
         rig = _make_rig()
         state = tmp_path / ".rig" / "state.json"
         state.parent.mkdir(parents=True)
-        state.write_text(json.dumps({
-            "devices": {"hx-stomp": {"last_preset": "old-preset"}, "brothers": {"last_preset": "low-gain"}},
-            "scenes": {"test-scene": {}},
-        }))
+        state.write_text(
+            json.dumps(
+                {
+                    "devices": {
+                        "hx-stomp": {"last_preset": "old-preset"},
+                        "brothers": {"last_preset": "low-gain"},
+                    },
+                    "scenes": {"test-scene": {}},
+                }
+            )
+        )
         diff = compute_diff(rig, root_path=str(tmp_path))
         assert diff["scenes"]["test-scene"]["presets"]["hx-stomp"]["old"] == "old-preset"
 

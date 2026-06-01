@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rig.midi.adapter import MidiManager, MidiConnectionError
+from rig.midi.adapter import MidiConnectionError, MidiManager
 
 
 @pytest.fixture
@@ -25,7 +25,9 @@ class TestPortDiscovery:
             assert m.list_output_ports() == []
 
     def test_list_ports_handles_backend_error(self, midi):
-        with patch("rig.midi.adapter.mido.get_output_names", side_effect=RuntimeError("no backend")):
+        with patch(
+            "rig.midi.adapter.mido.get_output_names", side_effect=RuntimeError("no backend")
+        ):
             assert midi.list_output_ports() == []
 
 

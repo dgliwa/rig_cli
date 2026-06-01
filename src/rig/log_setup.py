@@ -5,7 +5,6 @@ import logging
 from rich.console import Console
 from rich.logging import RichHandler
 
-
 _RIG_LOGGER_NAME = "rig"
 _LOGGER = logging.getLogger(_RIG_LOGGER_NAME)
 _HANDLER_ATTR = "_rig_handler"

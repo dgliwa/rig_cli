@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+
 from rig.models.pedal import PedalDefinition
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.scene import Scene

@@ -1,5 +1,6 @@
 import logging
-from rig.log_setup import setup_logging, _HANDLER_ATTR
+
+from rig.log_setup import _HANDLER_ATTR, setup_logging
 
 
 def _rig_logger() -> logging.Logger:
@@ -75,8 +76,6 @@ class TestModuleLoggers:
     def test_module_loggers_propagate_to_rig(self):
         setup_logging(verbose=1)
         for name in _get_module_loggers():
-            logger = logging.getLogger(name)
-            # Assert the effective level is INFO (inherited from rig logger)
-            # When not set explicitly, effective level is the parent's level
-            pass
-        assert True
+            log = logging.getLogger(name)
+            assert log.name == name
+            assert log.getEffectiveLevel() == logging.INFO

@@ -1,11 +1,11 @@
 from __future__ import annotations
+
 import json
 import logging
 from pathlib import Path
 from typing import Any
 
 from rig.models.rig import RigConfig
-
 
 logger = logging.getLogger(__name__)
 
@@ -41,14 +41,21 @@ def generate_mc6(rig: RigConfig) -> dict[str, Any]:
                     if pedal.type.value == "modeler":
                         for hp in rig.hx_presets.get(pedal_id, []):
                             if hp.id == preset_id and hp.preset_number is not None:
-                                commands.append({
-                                    "type": "pc",
-                                    "channel": pedal.config.midi_channel or 1,
-                                    "value": hp.preset_number,
-                                    "label": f"{pedal_id}: {preset_id}",
-                                })
-                                logger.debug("  Switch %s → PC ch%s val%s (%s)",
-                                             switch_label, pedal.config.midi_channel, hp.preset_number, preset_id)
+                                commands.append(
+                                    {
+                                        "type": "pc",
+                                        "channel": pedal.config.midi_channel or 1,
+                                        "value": hp.preset_number,
+                                        "label": f"{pedal_id}: {preset_id}",
+                                    }
+                                )
+                                logger.debug(
+                                    "  Switch %s → PC ch%s val%s (%s)",
+                                    switch_label,
+                                    pedal.config.midi_channel,
+                                    hp.preset_number,
+                                    preset_id,
+                                )
 
             output[bank_key]["presets"][switch_label] = {
                 "name": scene_name or "empty",

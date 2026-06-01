@@ -11,12 +11,12 @@ from typing import Any
 
 from rig.config.errors import ConfigError
 
-
 logger = logging.getLogger(__name__)
 
 _HAS_MIDO = False
 try:
-    import mido  # noqa: F811
+    import mido  # noqa: F401 — used dynamically below
+
     _HAS_MIDO = True
 except ImportError:
     pass
@@ -39,7 +39,7 @@ class MidiManager:
     """
 
     def __init__(self) -> None:
-        self._ports: dict[str, Any] = {}       # port_name → mido.ports.BaseOutput
+        self._ports: dict[str, Any] = {}  # port_name → mido.ports.BaseOutput
         self._device_ports: dict[str, str] = {}  # device_id → port_name
 
     # ------------------------------------------------------------------
@@ -57,6 +57,7 @@ class MidiManager:
             return []
         try:
             import mido
+
             names = mido.get_output_names()
             logger.debug("Available MIDI output ports: %s", names)
             return names
@@ -79,6 +80,7 @@ class MidiManager:
         if port_name not in self._ports:
             try:
                 import mido
+
                 logger.debug("Opening MIDI output '%s'", port_name)
                 self._ports[port_name] = mido.open_output(port_name)
                 logger.info("MIDI output '%s' opened", port_name)
@@ -135,7 +137,9 @@ class MidiManager:
             raise MidiConnectionError(f"Device '{device_id}' has no open MIDI connection")
         port = self._ports.get(port_name)
         if port is None:
-            raise MidiConnectionError(f"Port '{port_name}' for device '{device_id}' is no longer open")
+            raise MidiConnectionError(
+                f"Port '{port_name}' for device '{device_id}' is no longer open"
+            )
         return port
 
     def send(self, device_id: str, message: Any) -> None:
@@ -152,6 +156,7 @@ class MidiManager:
         if not _HAS_MIDO:
             raise MidiConnectionError("mido library is not available")
         import mido
+
         msg = mido.Message("program_change", program=program, channel=channel)
         self.send(device_id, msg)
 
@@ -160,5 +165,6 @@ class MidiManager:
         if not _HAS_MIDO:
             raise MidiConnectionError("mido library is not available")
         import mido
+
         msg = mido.Message("control_change", control=control, value=value, channel=channel)
         self.send(device_id, msg)

@@ -1,17 +1,17 @@
 from __future__ import annotations
+
 import json
 import logging
 import zipfile
 from pathlib import Path
 from typing import Any
 
-
 logger = logging.getLogger(__name__)
 
 
 def ingest_hx_file(path: str) -> list[dict[str, Any]]:
     """Extract preset data from an HX Stomp .hlx bundle file.
-    
+
     .hlx files are zip archives containing JSON preset definitions.
     Returns a list of preset dicts suitable for writing as YAML.
     """
@@ -66,7 +66,12 @@ def _parse_hx_json(data: dict[str, Any], source_name: str) -> dict[str, Any] | N
         if isinstance(params, dict):
             block["settings"] = params
         blocks.append(block)
-        logger.debug("  Block: %s (%s) — %d parameter(s)", block["name"], block["model"], len(params) if isinstance(params, dict) else 0)
+        logger.debug(
+            "  Block: %s (%s) — %d parameter(s)",
+            block["name"],
+            block["model"],
+            len(params) if isinstance(params, dict) else 0,
+        )
 
     return {
         "id": preset_name.lower().replace(" ", "-"),

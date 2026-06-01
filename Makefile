@@ -1,4 +1,4 @@
-.PHONY: help install lock test lint format build publish tool-install clean
+.PHONY: help install lock test lint lint-all format format-all pre-commit-install pre-commit-check build publish tool-install clean
 
 # ─── Help ─────────────────────────────────────────────────────────────────────
 
@@ -21,11 +21,23 @@ lock:              ## Re-lock dependencies
 test:              ## Run all tests
 	uv run pytest tests/ -v
 
-lint:              ## Lint with ruff
+lint:              ## Lint source with ruff
 	uv run ruff check src/
 
-format:            ## Format with ruff
+lint-all:          ## Lint src + tests with ruff
+	uv run ruff check src/ tests/
+
+format:            ## Format source with ruff
 	uv run ruff format src/
+
+format-all:        ## Format src + tests with ruff
+	uv run ruff format src/ tests/
+
+pre-commit-install: ## Install pre-commit hooks
+	uv run pre-commit install
+
+pre-commit-check:  ## Run all pre-commit hooks against all files
+	uv run pre-commit run --all-files
 
 # ─── Build / Package ─────────────────────────────────────────────────────────
 

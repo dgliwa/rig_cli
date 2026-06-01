@@ -139,8 +139,7 @@ def set_device_in_scene(
 
     if pedal_id not in presets:
         raise IngestError(
-            f"Device '{pedal_id}' is not in scene '{name}' "
-            f"(use 'ingest scene add' to add it)"
+            f"Device '{pedal_id}' is not in scene '{name}' (use 'ingest scene add' to add it)"
         )
 
     presets[pedal_id] = preset_id

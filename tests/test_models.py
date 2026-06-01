@@ -1,17 +1,36 @@
 import pytest
 from pydantic import ValidationError
-from rig.models.pedal import PedalType, ControlType, Control, PedalDefinition, ManualConfig, MidiConfig
-from rig.models.preset import AnalogPreset, DigitalPreset, HXBlock, HXStompPreset, MIDICommand, FootswitchAssignment
+
+from rig.models.pedal import (
+    Control,
+    ControlType,
+    ManualConfig,
+    PedalDefinition,
+    PedalType,
+)
+from rig.models.preset import (
+    AnalogPreset,
+    DigitalPreset,
+    FootswitchAssignment,
+    HXBlock,
+    HXStompPreset,
+    MIDICommand,
+)
+from rig.models.rig import RigConfig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
-from rig.models.rig import RigConfig
 
 
 class TestPedalModels:
     def test_pedal_definition_round_trips(self):
         pedal = PedalDefinition(
-            id="tumnus", manufacturer="Wampler", model="Tumnus", type=PedalType.ANALOG,
-            config=ManualConfig(controls=[Control(name="Gain", type=ControlType.KNOB, min=0, max=10)]),
+            id="tumnus",
+            manufacturer="Wampler",
+            model="Tumnus",
+            type=PedalType.ANALOG,
+            config=ManualConfig(
+                controls=[Control(name="Gain", type=ControlType.KNOB, min=0, max=10)]
+            ),
         )
         assert pedal.id == "tumnus"
         assert pedal.config.controls[0].name == "Gain"
@@ -42,15 +61,20 @@ class TestPedalModels:
 class TestPresetModels:
     def test_analog_preset_round_trips_knob_values(self):
         preset = AnalogPreset(
-            id="edge-of-breakup", pedal="tumnus", name="Edge of Breakup",
+            id="edge-of-breakup",
+            pedal="tumnus",
+            name="Edge of Breakup",
             values={"Gain": 3.5, "Level": 7.0, "Treble": 5.5},
         )
         assert preset.values["Gain"] == 3.5
 
     def test_analog_preset_with_tags(self):
         preset = AnalogPreset(
-            id="test", pedal="tumnus", name="Test",
-            values={"Gain": 5.0}, tags=["rhythm", "cleanish"],
+            id="test",
+            pedal="tumnus",
+            name="Test",
+            values={"Gain": 5.0},
+            tags=["rhythm", "cleanish"],
         )
         assert "rhythm" in preset.tags
 
@@ -60,13 +84,18 @@ class TestPresetModels:
 
     def test_digital_preset_with_parameters(self):
         preset = DigitalPreset(
-            id="lead", pedal="brothers", name="Lead", preset_number=7,
+            id="lead",
+            pedal="brothers",
+            name="Lead",
+            preset_number=7,
             parameters={"Gain": 8, "Tone": 5},
         )
         assert preset.parameters["Gain"] == 8
 
     def test_hx_block_with_settings(self):
-        block = HXBlock(name="Amp", type="amp", model="US Double Nrm", settings={"Drive": 4.5, "Bass": 5.0})
+        block = HXBlock(
+            name="Amp", type="amp", model="US Double Nrm", settings={"Drive": 4.5, "Bass": 5.0}
+        )
         assert block.settings["Drive"] == 4.5
         assert block.enabled is True
 
@@ -91,9 +120,14 @@ class TestPresetModels:
         cmd = MIDICommand(type="pc", channel=3, value=4)
         fs = FootswitchAssignment(switch="FS1", action="toggle_block", target="Delay")
         preset = HXStompPreset(
-            id="clean-edge", pedal="hx-stomp", name="Clean Edge",
-            preset_number=12, blocks=[block], midi_commands=[cmd],
-            footswitch_assignments=[fs], tempo=118,
+            id="clean-edge",
+            pedal="hx-stomp",
+            name="Clean Edge",
+            preset_number=12,
+            blocks=[block],
+            midi_commands=[cmd],
+            footswitch_assignments=[fs],
+            tempo=118,
         )
         assert preset.preset_number == 12
         assert preset.tempo == 118
@@ -112,9 +146,13 @@ class TestSceneModel:
 
     def test_scene_full(self):
         scene = Scene(
-            name="billy-clean", description="Billy clean tone", tempo=118,
+            name="billy-clean",
+            description="Billy clean tone",
+            tempo=118,
             presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
-            mc6_bank=1, mc6_switch="A", tags=["bluegrass"],
+            mc6_bank=1,
+            mc6_switch="A",
+            tags=["bluegrass"],
         )
         assert scene.tempo == 118
         assert scene.mc6_switch == "A"

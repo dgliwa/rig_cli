@@ -1,26 +1,57 @@
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+from rig.engine.apply import apply_plan
+from rig.engine.plan import compute_plan
+from rig.models.pedal import ChaseBlissConfig, MidiConfig, PedalDefinition, PedalType
+from rig.models.preset import DigitalPreset, HXBlock, HXStompPreset
 from rig.models.rig import RigConfig
-from rig.models.pedal import PedalDefinition, PedalType, MidiConfig, ChaseBlissConfig
-from rig.models.preset import DigitalPreset, HXStompPreset, HXBlock
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
-from rig.engine.plan import compute_plan
-from rig.engine.apply import apply_plan
 
 
 def _make_config() -> RigConfig:
-    hx = PedalDefinition(id="hx-stomp", manufacturer="Line6", model="HX Stomp", type=PedalType.MODELER, config=MidiConfig(midi_channel=1))
-    bro = PedalDefinition(id="brothers", manufacturer="CBA", model="Brothers", type=PedalType.DIGITAL, config=ChaseBlissConfig(midi_channel=3))
+    hx = PedalDefinition(
+        id="hx-stomp",
+        manufacturer="Line6",
+        model="HX Stomp",
+        type=PedalType.MODELER,
+        config=MidiConfig(midi_channel=1),
+    )
+    bro = PedalDefinition(
+        id="brothers",
+        manufacturer="CBA",
+        model="Brothers",
+        type=PedalType.DIGITAL,
+        config=ChaseBlissConfig(midi_channel=3),
+    )
     block = HXBlock(name="Amp", type="amp", model="US Double Nrm")
     return RigConfig(
         name="test",
         signal_chain=[SignalChainPosition(pedal_ref="hx-stomp", position=1)],
         pedals={"hx-stomp": hx, "brothers": bro},
-        hx_presets={"hx-stomp": [HXStompPreset(id="clean-edge", pedal="hx-stomp", name="Clean Edge", preset_number=12, blocks=[block])]},
-        digital_presets={"brothers": [DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)]},
-        scenes={"test-scene": Scene(name="test-scene", presets={"hx-stomp": "clean-edge", "brothers": "low-gain"})},
+        hx_presets={
+            "hx-stomp": [
+                HXStompPreset(
+                    id="clean-edge",
+                    pedal="hx-stomp",
+                    name="Clean Edge",
+                    preset_number=12,
+                    blocks=[block],
+                )
+            ]
+        },
+        digital_presets={
+            "brothers": [
+                DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)
+            ]
+        },
+        scenes={
+            "test-scene": Scene(
+                name="test-scene", presets={"hx-stomp": "clean-edge", "brothers": "low-gain"}
+            )
+        },
     )
 
 
@@ -87,6 +118,7 @@ class TestMidiApply:
             patch("builtins.input", side_effect=inputs),
         ):
             from rig.midi.adapter import MidiManager
+
             midi = MidiManager()
             apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False, midi=midi)
             midi.disconnect_all()
@@ -102,13 +134,16 @@ class TestMidiApply:
     def test_midi_auto_reconnect_from_state(self, tmp_path):
         """Cached midi_port reconnects without prompting."""
         rig = _make_config()
-        _write_state(tmp_path, {
-            "devices": {
-                "hx-stomp": {"midi_port": "USB Interface", "last_preset": "clean-edge"},
-                "brothers": {"midi_port": "USB Interface", "last_preset": "low-gain"},
+        _write_state(
+            tmp_path,
+            {
+                "devices": {
+                    "hx-stomp": {"midi_port": "USB Interface", "last_preset": "clean-edge"},
+                    "brothers": {"midi_port": "USB Interface", "last_preset": "low-gain"},
+                },
+                "scenes": {"test-scene": {}},
             },
-            "scenes": {"test-scene": {}},
-        })
+        )
         plan = compute_plan(rig, root_path=str(tmp_path))
         fake_port = MagicMock()
         # No MIDI connect prompts needed (auto-reconnect), just scene confirms
@@ -121,6 +156,7 @@ class TestMidiApply:
             patch("builtins.input", side_effect=inputs),
         ):
             from rig.midi.adapter import MidiManager
+
             midi = MidiManager()
             apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False, midi=midi)
             midi.disconnect_all()
@@ -140,6 +176,7 @@ class TestMidiApply:
             patch("builtins.input", side_effect=inputs),
         ):
             from rig.midi.adapter import MidiManager
+
             midi = MidiManager()
             apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False, midi=midi)
             midi.disconnect_all()
@@ -159,6 +196,7 @@ class TestMidiApply:
             patch("rig.midi.adapter.mido.open_output", return_value=MagicMock()),
         ):
             from rig.midi.adapter import MidiManager
+
             midi = MidiManager()
             apply_plan(plan, rig=rig, dry_run=True, midi=midi)
             midi.disconnect_all()
@@ -178,6 +216,7 @@ class TestMidiApply:
             patch("builtins.input", side_effect=inputs),
         ):
             from rig.midi.adapter import MidiManager
+
             midi = MidiManager()
             apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False, midi=midi)
             midi.disconnect_all()
@@ -199,6 +238,7 @@ class TestMidiApply:
             patch("builtins.input", side_effect=inputs),
         ):
             from rig.midi.adapter import MidiManager
+
             midi = MidiManager()
             apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False, midi=midi)
             midi.disconnect_all()
@@ -231,13 +271,18 @@ class TestCbaApply:
     def test_cba_preset_build_writes_state(self, tmp_path):
         rig = _make_config()
         # Pre-establish channel so plan goes to build_preset
-        _write_state(tmp_path, {
-            "devices": {"brothers": {
-                "channel_established": True,
-                "midi_channel": 3,
-                "presets_saved": {},
-            }},
-        })
+        _write_state(
+            tmp_path,
+            {
+                "devices": {
+                    "brothers": {
+                        "channel_established": True,
+                        "midi_channel": 3,
+                        "presets_saved": {},
+                    }
+                },
+            },
+        )
         plan = compute_plan(rig, root_path=str(tmp_path))
         with patch("builtins.input", return_value="c"):
             apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False)
@@ -254,14 +299,19 @@ class TestCbaApply:
 
     def test_cba_registration_writes_state(self, tmp_path):
         rig = _make_config()
-        _write_state(tmp_path, {
-            "devices": {"brothers": {
-                "channel_established": True,
-                "midi_channel": 3,
-                "presets_saved": {"low-gain": True},
-            }},
-            "scenes": {"test-scene": {}},
-        })
+        _write_state(
+            tmp_path,
+            {
+                "devices": {
+                    "brothers": {
+                        "channel_established": True,
+                        "midi_channel": 3,
+                        "presets_saved": {"low-gain": True},
+                    }
+                },
+                "scenes": {"test-scene": {}},
+            },
+        )
         plan = compute_plan(rig, root_path=str(tmp_path))
         with patch("builtins.input", return_value="c"):
             apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False)
