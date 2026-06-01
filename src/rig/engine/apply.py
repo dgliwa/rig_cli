@@ -162,8 +162,9 @@ def apply_plan(
                 logger.debug(
                     "Dry-run: CB build preset '%s' on %s", action.preset_name, action.device
                 )
+                cc_count = len(action.cc_params)
                 console.print(
-                    f"  [cyan]🔧[/cyan] {action.device}: build preset #{action.preset_number} '{action.preset_name}'[dim] (dry-run)[/dim]"
+                    f"  [cyan]🔧[/cyan] {action.device}: build preset #{action.preset_number} '{action.preset_name}' ({cc_count} CC params)[dim] (dry-run)[/dim]"
                 )
                 continue
 
@@ -181,6 +182,17 @@ def apply_plan(
                 except Exception as e:
                     logger.error("Failed to send to %s: %s", action.device, e)
                     console.print(f"  [red]✗[/red] MIDI send failed: {e}")
+
+            if action.device in connected_devices and action.cc_params:
+                for param in action.cc_params:
+                    try:
+                        midi.send_control_change(
+                            action.device, param["cc"], param["value"], action.midi_channel
+                        )
+                    except Exception as e:
+                        logger.error("Failed CC %d on %s: %s", param["cc"], action.device, e)
+                        console.print(f"  [red]✗[/red] CC send failed (CC {param['cc']}): {e}")
+                logger.info("Sent %d CC params to %s", len(action.cc_params), action.device)
 
             res = prompt_cba_build_preset(
                 action.device, action.preset_name, action.preset_number, action.midi_channel
