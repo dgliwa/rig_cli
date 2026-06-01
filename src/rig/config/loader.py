@@ -3,8 +3,8 @@ from pathlib import Path
 
 import yaml
 
-from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError
-from rig.models.pedal import PedalDefinition
+from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
+from rig.models.pedal import ChaseBlissConfig, PedalDefinition
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import RigConfig
 from rig.models.scene import Scene
@@ -134,6 +134,25 @@ def _validate_references(
                 raise MissingReferenceError(
                     f"Scene '{scene_name}': pedal '{pedal_id}' has no preset '{preset_id}'"
                 )
+    logger.debug("Validating CBA preset parameter names against pedal controls")
+    for pedal_id, pedal in config.pedals.items():
+        if not isinstance(pedal.config, ChaseBlissConfig):
+            continue
+        control_names = {c.name for c in pedal.config.controls}
+        for preset in digital_presets.get(pedal_id, []):
+            unknown = set(preset.parameters) - control_names
+            if unknown:
+                logger.error(
+                    "Preset '%s' on '%s' has unknown parameters: %s",
+                    preset.id,
+                    pedal_id,
+                    unknown,
+                )
+                raise ValidationError(
+                    f"Preset '{preset.id}' on '{pedal_id}' has unknown parameters: {unknown}. "
+                    f"Known controls: {sorted(control_names)}"
+                )
+
     logger.debug("All cross-references valid")
 
 
