@@ -102,6 +102,16 @@ def plan(config: str = _CONFIG_OPTION, scene: str | None = _SCENE_OPTION, format
             elif action.status == "verify":
                 console.print(f"  [green]✓[/green] {action.device}: '{action.preset_name}' (already set)")
 
+    if plan.cba_setup:
+        console.print("\n[bold]CBA Setup Required:[/bold]")
+        for action in plan.cba_setup:
+            if action.type == "establish_channel":
+                console.print(f"  [cyan]🔧[/cyan] {action.device}: establish MIDI channel {action.midi_channel}")
+            elif action.type == "build_preset":
+                console.print(f"  [cyan]🔧[/cyan] {action.device}: build preset #{action.preset_number} '{action.preset_name}'")
+            elif action.type == "register_scenes":
+                console.print(f"  [cyan]🔧[/cyan] {action.device}: register presets to scenes")
+
     if not scene_names:
         console.print("[yellow]No scenes found[/yellow]")
 
@@ -123,7 +133,7 @@ def apply(config: str = _CONFIG_OPTION, dry_run: bool = typer.Option(False, "--d
 
     config_path = str(Path(config).resolve())
     plan = compute_plan(rig, root_path=config_path)
-    apply_plan(plan, config_path=config_path, dry_run=dry_run, scene=scene)
+    apply_plan(plan, rig=rig, config_path=config_path, dry_run=dry_run, scene=scene)
 
 
 @app.command()

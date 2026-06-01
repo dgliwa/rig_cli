@@ -24,19 +24,22 @@ def _make_config() -> RigConfig:
     )
 
 
+def _write_state(tmp_path: Path, data: dict):
+    path = tmp_path / ".rig" / "state.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data))
+
+
 class TestApplyPlan:
     def test_clean_plan_prints_no_changes(self, capsys):
         config = _make_config()
         plan = compute_plan(config)
-        # Set up state to match
         apply_plan(plan, dry_run=True)
         captured = capsys.readouterr()
-        # With no state file, all scenes are new, so we should see changes
         assert "No changes needed" not in captured.out
 
     def test_dry_run_does_not_write_state(self, tmp_path):
         config = _make_config()
-        # Temporarily set config_path so it would write
         plan = compute_plan(config)
         apply_plan(plan, config_path=str(tmp_path), dry_run=True)
         state_file = tmp_path / ".rig" / "state.json"
@@ -60,14 +63,85 @@ class TestApplyPlan:
             apply_plan(plan, config_path=str(tmp_path), dry_run=False)
         state_file = tmp_path / ".rig" / "state.json"
         state = json.loads(state_file.read_text())
-        # Scene should be saved but devices may be skipped
         assert "scenes" in state
 
     def test_apply_quit_stops_early(self, tmp_path, capsys):
         config = _make_config()
         plan = compute_plan(config)
-        # First input = q for quit
         with patch("builtins.input", return_value="q"):
             apply_plan(plan, config_path=str(tmp_path), dry_run=False)
         captured = capsys.readouterr()
         assert "cancelled" in captured.out.lower()
+
+
+class TestCbaApply:
+    def test_cba_channel_establishment_writes_state(self, tmp_path):
+        rig = _make_config()
+        plan = compute_plan(rig)
+        # confirm CBA channel, then "c" for each device in scene
+        with patch("builtins.input", return_value="c"):
+            apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False)
+        state = json.loads((tmp_path / ".rig" / "state.json").read_text())
+        dev = state["devices"]["brothers"]
+        assert dev["channel_established"] is True
+        assert dev["midi_channel"] == 3
+
+    def test_cba_channel_skipped_writes_no_state(self, tmp_path, capsys):
+        rig = _make_config()
+        plan = compute_plan(rig)
+        with patch("builtins.input", return_value="s"):
+            apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False)
+        state = json.loads((tmp_path / ".rig" / "state.json").read_text())
+        # Channel was skipped, but scene was still visited
+        assert "channel_established" not in state.get("devices", {}).get("brothers", {})
+
+    def test_cba_preset_build_writes_state(self, tmp_path):
+        rig = _make_config()
+        # Pre-establish channel so plan goes to build_preset
+        _write_state(tmp_path, {
+            "devices": {"brothers": {
+                "channel_established": True,
+                "midi_channel": 3,
+                "presets_saved": {},
+            }},
+        })
+        plan = compute_plan(rig, root_path=str(tmp_path))
+        with patch("builtins.input", return_value="c"):
+            apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False)
+        state = json.loads((tmp_path / ".rig" / "state.json").read_text())
+        assert state["devices"]["brothers"]["presets_saved"]["low-gain"] is True
+
+    def test_cba_setup_shown_in_dry_run(self, tmp_path, capsys):
+        rig = _make_config()
+        plan = compute_plan(rig)
+        apply_plan(plan, rig=rig, dry_run=True)
+        captured = capsys.readouterr()
+        assert "establish MIDI channel" in captured.out
+        assert "dry-run" in captured.out
+
+    def test_cba_registration_writes_state(self, tmp_path):
+        rig = _make_config()
+        _write_state(tmp_path, {
+            "devices": {"brothers": {
+                "channel_established": True,
+                "midi_channel": 3,
+                "presets_saved": {"low-gain": True},
+            }},
+            "scenes": {"test-scene": {}},
+        })
+        plan = compute_plan(rig, root_path=str(tmp_path))
+        with patch("builtins.input", return_value="c"):
+            apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False)
+        state = json.loads((tmp_path / ".rig" / "state.json").read_text())
+        assert state["devices"]["brothers"]["registration_done"] is True
+
+    def test_cba_quit_during_channel_saves_no_state(self, tmp_path, capsys):
+        rig = _make_config()
+        plan = compute_plan(rig)
+        with patch("builtins.input", return_value="q"):
+            apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False)
+        captured = capsys.readouterr()
+        assert "cancelled" in captured.out.lower()
+        # No state written because we quit before any confirmation
+        state_file = tmp_path / ".rig" / "state.json"
+        assert not state_file.exists()

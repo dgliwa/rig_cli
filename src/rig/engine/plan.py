@@ -41,6 +41,7 @@ class CbaSetupAction(BaseModel):
     preset_id: str | None = None
     preset_name: str | None = None
     preset_number: int | None = None
+    scene_refs: list[str] = []
 
 
 class Plan(BaseModel):
@@ -109,15 +110,14 @@ def _detect_cba_setup(rig: RigConfig, state: dict) -> list[CbaSetupAction]:
 
         # Phase 3: Scene registration (only if channel + presets done, but not yet registered)
         if not ds.get("registration_done") and not has_unsaved:
-            # Check if any scene references this pedal
-            for scene in rig.scenes.values():
-                if pedal_id in scene.presets:
-                    actions.append(CbaSetupAction(
-                        device=pedal_id,
-                        midi_channel=ch,
-                        type="register_scenes",
-                    ))
-                    break
+            scene_refs = [sn for sn, s in rig.scenes.items() if pedal_id in s.presets]
+            if scene_refs:
+                actions.append(CbaSetupAction(
+                    device=pedal_id,
+                    midi_channel=ch,
+                    type="register_scenes",
+                    scene_refs=scene_refs,
+                ))
 
     return actions
 
