@@ -1,4 +1,12 @@
-.PHONY: install test lint build clean lock
+.PHONY: help install lock test lint format build publish tool-install clean
+
+# ─── Help ─────────────────────────────────────────────────────────────────────
+
+help:              ## Show available targets
+	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | \
+		awk 'BEGIN {FS = ":.*##"}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+.DEFAULT_GOAL := help
 
 # ─── Dev ─────────────────────────────────────────────────────────────────────
 

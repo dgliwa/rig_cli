@@ -94,14 +94,17 @@ RigConfig              — Top-level config (imports all above)
 cd rig-cli
 uv sync
 
+# See all available targets
+make help
+
 # Run tests
 make test
 
-# Lint
+# Lint / format
 make lint
 make format
 
-# Build distributable
+# Build distributable wheel
 make build
 
 # Install as global CLI tool (one-time)
@@ -112,6 +115,7 @@ make tool-install
 
 | Target | Description |
 |--------|-------------|
+| `make help` | Show available targets (default) |
 | `make install` | Install deps + package (editable) via `uv sync` |
 | `make test` | Run test suite |
 | `make lint` | Ruff check |
