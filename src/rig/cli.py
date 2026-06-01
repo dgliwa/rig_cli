@@ -16,6 +16,7 @@ from rig.engine.diff import compute_diff, format_diff
 from rig.engine.plan import compute_plan
 from rig.generators.mc6_presets import generate_mc6, write_mc6_config
 from rig.ingest.hx_stomp import ingest_hx_file
+from rig.ingest.manual import ingest_manual_pedal
 from rig.ingest.mc6_config import ingest_mc6_config
 from rig.ingest.scene import IngestError, add_device_to_scene, create_scene, set_device_in_scene
 from rig.log_setup import setup_logging
@@ -355,6 +356,17 @@ def ingest_mc6(
         console.print(f"  [green]✓[/green] {scene_path}")
 
     console.print(f"[green]Ingested {len(scenes)} scene(s)")
+
+
+@in_app.command("manual")
+def ingest_manual(
+    config: str = _CONFIG_OPTION,
+    verbose: int = _VERBOSE_OPTION,
+):
+    """Interactively ingest a manual (non-MIDI) pedal definition."""
+    setup_logging(verbose)
+    config_path = Path(config).resolve()
+    ingest_manual_pedal(config_path)
 
 
 scene_app = typer.Typer(help="Manage scene definitions (create/add/set)")

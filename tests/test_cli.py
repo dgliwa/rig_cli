@@ -68,9 +68,7 @@ class TestValidate:
 
     def test_validate_json_output(self, tmp_path: Path):
         _write_minimal_rig(tmp_path)
-        result = runner.invoke(
-            app, ["validate", "--config", str(tmp_path), "--format", "json"]
-        )
+        result = runner.invoke(app, ["validate", "--config", str(tmp_path), "--format", "json"])
         assert result.exit_code == 0
         data = json.loads(result.stdout)
         assert data["status"] == "valid"
@@ -78,9 +76,7 @@ class TestValidate:
         assert data["scenes"] == 0
 
     def test_validate_json_error(self, tmp_path: Path):
-        result = runner.invoke(
-            app, ["validate", "--config", str(tmp_path), "--format", "json"]
-        )
+        result = runner.invoke(app, ["validate", "--config", str(tmp_path), "--format", "json"])
         assert result.exit_code == 1
         data = json.loads(result.stdout)
         assert data["status"] == "error"
@@ -100,9 +96,7 @@ class TestStatus:
 
     def test_status_json(self, tmp_path: Path):
         _write_minimal_rig(tmp_path)
-        result = runner.invoke(
-            app, ["status", "--config", str(tmp_path), "--format", "json"]
-        )
+        result = runner.invoke(app, ["status", "--config", str(tmp_path), "--format", "json"])
         assert result.exit_code == 0
         data = json.loads(result.stdout)
         assert data["name"] == "test-rig"
@@ -126,9 +120,7 @@ class TestPlan:
 
     def test_plan_json(self, tmp_path: Path):
         _write_minimal_rig(tmp_path)
-        result = runner.invoke(
-            app, ["plan", "--config", str(tmp_path), "--format", "json"]
-        )
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path), "--format", "json"])
         assert result.exit_code == 0
         data = json.loads(result.stdout)
         assert "status" in data
@@ -152,9 +144,7 @@ class TestDiff:
 
     def test_diff_json(self, tmp_path: Path):
         _write_minimal_rig(tmp_path)
-        result = runner.invoke(
-            app, ["diff", "--config", str(tmp_path), "--format", "json"]
-        )
+        result = runner.invoke(app, ["diff", "--config", str(tmp_path), "--format", "json"])
         assert result.exit_code == 0
         data = json.loads(result.stdout)
         assert "scenes" in data
@@ -179,9 +169,7 @@ class TestFormatOption:
 
     def test_validate_short_format_flag(self, tmp_path: Path):
         _write_minimal_rig(tmp_path)
-        result = runner.invoke(
-            app, ["validate", "--config", str(tmp_path), "-f", "json"]
-        )
+        result = runner.invoke(app, ["validate", "--config", str(tmp_path), "-f", "json"])
         assert result.exit_code == 0
         data = json.loads(result.stdout)
         assert data["status"] == "valid"
