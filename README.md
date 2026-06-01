@@ -31,6 +31,18 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 | `rig apply` | Apply changes to reach desired state |
 | `rig status` | Show current rig state |
 | `rig diff` | Show differences between config versions |
+| `rig ingest hx <file>` | Import HX Stomp .hlx presets to YAML |
+| `rig ingest mc6 <file>` | Import MC6 JSON config to scene YAML |
+| `rig ingest scene create/add/set` | Create/add/set device presets in scenes |
+| `rig generate mc6` | Generate MC6 bank configs from scenes |
+
+### Common Flags
+
+| Flag | Description |
+|------|-------------|
+| `--config <path>` | Path to rig config repo (default: `.`) |
+| `-v` / `-vv` | Increase verbosity (INFO / DEBUG) |
+| `--format json` | Machine-readable JSON output for automation |
 
 ## Tech Stack
 
