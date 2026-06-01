@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from rig.engine.state import read_state
+from rig.engine.state import DeviceState, RigState, read_state
 from rig.models.preset import HXBlock
 from rig.models.rig import RigConfig
 
@@ -71,20 +71,19 @@ def _is_cba(pedal) -> bool:
     return isinstance(pedal.config, ChaseBlissConfig)
 
 
-def _detect_cba_setup(rig: RigConfig, state: dict) -> list[CbaSetupAction]:
+def _detect_cba_setup(rig: RigConfig, state: RigState) -> list[CbaSetupAction]:
     """Detect CBA setup actions needed based on current state."""
     actions: list[CbaSetupAction] = []
-    device_state = state.get("devices", {})
 
     for pedal_id, pedal in rig.pedals.items():
         if not _is_cba(pedal):
             continue
 
         ch = pedal.config.midi_channel or 1
-        ds = device_state.get(pedal_id, {})
+        ds = state.devices.get(pedal_id, DeviceState())
 
         # Phase 1: Channel establishment
-        if not ds.get("channel_established"):
+        if not ds.channel_established:
             actions.append(
                 CbaSetupAction(
                     device=pedal_id,
@@ -96,7 +95,7 @@ def _detect_cba_setup(rig: RigConfig, state: dict) -> list[CbaSetupAction]:
             continue
 
         # Phase 2: Preset building
-        presets_saved = ds.get("presets_saved", {})
+        presets_saved = ds.presets_saved
         has_unsaved = False
         for preset in rig.digital_presets.get(pedal_id, []):
             if not presets_saved.get(preset.id):
@@ -113,7 +112,7 @@ def _detect_cba_setup(rig: RigConfig, state: dict) -> list[CbaSetupAction]:
                 has_unsaved = True
 
         # Phase 3: Scene registration (only if channel + presets done, but not yet registered)
-        if not ds.get("registration_done") and not has_unsaved:
+        if not ds.registration_done and not has_unsaved:
             scene_refs = [sn for sn, s in rig.scenes.items() if pedal_id in s.presets]
             if scene_refs:
                 actions.append(
@@ -128,9 +127,11 @@ def _detect_cba_setup(rig: RigConfig, state: dict) -> list[CbaSetupAction]:
     return actions
 
 
-def _diff_blocks(desired_blocks: list[HXBlock], actual_preset_state: dict) -> list[BlockDiff]:
+def _diff_blocks(
+    desired_blocks: list[HXBlock], actual_preset_state: DeviceState
+) -> list[BlockDiff]:
     diffs: list[BlockDiff] = []
-    actual_names = set(actual_preset_state.get("block_names", []))
+    actual_names = set(actual_preset_state.block_names)
     desired_names = {b.name for b in desired_blocks}
 
     for block in desired_blocks:
@@ -148,10 +149,10 @@ def _diff_blocks(desired_blocks: list[HXBlock], actual_preset_state: dict) -> li
 
 def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
     logger.debug("Computing plan for %d scenes", len(rig.scenes))
-    actual = {}
+    actual = RigState()
     if root_path:
         actual = read_state(root_path)
-        logger.debug("Read state for %d devices", len(actual.get("devices", {})))
+        logger.debug("Read state for %d devices", len(actual.devices))
 
     scenes_plan: dict[str, ScenePlan] = {}
     any_changes = False
@@ -169,7 +170,7 @@ def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
                 )
                 continue
 
-            actual_preset = actual.get("devices", {}).get(pedal_id, {}).get("last_preset")
+            actual_preset = actual.devices.get(pedal_id, DeviceState()).last_preset
             logger.debug(
                 "  Device '%s': actual='%s' desired='%s'", pedal_id, actual_preset, preset_id
             )
@@ -197,7 +198,7 @@ def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
                     if hp.id == preset_id:
                         preset_number = hp.preset_number
                         block_diffs = _diff_blocks(
-                            hp.blocks, actual.get("devices", {}).get(pedal_id, {})
+                            hp.blocks, actual.devices.get(pedal_id, DeviceState())
                         )
                         break
                 logger.debug(
@@ -228,7 +229,7 @@ def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
 
         scene_status: Literal["new", "changed", "unchanged"] = (
             "new"
-            if scene_name not in actual.get("scenes", {})
+            if scene_name not in actual.scenes
             else "changed"
             if scene_has_changes
             else "unchanged"

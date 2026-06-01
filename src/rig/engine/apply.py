@@ -7,7 +7,7 @@ from rich.console import Console
 
 from rig.config.errors import ConfigError
 from rig.engine.plan import Plan
-from rig.engine.state import read_state, write_state
+from rig.engine.state import DeviceState, RigState, read_state, write_state
 from rig.midi.adapter import MidiManager
 from rig.models.rig import RigConfig
 
@@ -133,11 +133,14 @@ def _prompt_cba_register(device: str, scene_refs: list[str]) -> _ConfirmResult:
         console.print("[yellow]Invalid choice. Enter c, s, or q[/yellow]")
 
 
-def _merge_device_state(state: dict, device: str, **fields) -> dict:
-    """Update device state fields without clobbering existing values."""
-    entry = state.setdefault("devices", {}).setdefault(device, {})
-    entry.update(fields)
-    return state
+def _update_device_state(state: RigState, device: str, **fields) -> None:
+    """Update a device's state fields in-place.
+
+    Creates a new ``DeviceState`` entry if *device* has no existing state.
+    Preserves any existing fields not listed in **fields*.
+    """
+    current = state.devices.get(device, DeviceState())
+    state.devices[device] = current.model_copy(update=fields)
 
 
 def _prompt_midi_connect(
@@ -240,7 +243,7 @@ def apply_plan(
         return
 
     logger.debug("Reading current state")
-    state = {}
+    state = RigState()
     if config_path:
         state = read_state(config_path)
     state_modified = False
@@ -263,7 +266,7 @@ def apply_plan(
         # Look up pedal info
         pedal = rig.pedals.get(device_id) if rig else None
         ch = (pedal.config.midi_channel or 1) if pedal else 1
-        cached_port = state.get("devices", {}).get(device_id, {}).get("midi_port")
+        cached_port = state.devices.get(device_id, DeviceState()).midi_port
 
         if dry_run:
             console.print(
@@ -277,7 +280,7 @@ def apply_plan(
             console.print("[red]Apply cancelled by user[/red]")
             return
         if result == "confirm" and port_name:
-            _merge_device_state(state, device_id, midi_port=port_name)
+            _update_device_state(state, device_id, midi_port=port_name)
             state_modified = True
             connected_devices.add(device_id)
         # If skipped → device not in connected_devices, falls back to manual prompts
@@ -313,7 +316,7 @@ def apply_plan(
                 console.print("[red]Apply cancelled by user[/red]")
                 return
             if result == "confirm":
-                _merge_device_state(
+                _update_device_state(
                     state, action.device, channel_established=True, midi_channel=action.midi_channel
                 )
                 state_modified = True
@@ -350,10 +353,11 @@ def apply_plan(
                 console.print("[red]Apply cancelled by user[/red]")
                 return
             if result == "confirm":
-                _merge_device_state(state, action.device, last_preset=action.preset_name)
-                state.setdefault("devices", {}).setdefault(action.device, {}).setdefault(
-                    "presets_saved", {}
-                )[action.preset_id] = True
+                _update_device_state(state, action.device, last_preset=action.preset_name)
+                ds = state.devices.get(action.device, DeviceState())
+                ps = dict(ds.presets_saved)
+                ps[action.preset_id] = True
+                state.devices[action.device] = ds.model_copy(update={"presets_saved": ps})
                 state_modified = True
 
         elif action.type == "register_scenes":
@@ -368,7 +372,7 @@ def apply_plan(
                 console.print("[red]Apply cancelled by user[/red]")
                 return
             if result == "confirm":
-                _merge_device_state(state, action.device, registration_done=True)
+                _update_device_state(state, action.device, registration_done=True)
                 state_modified = True
 
     # --- Phase 1: Scene apply ---
@@ -409,7 +413,7 @@ def apply_plan(
                     console.print("[red]Apply cancelled by user[/red]")
                     return
                 if result == "confirm":
-                    _merge_device_state(state, action.device, last_preset=action.preset_name)
+                    _update_device_state(state, action.device, last_preset=action.preset_name)
                     state_modified = True
                 continue
 
@@ -462,7 +466,7 @@ def apply_plan(
                     console.print(
                         f"  [green]✓[/green] {action.device}: '{action.preset_name}' configured"
                     )
-                    _merge_device_state(state, action.device, last_preset=action.preset_name)
+                    _update_device_state(state, action.device, last_preset=action.preset_name)
                     state_modified = True
                     break
                 if result == "retry":
@@ -487,7 +491,7 @@ def apply_plan(
                     console.print("[red]Apply cancelled by user[/red]")
                     return
 
-        state.setdefault("scenes", {})[sp.scene_name] = {}
+        state.scenes[sp.scene_name] = {}
         state_modified = True
 
     if config_path and not dry_run and state_modified:
