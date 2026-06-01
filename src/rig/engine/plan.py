@@ -33,6 +33,7 @@ class CbaSetupAction(BaseModel):
     preset_name: str | None = None
     preset_number: int | None = None
     scene_refs: list[str] = []
+    cc_params: list[dict[str, int]] = []
 
 
 class Plan(BaseModel):
@@ -99,6 +100,7 @@ def _detect_cba_setup(rig: RigConfig, state: RigState) -> list[CbaSetupAction]:
                         preset_id=preset.id,
                         preset_name=preset.name,
                         preset_number=preset.preset_number,
+                        cc_params=pedal.config.get_cc_params(preset.parameters),
                     )
                 )
                 has_unsaved = True
