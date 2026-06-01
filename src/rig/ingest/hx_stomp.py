@@ -23,26 +23,43 @@ def ingest_hx_file(path: str) -> list[dict[str, Any]]:
     logger.info("Ingesting HX file: %s", path)
     presets: list[dict[str, Any]] = []
 
-    with zipfile.ZipFile(path, "r") as zf:
-        logger.debug("Opened .hlx archive with %d entries", len(zf.namelist()))
-        for name in zf.namelist():
-            if not name.endswith(".json"):
-                logger.debug("Skipping non-JSON entry: %s", name)
-                continue
-            logger.debug("Reading entry: %s", name)
-            with zf.open(name) as f:
-                try:
-                    data = json.loads(f.read())
-                except json.JSONDecodeError as e:
-                    logger.warning("Invalid JSON in .hlx entry '%s': %s", name, e)
+    # Newer HX firmware exports as plain JSON; older as zip archives.
+    # Try JSON first, then fall back to zip.
+    raw_data = _try_read_json(path)
+    if raw_data is not None:
+        preset = _parse_hx_json(raw_data, path.name)
+        if preset:
+            presets.append(preset)
+    else:
+        with zipfile.ZipFile(path, "r") as zf:
+            logger.debug("Opened .hlx archive with %d entries", len(zf.namelist()))
+            for name in zf.namelist():
+                if not name.endswith(".json"):
+                    logger.debug("Skipping non-JSON entry: %s", name)
                     continue
+                logger.debug("Reading entry: %s", name)
+                with zf.open(name) as f:
+                    try:
+                        data = json.loads(f.read())
+                    except json.JSONDecodeError as e:
+                        logger.warning("Invalid JSON in .hlx entry '%s': %s", name, e)
+                        continue
 
-            preset = _parse_hx_json(data, name)
-            if preset:
-                presets.append(preset)
+                preset = _parse_hx_json(data, name)
+                if preset:
+                    presets.append(preset)
 
-    logger.info("Extracted %d preset(s) from .hlx archive", len(presets))
+    logger.info("Extracted %d preset(s) from .hlx file", len(presets))
     return presets
+
+
+def _try_read_json(path: Path) -> dict[str, Any] | None:
+    """Try to read *path* as plain JSON. Returns None on failure."""
+    try:
+        with open(path) as f:
+            return json.loads(f.read())
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
 
 
 def _parse_hx_json(data: dict[str, Any], source_name: str) -> dict[str, Any] | None:
