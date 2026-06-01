@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 
@@ -53,16 +54,16 @@ _VERBOSE_OPTION = typer.Option(
 
 @app.command()
 def validate(
-    config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION
+    config: str = _CONFIG_OPTION,
+    output_format: str = _FORMAT_OPTION,
+    verbose: int = _VERBOSE_OPTION,
 ):
     """Validate the rig configuration."""
     setup_logging(verbose)
     logger.info("Validating config at: %s", config)
     try:
         rig = load_rig(config)
-        if format == "json":
-            import json
-
+        if output_format == "json":
             console.print(
                 json.dumps(
                     {"status": "valid", "pedals": len(rig.pedals), "scenes": len(rig.scenes)},
@@ -75,9 +76,7 @@ def validate(
             )
             console.print("[green]✓[/green] All cross-references valid")
     except ConfigError as e:
-        if format == "json":
-            import json
-
+        if output_format == "json":
             console.print(json.dumps({"status": "error", "error": str(e)}))
         else:
             console.print(f"[red]✗[/red] {e}")
@@ -88,7 +87,7 @@ def validate(
 def plan(
     config: str = _CONFIG_OPTION,
     scene: str | None = _SCENE_OPTION,
-    format: str = _FORMAT_OPTION,
+    output_format: str = _FORMAT_OPTION,
     verbose: int = _VERBOSE_OPTION,
 ):
     """Preview changes needed to reach desired state."""
@@ -102,7 +101,7 @@ def plan(
 
     plan = compute_plan(rig, root_path=Path(config).resolve() if config else None)
 
-    if format == "json":
+    if output_format == "json":
         console.print(plan.model_dump_json(indent=2))
         return
 
@@ -155,8 +154,8 @@ def plan(
     if not scene_names:
         console.print("[yellow]No scenes found[/yellow]")
 
-    unknown = config and Path(config).exists()
-    if unknown:
+    config_exists = config and Path(config).exists()
+    if config_exists:
         console.print("\n[dim]State source: .rig/state.json[/dim]")
 
 
@@ -187,7 +186,9 @@ def apply(
 
 @app.command()
 def status(
-    config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION
+    config: str = _CONFIG_OPTION,
+    output_format: str = _FORMAT_OPTION,
+    verbose: int = _VERBOSE_OPTION,
 ):
     """Show current rig state."""
     setup_logging(verbose)
@@ -198,9 +199,7 @@ def status(
         console.print(f"[red]✗[/red] {e}")
         raise typer.Exit(1)
 
-    if format == "json":
-        import json
-
+    if output_format == "json":
         info = {
             "name": rig.name,
             "pedals": {
@@ -234,7 +233,9 @@ def status(
 
 @app.command()
 def diff(
-    config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: int = _VERBOSE_OPTION
+    config: str = _CONFIG_OPTION,
+    output_format: str = _FORMAT_OPTION,
+    verbose: int = _VERBOSE_OPTION,
 ):
     """Show differences between config and last-known state."""
     setup_logging(verbose)
@@ -247,9 +248,7 @@ def diff(
 
     config_path = str(Path(config).resolve())
     changes = compute_diff(rig, root_path=config_path)
-    if format == "json":
-        import json
-
+    if output_format == "json":
         console.print(json.dumps(changes, indent=2))
         return
     output = format_diff(changes)

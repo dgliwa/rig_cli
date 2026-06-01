@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel
 
 from rig.models.pedal import PedalDefinition
@@ -16,4 +18,4 @@ class RigConfig(BaseModel):
     hx_presets: dict[str, list[HXStompPreset]] = {}
     scenes: dict[str, Scene] = {}
     midi_channel: int | None = None
-    mc6: dict = {}
+    mc6: dict[str, Any] = {}

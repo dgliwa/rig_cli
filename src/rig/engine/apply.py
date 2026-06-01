@@ -71,7 +71,7 @@ def _prompt_cba_channel(device: str, midi_channel: int, midi_sent: bool = False)
         console.print("  3. While holding, reconnect power (pedal enters learn mode)")
         console.print(f"  4. I will send PC#0 on channel {midi_channel} to lock the channel")
     while True:
-        label = "done — channel saved" if midi_sent else "ready — send PC on ch {midi_channel}"
+        label = "done — channel saved" if midi_sent else f"ready — send PC on ch {midi_channel}"
         response = input(f"  [c] {label}  [r] show again  [s] skip  [q] quit: ").strip().lower()
         if response in ("c", "confirm", "done"):
             console.print(f"  [green]✓[/green] {device}: channel {midi_channel} established")
