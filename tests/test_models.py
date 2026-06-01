@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from rig.models.pedal import PedalType, ControlType, Control, PedalDefinition
+from rig.models.pedal import PedalType, ControlType, Control, PedalDefinition, ManualConfig, MidiConfig
 from rig.models.preset import AnalogPreset, DigitalPreset, HXBlock, HXStompPreset, MIDICommand, FootswitchAssignment
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
@@ -11,10 +11,10 @@ class TestPedalModels:
     def test_pedal_definition_round_trips(self):
         pedal = PedalDefinition(
             id="tumnus", manufacturer="Wampler", model="Tumnus", type=PedalType.ANALOG,
-            controls=[Control(name="Gain", type=ControlType.KNOB, min=0, max=10)],
+            config=ManualConfig(controls=[Control(name="Gain", type=ControlType.KNOB, min=0, max=10)]),
         )
         assert pedal.id == "tumnus"
-        assert pedal.controls[0].name == "Gain"
+        assert pedal.config.controls[0].name == "Gain"
 
     def test_pedal_type_enum_values(self):
         assert PedalType.DIGITAL.value == "digital"

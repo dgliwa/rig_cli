@@ -1,6 +1,6 @@
 import json
 from rig.models.rig import RigConfig
-from rig.models.pedal import PedalDefinition, PedalType
+from rig.models.pedal import PedalDefinition, PedalType, ManualConfig, MidiConfig, ChaseBlissConfig
 from rig.models.preset import DigitalPreset, HXStompPreset, HXBlock
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
@@ -8,9 +8,9 @@ from rig.engine.plan import compute_plan
 
 
 def _make_rig(scene_presets: dict | None = None) -> RigConfig:
-    hx = PedalDefinition(id="hx-stomp", manufacturer="Line6", model="HX Stomp", type=PedalType.MODELER, midi_channel=1)
-    bro = PedalDefinition(id="brothers", manufacturer="CBA", model="Brothers", type=PedalType.DIGITAL, midi_channel=3)
-    tum = PedalDefinition(id="tumnus", manufacturer="Wampler", model="Tumnus", type=PedalType.ANALOG)
+    hx = PedalDefinition(id="hx-stomp", manufacturer="Line6", model="HX Stomp", type=PedalType.MODELER, config=MidiConfig(midi_channel=1))
+    bro = PedalDefinition(id="brothers", manufacturer="CBA", model="Brothers", type=PedalType.DIGITAL, config=ChaseBlissConfig(midi_channel=3))
+    tum = PedalDefinition(id="tumnus", manufacturer="Wampler", model="Tumnus", type=PedalType.ANALOG, config=ManualConfig())
     block = HXBlock(name="Amp", type="amp", model="US Double Nrm", settings={"Drive": 4.5})
     hx_preset = HXStompPreset(id="clean-edge", pedal="hx-stomp", name="Clean Edge", preset_number=12, blocks=[block])
     return RigConfig(

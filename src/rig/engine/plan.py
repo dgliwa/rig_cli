@@ -67,8 +67,8 @@ def _get_preset_number(rig: RigConfig, pedal_id: str, preset_id: str) -> int | N
 
 def _is_cba(pedal) -> bool:
     """Check if a pedal is a Chase Bliss Audio device."""
-    mfg = (pedal.manufacturer or "").lower()
-    return "chase bliss" in mfg or "cba" in mfg
+    from rig.models.pedal import ChaseBlissConfig
+    return isinstance(pedal.config, ChaseBlissConfig)
 
 
 def _detect_cba_setup(rig: RigConfig, state: dict) -> list[CbaSetupAction]:
@@ -80,7 +80,7 @@ def _detect_cba_setup(rig: RigConfig, state: dict) -> list[CbaSetupAction]:
         if not _is_cba(pedal):
             continue
 
-        ch = pedal.midi_channel or 1
+        ch = pedal.config.midi_channel or 1
         ds = device_state.get(pedal_id, {})
 
         # Phase 1: Channel establishment
@@ -204,7 +204,7 @@ def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
                 status="configure" if needs_config else "verify",
                 preset_name=preset_id,
                 preset_number=preset_number,
-                midi_channel=pedal.midi_channel,
+                midi_channel=pedal.config.midi_channel,
                 block_diffs=block_diffs,
             ))
 

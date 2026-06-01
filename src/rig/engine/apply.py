@@ -253,7 +253,7 @@ def apply_plan(
 
         # Look up pedal info
         pedal = rig.pedals.get(device_id) if rig else None
-        ch = pedal.midi_channel if pedal else 1
+        ch = (pedal.config.midi_channel or 1) if pedal else 1
         cached_port = state.get("devices", {}).get(device_id, {}).get("midi_port")
 
         if dry_run:

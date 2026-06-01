@@ -156,7 +156,7 @@ def status(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: 
         import json
         info = {
             "name": rig.name,
-            "pedals": {pid: {"type": p.type.value, "midi_channel": p.midi_channel} for pid, p in rig.pedals.items()},
+            "pedals": {pid: {"type": p.type.value, "midi_channel": p.config.midi_channel} for pid, p in rig.pedals.items()},
             "scenes": list(rig.scenes.keys()),
         }
         console.print(json.dumps(info, indent=2))
@@ -176,7 +176,7 @@ def status(config: str = _CONFIG_OPTION, format: str = _FORMAT_OPTION, verbose: 
         table.add_row(
             pid,
             pedal.type.value,
-            str(pedal.midi_channel or "-"),
+            str(pedal.config.midi_channel or "-"),
             str(preset_count),
         )
     console.print(table)

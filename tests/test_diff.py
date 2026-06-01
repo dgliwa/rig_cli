@@ -1,6 +1,6 @@
 import json
 from rig.models.rig import RigConfig
-from rig.models.pedal import PedalDefinition, PedalType
+from rig.models.pedal import PedalDefinition, PedalType, MidiConfig, ChaseBlissConfig
 from rig.models.preset import DigitalPreset, HXStompPreset, HXBlock
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
@@ -8,8 +8,8 @@ from rig.engine.diff import compute_diff, format_diff
 
 
 def _make_rig() -> RigConfig:
-    hx = PedalDefinition(id="hx-stomp", manufacturer="Line6", model="HX Stomp", type=PedalType.MODELER, midi_channel=1)
-    bro = PedalDefinition(id="brothers", manufacturer="CBA", model="Brothers", type=PedalType.DIGITAL, midi_channel=3)
+    hx = PedalDefinition(id="hx-stomp", manufacturer="Line6", model="HX Stomp", type=PedalType.MODELER, config=MidiConfig(midi_channel=1))
+    bro = PedalDefinition(id="brothers", manufacturer="CBA", model="Brothers", type=PedalType.DIGITAL, config=ChaseBlissConfig(midi_channel=3))
     block = HXBlock(name="Amp", type="amp", model="US Double Nrm")
     return RigConfig(
         name="test",
