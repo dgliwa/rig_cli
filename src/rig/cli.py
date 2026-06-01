@@ -138,9 +138,6 @@ def plan(
                 console.print(
                     f"  [cyan]→[/cyan] {action.device}:{pc_info} '{action.preset_name}'{ch_info}"
                 )
-                for bd in action.block_diffs:
-                    if bd.status == "added":
-                        console.print(f"    [green]+[/green] block: {bd.name}")
             elif action.status == "verify":
                 console.print(
                     f"  [green]✓[/green] {action.device}: '{action.preset_name}' (already set)"
@@ -302,7 +299,7 @@ def hx(
     setup_logging(verbose)
     logger.info("Ingesting HX file: %s", path)
     try:
-        presets = ingest_hx_file(path)
+        presets = ingest_hx_file(path, repo_root=output)
     except FileNotFoundError as e:
         console.print(f"[red]✗[/red] {e}")
         raise typer.Exit(1)

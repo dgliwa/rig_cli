@@ -13,34 +13,45 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-from rig.models.preset import HXBlock, HXStompPreset
+from rig.models.preset import HXStompPreset
 
 logger = logging.getLogger(__name__)
 
 
-def ingest_hx_file(path: str) -> list[HXStompPreset]:
-    """Extract preset data from an HX Stomp .hlx bundle file.
+def ingest_hx_file(path: str, repo_root: str | None = None) -> list[HXStompPreset]:
+    """Extract preset metadata from an HX Stomp .hlx bundle file.
 
     .hlx files from newer firmware are plain JSON. Older exports are zip
-    archives containing JSON entries.  Returns a list of typed
-    :class:`HXStompPreset` objects.
-    """
-    path = Path(path)
-    if not path.exists():
-        logger.error("HX file not found: %s", path)
-        raise FileNotFoundError(f"HX file not found: {path}")
+    archives containing JSON entries. Returns a list of typed
+    :class:`HXStompPreset` objects with ``preset_number=0`` as a placeholder —
+    update the YAML to reflect the actual slot number on the device.
 
-    logger.info("Ingesting HX file: %s", path)
+    If *repo_root* is provided, ``hlx_file`` is stored relative to that path;
+    otherwise the absolute path is used.
+    """
+    p = Path(path).resolve()
+    if not p.exists():
+        logger.error("HX file not found: %s", p)
+        raise FileNotFoundError(f"HX file not found: {p}")
+
+    if repo_root:
+        try:
+            hlx_file = str(p.relative_to(Path(repo_root).resolve()))
+        except ValueError:
+            hlx_file = str(p)
+    else:
+        hlx_file = str(p)
+
+    logger.info("Ingesting HX file: %s", p)
     presets: list[HXStompPreset] = []
 
-    # Newer HX firmware exports as plain JSON; older as zip archives.
-    raw_data = _try_read_json(path)
+    raw_data = _try_read_json(p)
     if raw_data is not None:
-        preset = _parse_hx_json(raw_data, path.name)
+        preset = _parse_hx_json(raw_data, p.name, hlx_file)
         if preset:
             presets.append(preset)
     else:
-        with zipfile.ZipFile(path, "r") as zf:
+        with zipfile.ZipFile(p, "r") as zf:
             logger.debug("Opened .hlx archive with %d entries", len(zf.namelist()))
             for name in zf.namelist():
                 if not name.endswith(".json"):
@@ -54,7 +65,7 @@ def ingest_hx_file(path: str) -> list[HXStompPreset]:
                         logger.warning("Invalid JSON in .hlx entry '%s': %s", name, e)
                         continue
 
-                preset = _parse_hx_json(data, name)
+                preset = _parse_hx_json(data, name, hlx_file)
                 if preset:
                     presets.append(preset)
 
@@ -71,80 +82,16 @@ def _try_read_json(path: Path) -> dict[str, Any] | None:
         return None
 
 
-def _parse_hx_json(data: dict[str, Any], source_name: str) -> HXStompPreset | None:
+def _parse_hx_json(data: dict[str, Any], source_name: str, hlx_file: str) -> HXStompPreset | None:
     """Convert HX JSON preset structure to a typed :class:`HXStompPreset`."""
     inner = data.get("data", data)
     meta = inner.get("meta", {})
     preset_name = meta.get("name") or inner.get("name", "") or Path(source_name).stem
     logger.debug("Parsing HX preset '%s'", preset_name)
 
-    blocks: list[HXBlock] = []
-
-    # New-style: blocks live under tone.dsp0 / tone.dsp1 with @model keys
-    tone = inner.get("tone", {})
-    if tone:
-        for dsp_key in ("dsp0", "dsp1"):
-            dsp = tone.get(dsp_key, {})
-            if not dsp:
-                continue
-            # Include all DSP flow nodes: tone blocks (block#), split/join
-            # routing, and input/output blocks.
-            _flow_keys = {"split", "join", "inputA", "inputB", "outputA", "outputB"}
-            for block_key in sorted(
-                dsp,
-                key=lambda k: dsp[k].get("@position", 999) if isinstance(dsp.get(k), dict) else 999,
-            ):
-                if not (block_key.startswith("block") or block_key in _flow_keys):
-                    continue
-                block_data = dsp[block_key]
-                if not isinstance(block_data, dict):
-                    continue
-
-                model = block_data.get("@model", "unknown")
-                enabled = block_data.get("@enabled", True)
-                stereo = block_data.get("@stereo", False)
-                path_val = block_data.get("@path", 0)
-                # New-style type comes as an integer; store as string
-                btype = str(block_data.get("@type", "unknown"))
-
-                settings: dict[str, float | str | bool] = {
-                    k: v for k, v in block_data.items() if not k.startswith("@")
-                }
-
-                blocks.append(
-                    HXBlock(
-                        name=model,
-                        type=btype,
-                        model=model,
-                        enabled=enabled,
-                        stereo=stereo,
-                        path=path_val,
-                        settings=settings,
-                    )
-                )
-                logger.debug("  Block %s: %s — %d parameter(s)", block_key, model, len(settings))
-
-    # Old-style: blocks live under a "chain" key (from older zip format)
-    if not blocks:
-        chain = data.get("chain", inner.get("chain", []))
-        if chain:
-            logger.debug("  %d block(s) in chain", len(chain))
-            for block_data in chain:
-                settings = dict(block_data.get("parameters", {}))
-                blocks.append(
-                    HXBlock(
-                        name=block_data.get("name", "Untitled"),
-                        type=block_data.get("type", "unknown"),
-                        model=block_data.get("model", ""),
-                        enabled=block_data.get("enabled", True),
-                        settings=settings,
-                    )
-                )
-
     return HXStompPreset(
         id=preset_name.lower().replace(" ", "-"),
-        pedal="hx-stomp",
         name=preset_name,
         preset_number=0,
-        blocks=blocks,
+        hlx_file=hlx_file,
     )

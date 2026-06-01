@@ -11,10 +11,7 @@ from rig.models.pedal import (
 from rig.models.preset import (
     AnalogPreset,
     DigitalPreset,
-    FootswitchAssignment,
-    HXBlock,
     HXStompPreset,
-    MIDICommand,
 )
 from rig.models.rig import RigConfig
 from rig.models.scene import Scene
@@ -31,10 +28,7 @@ __all__ = [
     "ChaseBlissConfig",
     "AnalogPreset",
     "DigitalPreset",
-    "HXBlock",
     "HXStompPreset",
-    "MIDICommand",
-    "FootswitchAssignment",
     "Scene",
     "SignalChainPosition",
     "RigConfig",

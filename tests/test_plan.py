@@ -2,7 +2,7 @@ import json
 
 from rig.engine.plan import compute_plan
 from rig.models.pedal import ChaseBlissConfig, ManualConfig, MidiConfig, PedalDefinition, PedalType
-from rig.models.preset import DigitalPreset, HXBlock, HXStompPreset
+from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import RigConfig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
@@ -30,9 +30,8 @@ def _make_rig(scene_presets: dict | None = None) -> RigConfig:
         type=PedalType.ANALOG,
         config=ManualConfig(),
     )
-    block = HXBlock(name="Amp", type="amp", model="US Double Nrm", settings={"Drive": 4.5})
     hx_preset = HXStompPreset(
-        id="clean-edge", pedal="hx-stomp", name="Clean Edge", preset_number=12, blocks=[block]
+        id="clean-edge", name="Clean Edge", preset_number=12, hlx_file="hlx/clean-edge.hlx"
     )
     return RigConfig(
         name="test",

@@ -11,10 +11,7 @@ from rig.models.pedal import (
 from rig.models.preset import (
     AnalogPreset,
     DigitalPreset,
-    FootswitchAssignment,
-    HXBlock,
     HXStompPreset,
-    MIDICommand,
 )
 from rig.models.rig import RigConfig
 from rig.models.scene import Scene
@@ -92,51 +89,25 @@ class TestPresetModels:
         )
         assert preset.parameters["Gain"] == 8
 
-    def test_hx_block_with_settings(self):
-        block = HXBlock(
-            name="Amp", type="amp", model="US Double Nrm", settings={"Drive": 4.5, "Bass": 5.0}
-        )
-        assert block.settings["Drive"] == 4.5
-        assert block.enabled is True
-
-    def test_hx_block_can_be_disabled(self):
-        block = HXBlock(name="Reverb", type="reverb", model="Plate", enabled=False)
-        assert block.enabled is False
-
-    def test_midi_command_pc(self):
-        cmd = MIDICommand(type="pc", channel=3, value=4, label="Brothers → Low Gain")
-        assert cmd.channel == 3
-
-    def test_midi_command_cc_with_number(self):
-        cmd = MIDICommand(type="cc", channel=4, cc_number=14, value=50)
-        assert cmd.cc_number == 14
-
-    def test_midi_command_default_delay(self):
-        cmd = MIDICommand(type="pc", channel=1, value=1)
-        assert cmd.delay_ms == 0
-
     def test_hx_stomp_preset_full(self):
-        block = HXBlock(name="Amp", type="amp", model="US Double Nrm")
-        cmd = MIDICommand(type="pc", channel=3, value=4)
-        fs = FootswitchAssignment(switch="FS1", action="toggle_block", target="Delay")
         preset = HXStompPreset(
             id="clean-edge",
-            pedal="hx-stomp",
             name="Clean Edge",
             preset_number=12,
-            blocks=[block],
-            midi_commands=[cmd],
-            footswitch_assignments=[fs],
-            tempo=118,
+            hlx_file="hlx/clean-edge.hlx",
         )
         assert preset.preset_number == 12
-        assert preset.tempo == 118
-        assert preset.footswitch_assignments[0].switch == "FS1"
+        assert preset.hlx_file == "hlx/clean-edge.hlx"
 
-    def test_hx_stomp_preset_defaults(self):
-        preset = HXStompPreset(id="test", pedal="hx-stomp", name="Test", preset_number=1)
-        assert preset.blocks == []
-        assert preset.midi_commands == []
+    def test_hx_stomp_preset_with_tags(self):
+        preset = HXStompPreset(
+            id="test",
+            name="Test",
+            preset_number=1,
+            hlx_file="hlx/test.hlx",
+            tags=["clean", "bright"],
+        )
+        assert "clean" in preset.tags
 
 
 class TestSceneModel:

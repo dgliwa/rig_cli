@@ -153,8 +153,9 @@ class TestLoadRig:
         _write(
             rig_dir,
             "pedals/hx-stomp/presets/clean.yaml",
-            "id: clean\npedal: hx-stomp\nname: Clean Edge\npreset_number: 12\nblocks:\n  - name: Amp\n    type: amp\n    model: US Double Nrm\n    settings:\n      Drive: 4.5\n",
+            "id: clean\nname: Clean Edge\npreset_number: 12\nhlx_file: hlx/clean-edge.hlx\n",
         )
         config = load_rig(str(rig_dir))
         assert len(config.hx_presets["hx-stomp"]) == 1
-        assert config.hx_presets["hx-stomp"][0].blocks[0].settings["Drive"] == 4.5
+        assert config.hx_presets["hx-stomp"][0].preset_number == 12
+        assert config.hx_presets["hx-stomp"][0].hlx_file == "hlx/clean-edge.hlx"

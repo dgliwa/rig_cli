@@ -21,7 +21,6 @@ class DeviceState(BaseModel):
     midi_channel: int | None = None
     presets_saved: dict[str, bool] = {}
     registration_done: bool = False
-    block_names: list[str] = []
 
 
 class RigState(BaseModel):

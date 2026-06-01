@@ -2,7 +2,7 @@ import json
 
 from rig.generators.mc6_presets import generate_mc6, write_mc6_config
 from rig.models.pedal import MidiConfig, PedalDefinition, PedalType
-from rig.models.preset import HXBlock, HXStompPreset
+from rig.models.preset import HXStompPreset
 from rig.models.rig import RigConfig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
@@ -16,7 +16,6 @@ def _make_rig() -> RigConfig:
         type=PedalType.MODELER,
         config=MidiConfig(midi_channel=1),
     )
-    block = HXBlock(name="Amp", type="amp", model="US Double Nrm")
     return RigConfig(
         name="test",
         signal_chain=[SignalChainPosition(pedal_ref="hx-stomp", position=1)],
@@ -25,14 +24,11 @@ def _make_rig() -> RigConfig:
             "hx-stomp": [
                 HXStompPreset(
                     id="clean-edge",
-                    pedal="hx-stomp",
                     name="Clean Edge",
                     preset_number=12,
-                    blocks=[block],
+                    hlx_file="hlx/clean-edge.hlx",
                 ),
-                HXStompPreset(
-                    id="lead", pedal="hx-stomp", name="Lead", preset_number=5, blocks=[block]
-                ),
+                HXStompPreset(id="lead", name="Lead", preset_number=5, hlx_file="hlx/lead.hlx"),
             ],
         },
         scenes={

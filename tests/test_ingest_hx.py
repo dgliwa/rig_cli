@@ -3,6 +3,7 @@ import zipfile
 from pathlib import Path
 
 from rig.ingest.hx_stomp import ingest_hx_file
+from rig.models.preset import HXStompPreset
 
 
 def _make_test_hlx(path: Path) -> Path:
@@ -17,13 +18,6 @@ def _make_test_hlx(path: Path) -> Path:
                 "enabled": True,
                 "parameters": {"Drive": 4.5, "Bass": 5.0},
             },
-            {
-                "name": "Cab",
-                "type": "cab",
-                "model": "4x12 Greenback 25",
-                "enabled": True,
-                "parameters": {},
-            },
         ],
     }
     with zipfile.ZipFile(path, "w") as zf:
@@ -32,20 +26,30 @@ def _make_test_hlx(path: Path) -> Path:
 
 
 class TestIngestHx:
-    def test_ingest_hlx_extracts_presets(self, tmp_path):
+    def test_ingest_hlx_extracts_preset(self, tmp_path):
         hlx_path = _make_test_hlx(tmp_path / "test.hlx")
         presets = ingest_hx_file(str(hlx_path))
         assert len(presets) == 1
         assert presets[0].name == "Clean Edge"
-        assert len(presets[0].blocks) == 2
 
-    def test_ingest_hlx_parses_blocks(self, tmp_path):
+    def test_ingest_hlx_model_type(self, tmp_path):
         hlx_path = _make_test_hlx(tmp_path / "test.hlx")
         presets = ingest_hx_file(str(hlx_path))
-        block = presets[0].blocks[0]
-        assert block.name == "Amp"
-        assert block.type == "amp"
-        assert block.settings["Drive"] == 4.5
+        assert isinstance(presets[0], HXStompPreset)
+        assert presets[0].id == "clean-edge"
+        assert presets[0].preset_number == 0
+
+    def test_ingest_hlx_stores_absolute_hlx_file(self, tmp_path):
+        hlx_path = _make_test_hlx(tmp_path / "test.hlx")
+        presets = ingest_hx_file(str(hlx_path))
+        assert presets[0].hlx_file == str(hlx_path.resolve())
+
+    def test_ingest_hlx_stores_relative_hlx_file_when_repo_root_given(self, tmp_path):
+        hlx_dir = tmp_path / "hlx"
+        hlx_dir.mkdir()
+        hlx_path = _make_test_hlx(hlx_dir / "test.hlx")
+        presets = ingest_hx_file(str(hlx_path), repo_root=str(tmp_path))
+        assert presets[0].hlx_file == "hlx/test.hlx"
 
     def test_ingest_hlx_missing_file(self):
         try:
@@ -60,13 +64,3 @@ class TestIngestHx:
             pass
         presets = ingest_hx_file(str(path))
         assert presets == []
-
-    def test_ingest_hlx_model_type(self, tmp_path):
-        hlx_path = _make_test_hlx(tmp_path / "test.hlx")
-        presets = ingest_hx_file(str(hlx_path))
-        from rig.models.preset import HXStompPreset
-
-        assert isinstance(presets[0], HXStompPreset)
-        assert presets[0].id == "clean-edge"
-        assert presets[0].pedal == "hx-stomp"
-        assert presets[0].preset_number == 0

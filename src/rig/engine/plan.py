@@ -4,16 +4,9 @@ from typing import Literal
 from pydantic import BaseModel
 
 from rig.engine.state import DeviceState, RigState, read_state
-from rig.models.preset import HXBlock
 from rig.models.rig import RigConfig
 
 logger = logging.getLogger(__name__)
-
-
-class BlockDiff(BaseModel):
-    name: str
-    status: Literal["added", "removed", "changed", "unchanged"]
-    detail: str = ""
 
 
 class DeviceAction(BaseModel):
@@ -24,7 +17,6 @@ class DeviceAction(BaseModel):
     preset_number: int | None = None
     midi_channel: int | None = None
     instructions: list[str] = []
-    block_diffs: list[BlockDiff] = []
 
 
 class ScenePlan(BaseModel):
@@ -127,26 +119,6 @@ def _detect_cba_setup(rig: RigConfig, state: RigState) -> list[CbaSetupAction]:
     return actions
 
 
-def _diff_blocks(
-    desired_blocks: list[HXBlock], actual_preset_state: DeviceState
-) -> list[BlockDiff]:
-    diffs: list[BlockDiff] = []
-    actual_names = set(actual_preset_state.block_names)
-    desired_names = {b.name for b in desired_blocks}
-
-    for block in desired_blocks:
-        if block.name not in actual_names:
-            diffs.append(BlockDiff(name=block.name, status="added"))
-        else:
-            diffs.append(BlockDiff(name=block.name, status="unchanged"))
-
-    for name in actual_names:
-        if name not in desired_names:
-            diffs.append(BlockDiff(name=name, status="removed"))
-
-    return diffs
-
-
 def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
     logger.debug("Computing plan for %d scenes", len(rig.scenes))
     actual = RigState()
@@ -191,19 +163,13 @@ def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
 
             is_hx = pedal.type.value == "modeler"
             preset_number = None
-            block_diffs: list[BlockDiff] = []
 
             if is_hx:
                 for hp in rig.hx_presets.get(pedal_id, []):
                     if hp.id == preset_id:
                         preset_number = hp.preset_number
-                        block_diffs = _diff_blocks(
-                            hp.blocks, actual.devices.get(pedal_id, DeviceState())
-                        )
                         break
-                logger.debug(
-                    "    → HX preset #%s with %d block diff(s)", preset_number, len(block_diffs)
-                )
+                logger.debug("    → HX preset #%s", preset_number)
             else:
                 preset_number = _get_preset_number(rig, pedal_id, preset_id)
                 logger.debug("    → digital preset #%s", preset_number)
@@ -223,7 +189,6 @@ def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
                     preset_name=preset_id,
                     preset_number=preset_number,
                     midi_channel=pedal.config.midi_channel,
-                    block_diffs=block_diffs,
                 )
             )
 
