@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from pathlib import Path
 
 import typer
@@ -19,6 +20,13 @@ from rig.ingest.mc6_config import ingest_mc6_config
 from rig.ingest.scene import IngestError, add_device_to_scene, create_scene, set_device_in_scene
 from rig.log_setup import setup_logging
 from rig.midi.adapter import MidiManager
+
+
+# JSON output helper — uses raw sys.stdout to bypass Rich wrapping.
+def _emit_json(data: str) -> None:
+    sys.stdout.write(data + "\n")
+    sys.stdout.flush()
+
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +85,7 @@ def validate(
             console.print("[green]✓[/green] All cross-references valid")
     except ConfigError as e:
         if output_format == "json":
-            console.print(json.dumps({"status": "error", "error": str(e)}))
+            _emit_json(json.dumps({"status": "error", "error": str(e)}))
         else:
             console.print(f"[red]✗[/red] {e}")
         raise typer.Exit(1)
@@ -102,7 +110,7 @@ def plan(
     plan = compute_plan(rig, root_path=Path(config).resolve() if config else None)
 
     if output_format == "json":
-        console.print(plan.model_dump_json(indent=2))
+        _emit_json(plan.model_dump_json(indent=2))
         return
 
     scene_names = [scene] if scene else plan.scenes.keys()
@@ -208,7 +216,7 @@ def status(
             },
             "scenes": list(rig.scenes.keys()),
         }
-        console.print(json.dumps(info, indent=2))
+        _emit_json(json.dumps(info, indent=2))
         return
 
     table = Table(title=f"Rig: {rig.name}")
@@ -249,7 +257,7 @@ def diff(
     config_path = str(Path(config).resolve())
     changes = compute_diff(rig, root_path=config_path)
     if output_format == "json":
-        console.print(json.dumps(changes, indent=2))
+        _emit_json(json.dumps(changes, indent=2))
         return
     output = format_diff(changes)
     console.print(output)
