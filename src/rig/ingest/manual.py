@@ -108,7 +108,8 @@ def ingest_manual_pedal(config_dir: Path) -> PedalDefinition | None:
             console.print("[red]Aborted.[/red]")
             return None
 
-    dest.write_text(pedal.model_dump_yaml())
+    import yaml
+    dest.write_text(yaml.dump(pedal.model_dump(), default_flow_style=False, sort_keys=False))
 
     console.print(f"\n[green]Wrote {dest}[/green]")
     return pedal
