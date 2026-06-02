@@ -168,3 +168,13 @@ class MidiManager:
 
         msg = mido.Message("control_change", control=control, value=value, channel=channel)
         self.send(device_id, msg)
+
+    def send_sysex(self, device_id: str, data: list[int]) -> None:
+        """Send a SysEx message. data must include the leading F0 and trailing F7."""
+        if not _HAS_MIDO:
+            raise MidiConnectionError("mido library is not available")
+        import mido
+
+        # mido's SysEx data field excludes the F0/F7 framing bytes
+        msg = mido.Message("sysex", data=data[1:-1])
+        self.send(device_id, msg)

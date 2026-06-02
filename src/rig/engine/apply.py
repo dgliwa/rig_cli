@@ -18,6 +18,7 @@ from rig.interaction import (
     prompt_midi_connect,
 )
 from rig.midi.adapter import MidiManager
+from rig.midi.mc6 import SWITCH_INDEX, clear_preset_messages, update_preset_name, update_preset_pc
 from rig.models.rig import RigConfig
 
 logger = logging.getLogger(__name__)
@@ -345,6 +346,75 @@ def apply_plan(
 
         state.scenes[sp.scene_name] = {}
         state_modified = True
+
+    # --- Phase 2: MC6 programming ---
+    mc6_banks = (rig.mc6.get("banks", []) if rig else []) if not scene else []
+    if mc6_banks and midi:
+        console.print("\n[bold]MC6 Programming Phase[/bold]")
+        mc6_port = state.devices.get("mc6", DeviceState()).midi_port
+
+        if dry_run:
+            for bank in mc6_banks:
+                for switch_label, switch_data in bank.get("switches", {}).items():
+                    scene_name = switch_data.get("scene", "")
+                    console.print(
+                        f"  [cyan]🎛[/cyan] Bank {bank['bank']} / {switch_label}: '{scene_name}'[dim] (dry-run)[/dim]"
+                    )
+        else:
+            res, port_name = prompt_midi_connect("mc6", 1, midi, mc6_port)
+            if res == "quit":
+                console.print("[red]Apply cancelled by user[/red]")
+                return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
+
+            if res == "confirm" and port_name:
+                _update_device_state(state, "mc6", midi_port=port_name)
+                state_modified = True
+
+                for bank in mc6_banks:
+                    bank_num = bank["bank"]
+                    console.print(
+                        f"\n  Navigate the MC6 to [bold]Bank {bank_num}[/bold], then press Enter..."
+                    )
+                    input()
+
+                    for switch_label, switch_data in bank.get("switches", {}).items():
+                        scene_name = switch_data.get("scene", "")
+                        preset_idx = SWITCH_INDEX.get(switch_label)
+                        if preset_idx is None:
+                            logger.warning("Unknown MC6 switch label '%s'", switch_label)
+                            continue
+
+                        try:
+                            for msg in clear_preset_messages(preset_idx):
+                                midi.send_sysex("mc6", msg)
+                            midi.send_sysex("mc6", update_preset_name(preset_idx, scene_name))
+
+                            scene_obj = rig.scenes.get(scene_name) if rig else None
+                            if scene_obj:
+                                msg_slot = 0
+                                for pedal_id, preset_id in scene_obj.presets.items():
+                                    pedal = rig.pedals.get(pedal_id)
+                                    if pedal is None or pedal.config.midi_channel is None:
+                                        continue
+                                    pc = pedal.get_scene_pc_command(preset_id, rig)
+                                    if pc:
+                                        midi.send_sysex(
+                                            "mc6",
+                                            update_preset_pc(
+                                                preset_idx,
+                                                msg_slot,
+                                                pc["value"],
+                                                pc["channel"],
+                                            ),
+                                        )
+                                        msg_slot += 1
+
+                            console.print(
+                                f"  [green]✓[/green] Switch {switch_label}: '{scene_name}' programmed"
+                            )
+                        except Exception as e:
+                            logger.error("MC6 SysEx failed for switch %s: %s", switch_label, e)
+                            console.print(f"  [red]✗[/red] Switch {switch_label}: {e}")
 
     if config_path and not dry_run and state_modified:
         logger.info("Saving state to .rig/state.json")
