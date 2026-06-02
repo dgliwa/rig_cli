@@ -102,7 +102,7 @@ class TestSending:
         ):
             midi.connect("P", "hx-stomp")
             midi.send_program_change("hx-stomp", 12, 1)
-            mock_msg.assert_called_once_with("program_change", program=12, channel=1)
+            mock_msg.assert_called_once_with("program_change", program=12, channel=0)
             fake_port.send.assert_called_once()
 
     def test_send_program_change_to_nonexistent_device(self, midi):
@@ -117,7 +117,7 @@ class TestSending:
         ):
             midi.connect("P", "mood")
             midi.send_control_change("mood", 14, 64, 5)
-            mock_msg.assert_called_once_with("control_change", control=14, value=64, channel=5)
+            mock_msg.assert_called_once_with("control_change", control=14, value=64, channel=4)
             fake_port.send.assert_called_once()
 
     def test_send_raises_when_no_mido(self):

@@ -157,7 +157,7 @@ class MidiManager:
             raise MidiConnectionError("mido library is not available")
         import mido
 
-        msg = mido.Message("program_change", program=program, channel=channel)
+        msg = mido.Message("program_change", program=program, channel=channel - 1)
         self.send(device_id, msg)
 
     def send_control_change(self, device_id: str, control: int, value: int, channel: int) -> None:
@@ -166,7 +166,7 @@ class MidiManager:
             raise MidiConnectionError("mido library is not available")
         import mido
 
-        msg = mido.Message("control_change", control=control, value=value, channel=channel)
+        msg = mido.Message("control_change", control=control, value=value, channel=channel - 1)
         self.send(device_id, msg)
 
     def send_sysex(self, device_id: str, data: list[int]) -> None:
