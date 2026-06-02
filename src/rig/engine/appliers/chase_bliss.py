@@ -4,9 +4,8 @@ import logging
 
 from rich.console import Console
 
-from rig.engine.appliers.base import ApplyContext
+from rig.engine.appliers.base import ApplyContext, DeviceApplyResult, update_device_state
 from rig.engine.appliers.midi_device import MidiApplier
-from rig.engine.apply import DeviceApplyResult, _update_device_state
 from rig.engine.plan import CbaSetupAction, DeviceAction, _detect_cba_setup
 from rig.engine.state import DeviceState
 from rig.interaction import prompt_cba_build_preset, prompt_cba_channel, prompt_cba_register
@@ -26,8 +25,11 @@ class ChaseBlissApplier:
         self,
         actions: list[CbaSetupAction],
         ctx: ApplyContext,
-    ) -> list[DeviceApplyResult]:
-        """Run the 3-phase CBA setup: establish_channel → build_preset → register_scenes."""
+    ) -> list[DeviceApplyResult] | None:
+        """Run the 3-phase CBA setup: establish_channel → build_preset → register_scenes.
+
+        Returns None if the user cancelled, or the list of results on completion.
+        """
         results: list[DeviceApplyResult] = []
         pending = list(actions)
         seen: set[tuple] = set()
@@ -51,7 +53,7 @@ class ChaseBlissApplier:
                 result = self._establish_channel(action, ctx)
                 if result is None:
                     # quit
-                    return results
+                    return None
                 results.append(result)
                 if result.status == "confirmed":
                     _enqueue_new_actions()
@@ -59,7 +61,7 @@ class ChaseBlissApplier:
             elif action.type == "build_preset":
                 result = self._build_preset(action, ctx)
                 if result is None:
-                    return results
+                    return None
                 results.append(result)
                 if result.status == "confirmed":
                     _enqueue_new_actions()
@@ -67,7 +69,7 @@ class ChaseBlissApplier:
             elif action.type == "register_scenes":
                 result = self._register_scenes(action, ctx)
                 if result is None:
-                    return results
+                    return None
                 results.append(result)
 
         return results
@@ -126,7 +128,7 @@ class ChaseBlissApplier:
                 return None
 
         if res == "confirm":
-            _update_device_state(
+            update_device_state(
                 ctx.state,
                 action.device,
                 channel_established=True,
@@ -203,7 +205,7 @@ class ChaseBlissApplier:
                 except Exception as e:
                     logger.error("Failed PC send to %s: %s", action.device, e)
                     console.print(f"  [red]✗[/red] PC send failed: {e}")
-            _update_device_state(ctx.state, action.device, last_preset=action.preset_name)
+            update_device_state(ctx.state, action.device, last_preset=action.preset_name)
             ds = ctx.state.devices.get(action.device, DeviceState())
             ps = dict(ds.presets_saved)
             ps[action.preset_id] = True
@@ -230,7 +232,7 @@ class ChaseBlissApplier:
             console.print("[red]Apply cancelled by user[/red]")
             return None
         if res == "confirm":
-            _update_device_state(ctx.state, action.device, registration_done=True)
+            update_device_state(ctx.state, action.device, registration_done=True)
         return DeviceApplyResult(
             device=action.device,
             status="confirmed" if res == "confirm" else "skipped",

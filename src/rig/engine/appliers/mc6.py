@@ -4,8 +4,7 @@ import logging
 
 from rich.console import Console
 
-from rig.engine.appliers.base import ApplyContext
-from rig.engine.apply import _update_device_state
+from rig.engine.appliers.base import ApplyContext, update_device_state
 from rig.engine.state import DeviceState
 from rig.interaction import prompt_midi_connect
 from rig.midi.mc6 import SWITCH_INDEX, clear_preset_messages, update_preset_name, update_preset_pc
@@ -39,7 +38,7 @@ class MC6Applier:
         if res != "confirm" or not port_name:
             return
 
-        _update_device_state(ctx.state, "mc6", midi_port=port_name)
+        update_device_state(ctx.state, "mc6", midi_port=port_name)
 
         for bank in banks:
             bank_num = bank["bank"]

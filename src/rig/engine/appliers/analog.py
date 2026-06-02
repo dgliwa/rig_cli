@@ -4,8 +4,7 @@ import logging
 
 from rich.console import Console
 
-from rig.engine.appliers.base import ApplyContext
-from rig.engine.apply import DeviceApplyResult, _update_device_state
+from rig.engine.appliers.base import ApplyContext, DeviceApplyResult, update_device_state
 from rig.engine.plan import DeviceAction
 from rig.interaction import prompt_analog
 
@@ -34,7 +33,7 @@ class AnalogApplier:
                 device=action.device, status="error", preset=action.preset_name, error="quit"
             )
         if res == "confirm":
-            _update_device_state(ctx.state, action.device, last_preset=action.preset_name)
+            update_device_state(ctx.state, action.device, last_preset=action.preset_name)
             return DeviceApplyResult(
                 device=action.device, status="confirmed", preset=action.preset_name
             )
