@@ -52,24 +52,28 @@ class TestLoadRig:
         config = load_rig(str(rig_dir))
         assert config.name == "test-rig"
         assert config.midi_channel == 1
-        assert "brothers" in config.pedals
-        assert "tumnus" in config.pedals
+        assert "brothers" in config.devices
+        assert "tumnus" in config.devices
 
     def test_loads_signal_chain(self, rig_dir):
         _write(
             rig_dir,
             "signal-chain.yaml",
-            "chain:\n  - pedal_ref: brothers\n    position: 1\n  - pedal_ref: tumnus\n    position: 2\n",
+            "chain:\n  - pedal: brothers\n    position: 1\n  - pedal: tumnus\n    position: 2\n",
         )
         config = load_rig(str(rig_dir))
         assert len(config.signal_chain) == 2
-        assert config.signal_chain[0].pedal_ref == "brothers"
+        assert config.signal_chain[0].device_ref == "brothers"
 
     def test_loads_presets(self, rig_dir):
         config = load_rig(str(rig_dir))
-        assert len(config.digital_presets["brothers"]) == 2
-        assert len(config.analog_presets["tumnus"]) == 1
-        assert config.analog_presets["tumnus"][0].values["Gain"] == 3.5
+        brothers = config.devices["brothers"]
+        tumnus = config.devices["tumnus"]
+        digital_presets = [p for p in brothers.presets]
+        analog_presets = [p for p in tumnus.presets]
+        assert len(digital_presets) == 2
+        assert len(analog_presets) == 1
+        assert analog_presets[0].values["Gain"] == 3.5
 
     def test_loads_scenes(self, rig_dir):
         config = load_rig(str(rig_dir))
@@ -111,13 +115,14 @@ class TestLoadRig:
 
     def test_broken_signal_chain_ref(self, rig_dir):
         _write(
-            rig_dir, "signal-chain.yaml", "chain:\n  - pedal_ref: unknown-pedal\n    position: 1\n"
+            rig_dir,
+            "signal-chain.yaml",
+            "chain:\n  - pedal: unknown-device\n    position: 1\n",
         )
         with pytest.raises(MissingReferenceError):
             load_rig(str(rig_dir))
 
     def test_scenes_dir_missing(self, rig_dir):
-        # Scenes dir is optional — no scenes is valid
         import shutil
 
         shutil.rmtree(str(rig_dir / "scenes"))
@@ -142,9 +147,11 @@ class TestLoadRig:
             "id: brothers\nmanufacturer: Some Brand\nmodel: Thing\ntype: digital\nconfig: {type: midi, midi_channel: 1}\n",
         )
         config = load_rig(str(rig_dir))
-        assert "brothers" in config.pedals
+        assert "brothers" in config.devices
 
     def test_hx_preset_loaded_as_hx_type(self, rig_dir):
+        from rig.models.preset import HXStompPreset
+
         _write(
             rig_dir,
             "pedals/hx-stomp.yaml",
@@ -156,6 +163,7 @@ class TestLoadRig:
             "id: clean\nname: Clean Edge\npreset_number: 12\nhlx_file: hlx/clean-edge.hlx\n",
         )
         config = load_rig(str(rig_dir))
-        assert len(config.hx_presets["hx-stomp"]) == 1
-        assert config.hx_presets["hx-stomp"][0].preset_number == 12
-        assert config.hx_presets["hx-stomp"][0].hlx_file == "hlx/clean-edge.hlx"
+        hx_presets = [p for p in config.devices["hx-stomp"].presets if isinstance(p, HXStompPreset)]
+        assert len(hx_presets) == 1
+        assert hx_presets[0].preset_number == 12
+        assert hx_presets[0].hlx_file == "hlx/clean-edge.hlx"

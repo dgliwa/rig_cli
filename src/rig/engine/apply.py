@@ -19,7 +19,7 @@ from rig.interaction import (
 )
 from rig.midi.adapter import MidiManager
 from rig.midi.mc6 import SWITCH_INDEX, clear_preset_messages, update_preset_name, update_preset_pc
-from rig.models.rig import RigConfig
+from rig.models.rig import Rig
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -58,7 +58,7 @@ def _update_device_state(state: RigState, device: str, **fields) -> None:
 
 def apply_plan(
     plan: Plan,
-    rig: RigConfig | None = None,
+    rig: Rig | None = None,
     config_path: str | None = None,
     dry_run: bool = False,
     scene: str | None = None,

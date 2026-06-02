@@ -1,42 +1,45 @@
 import pytest
 from pydantic import ValidationError
 
-from rig.models.pedal import (
+from rig.models.controller import ControllerType
+from rig.models.device import (
     Control,
     ControlType,
+    Device,
+    DeviceType,
     ManualConfig,
-    PedalDefinition,
-    PedalType,
 )
 from rig.models.preset import (
     AnalogPreset,
     DigitalPreset,
     HXStompPreset,
 )
-from rig.models.rig import RigConfig
+from rig.models.rig import Rig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
 
 
 class TestPedalModels:
     def test_pedal_definition_round_trips(self):
-        pedal = PedalDefinition(
+        device = Device(
             id="tumnus",
             manufacturer="Wampler",
             model="Tumnus",
-            type=PedalType.ANALOG,
+            type=DeviceType.ANALOG,
             config=ManualConfig(
                 controls=[Control(name="Gain", type=ControlType.KNOB, min=0, max=10)]
             ),
         )
-        assert pedal.id == "tumnus"
-        assert pedal.config.controls[0].name == "Gain"
+        assert device.id == "tumnus"
+        assert device.config.controls[0].name == "Gain"
 
-    def test_pedal_type_enum_values(self):
-        assert PedalType.DIGITAL.value == "digital"
-        assert PedalType.ANALOG.value == "analog"
-        assert PedalType.MODELER.value == "modeler"
-        assert PedalType.CONTROLLER.value == "controller"
+    def test_device_type_enum_values(self):
+        assert DeviceType.DIGITAL.value == "digital"
+        assert DeviceType.ANALOG.value == "analog"
+        assert DeviceType.MODELER.value == "modeler"
+
+    def test_controller_type_enum_values(self):
+        assert ControllerType.MC6.value == "mc6"
 
     def invalid_control_rejected(self):
         with pytest.raises(ValidationError):
@@ -135,25 +138,30 @@ class TestSceneModel:
 
 class TestSignalChainModel:
     def test_signal_chain_position_defaults(self):
-        pos = SignalChainPosition(pedal_ref="tumnus", position=1)
+        pos = SignalChainPosition(device_ref="tumnus", position=1)
         assert pos.loop == "front"
         assert pos.stereo is False
 
     def test_signal_chain_fx_loop(self):
-        pos = SignalChainPosition(pedal_ref="wombtone", position=5, loop="fx_loop")
+        pos = SignalChainPosition(device_ref="wombtone", position=5, loop="fx_loop")
         assert pos.loop == "fx_loop"
 
     def test_signal_chain_stereo(self):
-        pos = SignalChainPosition(pedal_ref="hx-stomp", position=4, stereo=True)
+        pos = SignalChainPosition(device_ref="hx-stomp", position=4, stereo=True)
         assert pos.stereo is True
+
+    def test_signal_chain_pedal_ref_compat(self):
+        # Ensure legacy pedal_ref attribute still accessible for backward compat
+        pos = SignalChainPosition(device_ref="tumnus", position=1)
+        assert pos.pedal_ref == "tumnus"
 
 
 class TestRigConfig:
     def test_rig_config_minimal(self):
-        config = RigConfig(name="Test", signal_chain=[])
+        config = Rig(name="Test", signal_chain=[])
         assert config.name == "Test"
 
     def test_rig_config_with_scenes(self):
         scene = Scene(name="test", presets={"hx-stomp": "x"})
-        config = RigConfig(name="Test", signal_chain=[], scenes={"test": scene})
+        config = Rig(name="Test", signal_chain=[], scenes={"test": scene})
         assert config.scenes["test"].name == "test"

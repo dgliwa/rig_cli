@@ -4,47 +4,41 @@ from unittest.mock import MagicMock, patch
 
 from rig.engine.apply import apply_plan
 from rig.engine.plan import compute_plan
-from rig.models.pedal import ChaseBlissConfig, MidiConfig, PedalDefinition, PedalType
+from rig.models.device import ChaseBlissConfig, Device, DeviceType, MidiConfig
 from rig.models.preset import DigitalPreset, HXStompPreset
-from rig.models.rig import RigConfig
+from rig.models.rig import Rig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
 
 
-def _make_config() -> RigConfig:
-    hx = PedalDefinition(
+def _make_config() -> Rig:
+    hx = Device(
         id="hx-stomp",
         manufacturer="Line6",
         model="HX Stomp",
-        type=PedalType.MODELER,
+        type=DeviceType.MODELER,
         config=MidiConfig(midi_channel=1),
+        presets=[
+            HXStompPreset(
+                id="clean-edge",
+                name="Clean Edge",
+                preset_number=12,
+                hlx_file="hlx/clean-edge.hlx",
+            )
+        ],
     )
-    bro = PedalDefinition(
+    bro = Device(
         id="brothers",
         manufacturer="CBA",
         model="Brothers",
-        type=PedalType.DIGITAL,
+        type=DeviceType.DIGITAL,
         config=ChaseBlissConfig(midi_channel=3),
+        presets=[DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)],
     )
-    return RigConfig(
+    return Rig(
         name="test",
-        signal_chain=[SignalChainPosition(pedal_ref="hx-stomp", position=1)],
-        pedals={"hx-stomp": hx, "brothers": bro},
-        hx_presets={
-            "hx-stomp": [
-                HXStompPreset(
-                    id="clean-edge",
-                    name="Clean Edge",
-                    preset_number=12,
-                    hlx_file="hlx/clean-edge.hlx",
-                )
-            ]
-        },
-        digital_presets={
-            "brothers": [
-                DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)
-            ]
-        },
+        signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+        devices={"hx-stomp": hx, "brothers": bro},
         scenes={
             "test-scene": Scene(
                 name="test-scene", presets={"hx-stomp": "clean-edge", "brothers": "low-gain"}

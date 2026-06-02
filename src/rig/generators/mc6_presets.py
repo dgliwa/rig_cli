@@ -5,12 +5,12 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from rig.models.rig import RigConfig
+from rig.models.rig import Rig
 
 logger = logging.getLogger(__name__)
 
 
-def generate_mc6(rig: RigConfig) -> dict[str, Any]:
+def generate_mc6(rig: Rig) -> dict[str, Any]:
     """Generate MC6 bank definitions from rig config's mc6 mapping + scenes."""
     mc6_config = rig.mc6
     banks = mc6_config.get("banks", [])
@@ -33,12 +33,12 @@ def generate_mc6(rig: RigConfig) -> dict[str, Any]:
             if scene_name and scene_name in rig.scenes:
                 scene = rig.scenes[scene_name]
                 for pedal_id, preset_id in scene.presets.items():
-                    pedal = rig.pedals.get(pedal_id)
-                    if pedal is None:
-                        logger.warning("Pedal '%s' in scene '%s' not found", pedal_id, scene_name)
+                    device = rig.devices.get(pedal_id)
+                    if device is None:
+                        logger.warning("Device '%s' in scene '%s' not found", pedal_id, scene_name)
                         continue
 
-                    cmd = pedal.get_scene_pc_command(preset_id, rig)
+                    cmd = device.get_scene_pc_command(preset_id)
                     if cmd:
                         commands.append(cmd)
                         logger.debug(

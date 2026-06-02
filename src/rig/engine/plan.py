@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from rig.engine.state import DeviceState, RigState, read_state
-from rig.models.rig import RigConfig
+from rig.models.rig import Rig
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class Plan(BaseModel):
     cba_setup: list[CbaSetupAction] = []
 
 
-def _hx_preset_number(rig: RigConfig, hx_preset_id: str) -> int | None:
+def _hx_preset_number(rig: Rig, hx_preset_id: str) -> int | None:
     for presets in rig.hx_presets.values():
         for p in presets:
             if p.id == hx_preset_id:
@@ -50,7 +50,7 @@ def _hx_preset_number(rig: RigConfig, hx_preset_id: str) -> int | None:
     return None
 
 
-def _get_preset_number(rig: RigConfig, pedal_id: str, preset_id: str) -> int | None:
+def _get_preset_number(rig: Rig, pedal_id: str, preset_id: str) -> int | None:
     for presets in rig.digital_presets.get(pedal_id, []):
         if presets.id == preset_id:
             return presets.preset_number
@@ -64,7 +64,7 @@ def _is_cba(pedal) -> bool:
     return isinstance(pedal.config, ChaseBlissConfig)
 
 
-def _detect_cba_setup(rig: RigConfig, state: RigState) -> list[CbaSetupAction]:
+def _detect_cba_setup(rig: Rig, state: RigState) -> list[CbaSetupAction]:
     """Detect CBA setup actions needed based on current state."""
     actions: list[CbaSetupAction] = []
 
@@ -121,7 +121,7 @@ def _detect_cba_setup(rig: RigConfig, state: RigState) -> list[CbaSetupAction]:
     return actions
 
 
-def compute_plan(rig: RigConfig, root_path: str | None = None) -> Plan:
+def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
     logger.debug("Computing plan for %d scenes", len(rig.scenes))
     actual = RigState()
     if root_path:
