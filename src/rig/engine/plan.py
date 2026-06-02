@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from rig.engine.state import DeviceState, RigState, read_state
+from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 
 logger = logging.getLogger(__name__)
@@ -43,17 +44,20 @@ class Plan(BaseModel):
 
 
 def _hx_preset_number(rig: Rig, hx_preset_id: str) -> int | None:
-    for presets in rig.hx_presets.values():
-        for p in presets:
-            if p.id == hx_preset_id:
+    for device in rig.devices.values():
+        for p in device.presets:
+            if isinstance(p, HXStompPreset) and p.id == hx_preset_id:
                 return p.preset_number
     return None
 
 
 def _get_preset_number(rig: Rig, pedal_id: str, preset_id: str) -> int | None:
-    for presets in rig.digital_presets.get(pedal_id, []):
-        if presets.id == preset_id:
-            return presets.preset_number
+    device = rig.devices.get(pedal_id)
+    if device is None:
+        return None
+    for p in device.presets:
+        if isinstance(p, DigitalPreset) and p.id == preset_id:
+            return p.preset_number
     return None
 
 
@@ -68,7 +72,7 @@ def _detect_cba_setup(rig: Rig, state: RigState) -> list[CbaSetupAction]:
     """Detect CBA setup actions needed based on current state."""
     actions: list[CbaSetupAction] = []
 
-    for pedal_id, pedal in rig.pedals.items():
+    for pedal_id, pedal in rig.devices.items():
         if not _is_cba(pedal):
             continue
 
@@ -90,7 +94,7 @@ def _detect_cba_setup(rig: Rig, state: RigState) -> list[CbaSetupAction]:
         # Phase 2: Preset building
         presets_saved = ds.presets_saved
         has_unsaved = False
-        for preset in rig.digital_presets.get(pedal_id, []):
+        for preset in [p for p in pedal.presets if isinstance(p, DigitalPreset)]:
             if not presets_saved.get(preset.id):
                 actions.append(
                     CbaSetupAction(
@@ -137,7 +141,7 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
         scene_has_changes = False
 
         for pedal_id, preset_id in scene.presets.items():
-            pedal = rig.pedals.get(pedal_id)
+            pedal = rig.devices.get(pedal_id)
             if pedal is None:
                 logger.warning(
                     "Pedal '%s' referenced in scene '%s' not found", pedal_id, scene_name
@@ -167,7 +171,7 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
             preset_number = None
 
             if is_hx:
-                for hp in rig.hx_presets.get(pedal_id, []):
+                for hp in [p for p in pedal.presets if isinstance(p, HXStompPreset)]:
                     if hp.id == preset_id:
                         preset_number = hp.preset_number
                         break
