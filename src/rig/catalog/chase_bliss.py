@@ -29,3 +29,11 @@ MOOD_MKII_CONTROLS: list[Control] = [
     Control(name="dip_r_7", type=ControlType.DIPSWITCH, midi_cc=77, min=0, max=127),
     Control(name="dip_r_8", type=ControlType.DIPSWITCH, midi_cc=78, min=0, max=127),
 ]
+
+_CATALOG: dict[str, list[Control]] = {
+    "Chase Bliss Audio/Mood MkII": MOOD_MKII_CONTROLS,
+}
+
+
+def get_controls(manufacturer: str, model: str) -> list[Control]:
+    return _CATALOG.get(f"{manufacturer}/{model}", [])

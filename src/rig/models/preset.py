@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class AnalogPreset(BaseModel):
     id: str
-    pedal: str
+    pedal: str | None = None
     name: str
     values: dict[str, float | str | bool]
     notes: str | None = None
@@ -13,7 +13,7 @@ class AnalogPreset(BaseModel):
 
 class DigitalPreset(BaseModel):
     id: str
-    pedal: str
+    pedal: str | None = None
     name: str
     preset_number: int
     parameters: dict[str, float | str | bool] = {}

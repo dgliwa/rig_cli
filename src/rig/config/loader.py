@@ -55,7 +55,19 @@ def _load_presets(
     analog: dict[str, list[AnalogPreset]] = {}
     hx: dict[str, list[HXStompPreset]] = {}
 
-    for pedal_id in definitions:
+    for pedal_id, pedal_def in definitions.items():
+        # Inline presets take priority over the filesystem layout
+        if pedal_def.presets:
+            for p in pedal_def.presets:
+                if isinstance(p, HXStompPreset):
+                    hx.setdefault(pedal_id, []).append(p)
+                elif isinstance(p, AnalogPreset):
+                    analog.setdefault(pedal_id, []).append(p)
+                else:
+                    digital.setdefault(pedal_id, []).append(p)
+            logger.debug("Loaded %d inline presets for '%s'", len(pedal_def.presets), pedal_id)
+            continue
+
         preset_dir = pedals_dir / pedal_id / "presets"
         if not preset_dir.is_dir():
             logger.debug("No presets directory for pedal '%s' at %s", pedal_id, preset_dir)
@@ -64,7 +76,7 @@ def _load_presets(
         count = 0
         for path in sorted(preset_dir.glob("*.yaml")):
             data = _read_yaml(path)
-            pedal_type = definitions[pedal_id].type.value
+            pedal_type = pedal_def.type.value
             if pedal_type == "analog":
                 p = AnalogPreset(**data)
                 analog.setdefault(pedal_id, []).append(p)

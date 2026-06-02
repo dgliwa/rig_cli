@@ -3,7 +3,9 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 
 if TYPE_CHECKING:
     from rig.models.rig import RigConfig
@@ -80,8 +82,21 @@ class PedalDefinition(BaseModel):
     model: str
     type: PedalType
     config: Annotated[ManualConfig | MidiConfig | ChaseBlissConfig, Field(discriminator="type")]
+    presets: list[HXStompPreset | AnalogPreset | DigitalPreset] = Field(default_factory=list)
     image: str | None = None
     notes: str | None = None
+
+    @model_validator(mode="after")
+    def _populate_cba_controls(self) -> PedalDefinition:
+        if isinstance(self.config, ChaseBlissConfig) and not self.config.controls:
+            from rig.catalog.chase_bliss import get_controls
+
+            controls = get_controls(self.manufacturer, self.model)
+            if controls:
+                object.__setattr__(
+                    self, "config", self.config.model_copy(update={"controls": controls})
+                )
+        return self
 
     def get_scene_pc_command(self, preset_id: str, rig: RigConfig) -> dict[str, Any] | None:
         ch = self.config.midi_channel
