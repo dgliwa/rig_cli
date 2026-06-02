@@ -131,20 +131,48 @@ def apply_plan(
                 )
                 continue
 
-            midi_sent = action.device in connected_devices
-            if midi_sent:
-                try:
-                    midi.send_program_change(action.device, 0, action.midi_channel)
-                    logger.info("Sent PC#0 on ch %d to %s", action.midi_channel, action.device)
-                except Exception as e:
-                    logger.error("Failed to send to %s: %s", action.device, e)
-                    console.print(f"  [red]✗[/red] MIDI send failed: {e}")
-                    midi_sent = False
-
-            res = prompt_cba_channel(action.device, action.midi_channel, midi_sent=midi_sent)
+            # Step 1: guide user to power-cycle + hold footswitches to enter learn mode
+            while True:
+                res = prompt_cba_channel(action.device, action.midi_channel, midi_sent=False)
+                if res != "retry":
+                    break
             if res == "quit":
                 console.print("[red]Apply cancelled by user[/red]")
                 return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
+            if res == "skip":
+                cba_results.append(
+                    DeviceApplyResult(device=action.device, status="skipped", preset=None)
+                )
+                continue
+
+            # Step 2: pedal is in learn mode — send PC#0 to lock the channel
+            midi_sent = False
+            if action.device in connected_devices:
+                try:
+                    midi.send_program_change(action.device, 0, action.midi_channel)
+                    logger.info("Sent PC#0 on ch %d to %s", action.midi_channel, action.device)
+                    midi_sent = True
+                except Exception as e:
+                    logger.error("Failed to send to %s: %s", action.device, e)
+                    console.print(f"  [red]✗[/red] MIDI send failed: {e}")
+
+            if midi_sent:
+                # Step 3: pedal received PC#0 — prompt user to hold footswitches to save
+                while True:
+                    res = prompt_cba_channel(action.device, action.midi_channel, midi_sent=True)
+                    if res == "retry":
+                        try:
+                            midi.send_program_change(action.device, 0, action.midi_channel)
+                        except Exception as e:
+                            console.print(f"  [red]✗[/red] MIDI resend failed: {e}")
+                    else:
+                        break
+                if res == "quit":
+                    console.print("[red]Apply cancelled by user[/red]")
+                    return ApplyResult(
+                        status="cancelled", cba_setup=cba_results, scenes=scene_results
+                    )
+
             if res == "confirm":
                 _update_device_state(
                     state, action.device, channel_established=True, midi_channel=action.midi_channel
@@ -154,7 +182,7 @@ def apply_plan(
                 DeviceApplyResult(
                     device=action.device,
                     status="confirmed" if res == "confirm" else "skipped",
-                    preset=action.preset_name if action.type == "build_preset" else None,
+                    preset=None,
                 )
             )
 

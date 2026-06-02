@@ -109,7 +109,14 @@ class TestMidiApply:
         rig = _make_config()
         plan = compute_plan(rig)
         fake_port = MagicMock()
-        inputs = ["1", "1", "done", "c", "c"]  # 2 MIDI connects, CBA confirm, 2 scene confirms
+        inputs = [
+            "1",
+            "1",
+            "c",
+            "c",
+            "c",
+            "c",
+        ]  # 2 MIDI connects, CBA step1+step3, 2 scene confirms
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=fake_port),
@@ -144,10 +151,10 @@ class TestMidiApply:
         )
         plan = compute_plan(rig, root_path=str(tmp_path))
         fake_port = MagicMock()
-        # No MIDI connect prompts needed (auto-reconnect), just scene confirms
-        # CBA is skipped because brothers already has channel_established=false
-        # Scene loop: hx-stomp already verified, brothers needs config
-        inputs = ["c"]  # just confirm brothers send
+        # No MIDI connect prompts needed (auto-reconnect)
+        # CBA establish_channel still runs (channel_established not in state): step1 + step3
+        # Scene loop: brothers needs config (hx-stomp already verified via state)
+        inputs = ["c", "c", "c"]  # CBA step1, CBA step3, brothers scene confirm
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=fake_port),
@@ -166,8 +173,8 @@ class TestMidiApply:
         """Skipping MIDI connect falls back to old instructional prompts."""
         rig = _make_config()
         plan = compute_plan(rig)
-        # Skip MIDI connect for both devices, then manual confirms
-        inputs = ["s", "s", "c", "c", "c"]
+        # Skip MIDI connect for both devices, skip CBA step1, then manual confirms
+        inputs = ["s", "s", "s", "c", "c", "c"]
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=MagicMock()),
@@ -229,8 +236,8 @@ class TestMidiApply:
         """When no MIDI ports detected, show message and allow skip/refresh."""
         rig = _make_config()
         plan = compute_plan(rig)
-        # No ports → "r" (refresh, still none) → "s" (skip first device) → "s" (skip second) → manual prompts
-        inputs = ["r", "s", "s", "c", "c", "c"]
+        # No ports → "r" (refresh, still none) → "s" (skip both devices) → "s" (skip CBA step1) → manual prompts
+        inputs = ["r", "s", "s", "s", "c", "c", "c"]
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=[]),
             patch("builtins.input", side_effect=inputs),
