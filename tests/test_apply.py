@@ -116,7 +116,9 @@ class TestMidiApply:
             "c",
             "c",
             "c",
-        ]  # 2 MIDI connects, CBA step1+step3, 2 scene confirms
+            "c",
+            "c",
+        ]  # 2 MIDI connects, CBA step1+step3, build_preset, register_scenes, 2 scene confirms
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=fake_port),
@@ -154,7 +156,12 @@ class TestMidiApply:
         # No MIDI connect prompts needed (auto-reconnect)
         # CBA establish_channel still runs (channel_established not in state): step1 + step3
         # Scene loop: brothers needs config (hx-stomp already verified via state)
-        inputs = ["c", "c", "c"]  # CBA step1, CBA step3, brothers scene confirm
+        inputs = [
+            "c",
+            "c",
+            "c",
+            "c",
+        ]  # CBA step1, step3, build_preset, register_scenes; scene unchanged
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=fake_port),

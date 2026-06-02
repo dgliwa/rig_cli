@@ -98,12 +98,13 @@ def prompt_cba_build_preset(
     device: str, preset_name: str, preset_number: int | None, midi_channel: int
 ) -> _ConfirmResult:
     """Guide user through saving a preset on a CBA pedal (hold footswitches)."""
-    pc_info = f" PC#{preset_number}" if preset_number else ""
+    pc_info = f"PC#{preset_number}" if preset_number is not None else "preset"
     console.print(f"\n[bold]Chase Bliss Preset Build — {device}[/bold]")
     console.print()
-    console.print(f"Sent {pc_info} on channel {midi_channel} — '{preset_name}' loaded")
+    console.print(f"Parameters sent for '{preset_name}' on channel {midi_channel}.")
     console.print()
-    console.print("Now hold BOTH footswitches to save as preset")
+    console.print("Hold BOTH footswitches to enter save mode, then confirm below.")
+    console.print(f"[dim]On confirm, {pc_info} will be sent to write to that slot.[/dim]")
     while True:
         response = (
             input("  [c] done — preset saved  [r] retry  [s] skip  [q] quit: ").strip().lower()

@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel
 from rich.console import Console
 
-from rig.engine.plan import Plan
+from rig.engine.plan import Plan, _detect_cba_setup
 from rig.engine.state import DeviceState, RigState, read_state, write_state
 from rig.interaction import (
     collect_midi_devices,
@@ -120,7 +120,24 @@ def apply_plan(
         logger.info("CBA setup phase: %d action(s)", len(plan.cba_setup))
         console.print("\n[bold]Chase Bliss Setup Phase[/bold]")
 
-    for action in plan.cba_setup:
+    cba_pending = list(plan.cba_setup)
+    cba_seen: set[tuple] = set()
+
+    def _enqueue_new_cba_actions() -> None:
+        if rig is None:
+            return
+        for a in _detect_cba_setup(rig, state):
+            key = (a.device, a.type, a.preset_id)
+            if key not in cba_seen:
+                cba_pending.append(a)
+
+    while cba_pending:
+        action = cba_pending.pop(0)
+        action_key = (action.device, action.type, action.preset_id)
+        if action_key in cba_seen:
+            continue
+        cba_seen.add(action_key)
+
         if action.type == "establish_channel":
             if dry_run:
                 logger.debug(
@@ -178,6 +195,7 @@ def apply_plan(
                     state, action.device, channel_established=True, midi_channel=action.midi_channel
                 )
                 state_modified = True
+                _enqueue_new_cba_actions()
             cba_results.append(
                 DeviceApplyResult(
                     device=action.device,
@@ -197,45 +215,63 @@ def apply_plan(
                 )
                 continue
 
-            if action.device in connected_devices and action.preset_number is not None:
-                try:
-                    midi.send_program_change(
-                        action.device, action.preset_number, action.midi_channel
-                    )
-                    logger.info(
-                        "Sent PC#%d on ch %d to %s",
-                        action.preset_number,
-                        action.midi_channel,
-                        action.device,
-                    )
-                except Exception as e:
-                    logger.error("Failed to send to %s: %s", action.device, e)
-                    console.print(f"  [red]✗[/red] MIDI send failed: {e}")
+            def _send_ccs() -> int:
+                sent = 0
+                if action.device in connected_devices and action.cc_params:
+                    for param in action.cc_params:
+                        try:
+                            midi.send_control_change(
+                                action.device, param["cc"], param["value"], action.midi_channel
+                            )
+                            sent += 1
+                        except Exception as e:
+                            logger.error("Failed CC %d on %s: %s", param["cc"], action.device, e)
+                            console.print(f"  [red]✗[/red] CC send failed (CC {param['cc']}): {e}")
+                return sent
 
-            if action.device in connected_devices and action.cc_params:
-                for param in action.cc_params:
-                    try:
-                        midi.send_control_change(
-                            action.device, param["cc"], param["value"], action.midi_channel
-                        )
-                    except Exception as e:
-                        logger.error("Failed CC %d on %s: %s", param["cc"], action.device, e)
-                        console.print(f"  [red]✗[/red] CC send failed (CC {param['cc']}): {e}")
-                logger.info("Sent %d CC params to %s", len(action.cc_params), action.device)
+            cc_sent = _send_ccs()
+            if cc_sent:
+                logger.info("Sent %d CC params to %s", cc_sent, action.device)
+                console.print(
+                    f"  [green]✓[/green] {cc_sent}/{len(action.cc_params)} CC params sent"
+                )
 
-            res = prompt_cba_build_preset(
-                action.device, action.preset_name, action.preset_number, action.midi_channel
-            )
+            while True:
+                res = prompt_cba_build_preset(
+                    action.device, action.preset_name, action.preset_number, action.midi_channel
+                )
+                if res == "retry":
+                    cc_sent = _send_ccs()
+                    if cc_sent:
+                        console.print(f"  [green]✓[/green] Resent {cc_sent} CC params")
+                    continue
+                break
+
             if res == "quit":
                 console.print("[red]Apply cancelled by user[/red]")
                 return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
             if res == "confirm":
+                if action.device in connected_devices and action.preset_number is not None:
+                    try:
+                        midi.send_program_change(
+                            action.device, action.preset_number, action.midi_channel
+                        )
+                        logger.info(
+                            "Sent PC#%d on ch %d to %s to save preset",
+                            action.preset_number,
+                            action.midi_channel,
+                            action.device,
+                        )
+                    except Exception as e:
+                        logger.error("Failed PC send to %s: %s", action.device, e)
+                        console.print(f"  [red]✗[/red] PC send failed: {e}")
                 _update_device_state(state, action.device, last_preset=action.preset_name)
                 ds = state.devices.get(action.device, DeviceState())
                 ps = dict(ds.presets_saved)
                 ps[action.preset_id] = True
                 state.devices[action.device] = ds.model_copy(update={"presets_saved": ps})
                 state_modified = True
+                _enqueue_new_cba_actions()
 
         elif action.type == "register_scenes":
             if dry_run:

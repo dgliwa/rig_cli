@@ -62,12 +62,12 @@ def test_update_preset_pc_opcode_and_payload():
     assert payload[0] == 0x01  # PRESS
     assert payload[1] == 0x00  # POS 1
     assert payload[2] == 3  # pc_number
-    assert payload[3] == 1  # channel 2 → 0-indexed = 1
+    assert payload[3] == 2  # channel 2 → 1-indexed = 2
 
 
-def test_update_preset_pc_channel_zero_indexed():
+def test_update_preset_pc_channel_one_indexed():
     msg = update_preset_pc(0, 0, 0, midi_channel=1)
-    assert msg[16 + 3] == 0  # channel 1 → index 0
+    assert msg[16 + 3] == 1  # channel 1 → 1-indexed = 1
 
 
 def test_update_preset_pc_no_save():

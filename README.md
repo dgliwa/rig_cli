@@ -124,3 +124,9 @@ make tool-install
 | `make tool-install` | Install as global CLI via `uv tool install .` |
 | `make lock` | Re-lock dependencies |
 | `make clean` | Remove build artifacts |
+
+## Troubleshooting
+
+### MIDI events not passing through the MC6
+
+If CC/PC messages sent to the MC6 are not reaching downstream devices, check **Controller Settings → Cross MIDI Thru** in the Morningstar MC6 editor. This setting must be enabled for the MC6 to forward incoming MIDI messages out to connected devices. Plain "MIDI Thru" is not sufficient — Cross MIDI Thru handles USB→DIN and DIN→DIN routing.

@@ -63,14 +63,15 @@ def update_preset_pc(
 ) -> list[int]:
     """04h — Write a Program Change into one message slot of a preset.
 
-    midi_channel is 1-indexed (1–16); converted to 0-indexed in the payload.
+    midi_channel is 1-indexed (1–16); the Morningstar SysEx protocol uses the
+    same 1-indexed convention, so it is written directly to the payload.
     msg_slot is 0–15.
     """
     payload = [
         0x01,  # Action Type: PRESS
         0x00,  # Toggle Type: POS 1
         pc_number,
-        midi_channel - 1,  # SysEx uses 0-indexed channels
+        midi_channel,  # SysEx uses 1-indexed channels (1-16)
     ]
     return _build(0x04, preset_idx, msg_slot, 0x01, 0x7F if save else 0x00, 0x00, 0x00, payload)
 
