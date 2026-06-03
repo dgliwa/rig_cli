@@ -2,203 +2,178 @@ from rig.models.device import Control, ControlType
 
 MOOD_MKII_CONTROLS: list[Control] = [
     Control(
-        name="time",
+        name="time",  # wet channel delay/reverb time
         type=ControlType.KNOB,
-        description="Wet channel delay/reverb time",
         midi_cc=14,
         min=0,
         max=127,
     ),
     Control(
-        name="mix",
+        name="mix",  # wet/dry blend for the wet channel
         type=ControlType.KNOB,
-        description="Wet/dry blend for the wet channel",
         midi_cc=15,
         min=0,
         max=127,
     ),
     Control(
-        name="length",
+        name="length",  # micro looper loop length
         type=ControlType.KNOB,
-        description="Micro looper loop length",
         midi_cc=16,
         min=0,
         max=127,
     ),
     Control(
-        name="wet_modify",
+        name="wet_modify",  # modify knob for the wet channel (effect varies by mode)
         type=ControlType.KNOB,
-        description="Modify knob for the wet channel (effect varies by mode)",
         midi_cc=17,
         min=0,
         max=127,
     ),
     Control(
-        name="clock",
+        name="clock",  # internal clock rate / tap tempo multiplier
         type=ControlType.KNOB,
-        description="Internal clock rate / tap tempo multiplier",
         midi_cc=18,
         min=0,
         max=127,
     ),
     Control(
-        name="micro_looper_modify",
+        name="micro_looper_modify",  # modify knob for the micro looper channel
         type=ControlType.KNOB,
-        description="Modify knob for the micro looper channel",
         midi_cc=19,
         min=0,
         max=127,
     ),
     Control(
-        name="ramp_speed",
+        name="ramp_speed",  # speed of the ramp function when ramping is enabled
         type=ControlType.KNOB,
-        description="Speed of the ramp function when ramping is enabled",
         midi_cc=20,
         min=0,
         max=127,
     ),
     Control(
-        name="wet_bypass",
+        name="wet_bypass",  # bypass switch for the wet (delay/reverb) channel
         type=ControlType.SWITCH,
-        description="Bypass switch for the wet (delay/reverb) channel",
         midi_cc=103,
         min=0,
         max=127,
     ),
     Control(
-        name="micro_bypass",
+        name="micro_bypass",  # bypass switch for the micro looper channel
         type=ControlType.SWITCH,
-        description="Bypass switch for the micro looper channel",
         midi_cc=102,
         min=0,
         max=127,
     ),
     # Left dip switch bank (CC 61–68)
     Control(
-        name="dip_l_1",
+        name="dip_l_1",  # clock source: off = internal, on = external
         type=ControlType.DIPSWITCH,
-        description="Clock source: off = internal, on = external",
         midi_cc=61,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_l_2",
+        name="dip_l_2",  # left channel input: off = mono, on = stereo
         type=ControlType.DIPSWITCH,
-        description="Left channel input: off = mono, on = stereo",
         midi_cc=62,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_l_3",
+        name="dip_l_3",  # wet signal only: on = bypasses dry signal, wet out only
         type=ControlType.DIPSWITCH,
-        description="Wet signal only: on = bypasses dry signal, wet out only",
         midi_cc=63,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_l_4",
+        name="dip_l_4",  # infinite loop hold: on = freezes the current loop indefinitely
         type=ControlType.DIPSWITCH,
-        description="Infinite loop hold: on = freezes the current loop indefinitely",
         midi_cc=64,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_l_5",
+        name="dip_l_5",  # reverse playback: on = plays the loop/buffer in reverse
         type=ControlType.DIPSWITCH,
-        description="Reverse playback: on = plays the loop/buffer in reverse",
         midi_cc=65,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_l_6",
+        name="dip_l_6",  # octave down: on = shifts playback down one octave
         type=ControlType.DIPSWITCH,
-        description="Octave down: on = shifts playback down one octave",
         midi_cc=66,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_l_7",
+        name="dip_l_7",  # stutter mode: on = enables stutter/glitch playback
         type=ControlType.DIPSWITCH,
-        description="Stutter mode: on = enables stutter/glitch playback",
         midi_cc=67,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_l_8",
+        name="dip_l_8",  # self-oscillation: on = allows feedback to build into self-oscillation
         type=ControlType.DIPSWITCH,
-        description="Self-oscillation: on = allows feedback to build into self-oscillation",
         midi_cc=68,
         min=0,
         max=127,
     ),
     # Right dip switch bank (CC 71–78)
     Control(
-        name="dip_r_1",
+        name="dip_r_1",  # right channel WET bypass: on = wet signal bypassed on right channel
         type=ControlType.DIPSWITCH,
-        description="Right channel WET bypass: on = wet signal bypassed on right channel",
         midi_cc=71,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_r_2",
+        name="dip_r_2",  # right channel input: off = mono, on = stereo
         type=ControlType.DIPSWITCH,
-        description="Right channel input: off = mono, on = stereo",
         midi_cc=72,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_r_3",
+        name="dip_r_3",  # bypass mode: off = latching, on = momentary
         type=ControlType.DIPSWITCH,
-        description="Bypass mode: off = latching, on = momentary",
         midi_cc=73,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_r_4",
+        name="dip_r_4",  # tap tempo subdivision: on = half note
         type=ControlType.DIPSWITCH,
-        description="Tap tempo subdivision: on = half note",
         midi_cc=74,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_r_5",
+        name="dip_r_5",  # tap tempo subdivision: on = quarter note
         type=ControlType.DIPSWITCH,
-        description="Tap tempo subdivision: on = quarter note",
         midi_cc=75,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_r_6",
+        name="dip_r_6",  # MIDI clock out: on = sends MIDI clock to downstream devices
         type=ControlType.DIPSWITCH,
-        description="MIDI clock out: on = sends MIDI clock to downstream devices",
         midi_cc=76,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_r_7",
+        name="dip_r_7",  # expression pedal polarity: on = inverts expression pedal direction
         type=ControlType.DIPSWITCH,
-        description="Expression pedal polarity: on = inverts expression pedal direction",
         midi_cc=77,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_r_8",
+        name="dip_r_8",  # ramping: on = enables ramping (slow swell) on the wet channel
         type=ControlType.DIPSWITCH,
-        description="Ramping: on = enables ramping (slow swell) on the wet channel",
         midi_cc=78,
         min=0,
         max=127,
