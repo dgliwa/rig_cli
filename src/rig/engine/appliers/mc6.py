@@ -66,7 +66,7 @@ class MC6Applier:
                             pedal = ctx.rig.pedals.get(pedal_id)
                             if pedal is None or pedal.config.midi_channel is None:
                                 continue
-                            pc = pedal.get_scene_pc_command(preset_id, ctx.rig)
+                            pc = pedal.get_scene_pc_command(preset_id)
                             if pc:
                                 ctx.midi.send_sysex(
                                     "mc6",
