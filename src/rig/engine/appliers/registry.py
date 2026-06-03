@@ -6,14 +6,14 @@ from rig.engine.appliers.chase_bliss import ChaseBlissApplier
 from rig.engine.appliers.mc6 import MC6Applier
 from rig.engine.appliers.midi_device import MidiApplier
 
+_cba_applier = ChaseBlissApplier()
+_mc6_applier = MC6Applier()
+
 _SCENE_APPLIERS: dict[str, DeviceApplier] = {
     "manual": AnalogApplier(),
     "midi": MidiApplier(),
-    "chase_bliss": ChaseBlissApplier(),
+    "chase_bliss": _cba_applier,
 }
-
-_cba_applier = ChaseBlissApplier()
-_mc6_applier = MC6Applier()
 
 
 def get_scene_applier(config_type: str) -> DeviceApplier:

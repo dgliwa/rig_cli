@@ -118,7 +118,7 @@ def apply_plan(
         # User cancelled during CBA setup
         return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
     cba_results = cba_setup_result
-    if cba_results:
+    if any(r.status == "confirmed" for r in cba_results):
         state_modified = True
 
     # --- Phase 1: Scene apply ---

@@ -33,7 +33,7 @@ class ApplyContext:
 
 
 class DeviceApplier(Protocol):
-    def apply_scene(self, action: DeviceAction, ctx: ApplyContext): ...
+    def apply_scene(self, action: DeviceAction, ctx: ApplyContext) -> DeviceApplyResult: ...
 
 
 def update_device_state(state: RigState, device: str, **fields) -> None:
