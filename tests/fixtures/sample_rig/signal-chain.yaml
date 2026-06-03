@@ -1,15 +1,10 @@
 chain:
-  - pedal_ref: mood
+  - device: mood
     position: 1
     loop: front
     stereo: false
 
-  - pedal_ref: hx-stomp
+  - device: hx-stomp
     position: 2
     loop: fx_loop
     stereo: true
-
-  - pedal_ref: mc6
-    position: 3
-    loop: none
-    stereo: false

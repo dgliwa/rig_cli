@@ -1,6 +1,0 @@
-banks:
-  - bank: 1
-    name: Bank 1
-    switches:
-      A:
-        scene: lead

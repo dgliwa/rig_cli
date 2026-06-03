@@ -1,4 +1,4 @@
-from rig.models.pedal import Control, ControlType
+from rig.models.device import Control, ControlType
 
 MOOD_MKII_CONTROLS: list[Control] = [
     Control(name="time", type=ControlType.KNOB, midi_cc=14, min=0, max=127),

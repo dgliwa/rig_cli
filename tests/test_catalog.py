@@ -90,6 +90,7 @@ class TestGetScenePcCommand:
             model="HX Stomp XL",
             type=PedalType.MODELER,
             config=MidiConfig(midi_channel=1),
+            presets=[hx_preset],
         )
         mood_pedal = PedalDefinition(
             id="mood",
@@ -97,6 +98,7 @@ class TestGetScenePcCommand:
             model="MOOD MKII",
             type=PedalType.DIGITAL,
             config=ChaseBlissConfig(midi_channel=2),
+            presets=[digital_preset],
         )
         analog_pedal = PedalDefinition(
             id="comp",
@@ -108,29 +110,27 @@ class TestGetScenePcCommand:
         rig = RigConfig(
             name="test",
             signal_chain=[],
-            pedals={"hx-stomp": hx_pedal, "mood": mood_pedal, "comp": analog_pedal},
-            hx_presets={"hx-stomp": [hx_preset]},
-            digital_presets={"mood": [digital_preset]},
+            devices={"hx-stomp": hx_pedal, "mood": mood_pedal, "comp": analog_pedal},
         )
         return rig, hx_pedal, mood_pedal, analog_pedal
 
     def test_hx_pedal_returns_pc_command(self):
         rig, hx_pedal, _, _ = self._rig_with_hx_and_digital()
-        cmd = hx_pedal.get_scene_pc_command("lead", rig)
+        cmd = hx_pedal.get_scene_pc_command("lead")
         assert cmd == {"type": "pc", "channel": 1, "value": 5, "label": "hx-stomp: lead"}
 
     def test_digital_pedal_returns_pc_command(self):
         rig, _, mood_pedal, _ = self._rig_with_hx_and_digital()
-        cmd = mood_pedal.get_scene_pc_command("preset-1", rig)
+        cmd = mood_pedal.get_scene_pc_command("preset-1")
         assert cmd == {"type": "pc", "channel": 2, "value": 1, "label": "mood: preset-1"}
 
     def test_analog_pedal_returns_none(self):
         rig, _, _, analog_pedal = self._rig_with_hx_and_digital()
-        assert analog_pedal.get_scene_pc_command("anything", rig) is None
+        assert analog_pedal.get_scene_pc_command("anything") is None
 
     def test_unknown_preset_returns_none(self):
         rig, hx_pedal, _, _ = self._rig_with_hx_and_digital()
-        assert hx_pedal.get_scene_pc_command("nonexistent", rig) is None
+        assert hx_pedal.get_scene_pc_command("nonexistent") is None
 
 
 class TestLoaderValidation:

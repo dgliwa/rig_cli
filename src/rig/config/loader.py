@@ -4,9 +4,10 @@ from pathlib import Path
 import yaml
 
 from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
-from rig.models.pedal import ChaseBlissConfig, PedalDefinition
+from rig.models.controller import Controller, ControllerType, MC6Config
+from rig.models.device import ChaseBlissConfig, Device, DeviceType
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
-from rig.models.rig import RigConfig
+from rig.models.rig import Rig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
 
@@ -34,65 +35,76 @@ def _read_yaml(path: Path):
         raise ParseError(f"Invalid YAML in {path}: {e}")
 
 
-def _load_pedal_definitions(pedals_dir: Path) -> dict[str, PedalDefinition]:
-    definitions: dict[str, PedalDefinition] = {}
-    logger.debug("Loading pedal definitions from: %s", pedals_dir)
-    for path in sorted(pedals_dir.glob("*.yaml")):
+def _parse_device(data: dict) -> Device:
+    return Device(**data)
+
+
+def _parse_controller_legacy(pedal_data: dict, mc6_data: dict) -> Controller:
+    """Build a Controller from the old pedals/mc6.yaml + mc6.yaml layout."""
+    midi_channel = (pedal_data.get("config") or {}).get("midi_channel", 1)
+    return Controller(
+        id=pedal_data["id"],
+        manufacturer=pedal_data.get("manufacturer", "Morningstar"),
+        model=pedal_data.get("model", "MC6"),
+        type=ControllerType.MC6,
+        config=MC6Config(
+            midi_channel=midi_channel,
+            banks=mc6_data.get("banks", []),
+        ),
+    )
+
+
+def _load_devices_dir(
+    devices_dir: Path, mc6_data: dict
+) -> tuple[dict[str, Device], Controller | None]:
+    """Load all device YAML files; route controller-typed entries to Controller."""
+    devices: dict[str, Device] = {}
+    controller: Controller | None = None
+    logger.debug("Loading device definitions from: %s", devices_dir)
+    for path in sorted(devices_dir.glob("*.yaml")):
         data = _read_yaml(path)
-        pedal = PedalDefinition(**data)
-        definitions[pedal.id] = pedal
-        logger.debug("Loaded pedal '%s' (%s %s)", pedal.id, pedal.manufacturer, pedal.model)
-    logger.info("Loaded %d pedals", len(definitions))
-    return definitions
+        if data.get("type") == "controller":
+            controller = _parse_controller_legacy(data, mc6_data)
+            logger.debug("Loaded controller '%s'", controller.id)
+        else:
+            device = _parse_device(data)
+            devices[device.id] = device
+            logger.debug("Loaded device '%s' (%s %s)", device.id, device.manufacturer, device.model)
+    logger.info("Loaded %d devices", len(devices))
+    return devices, controller
 
 
-def _load_presets(
-    pedals_dir: Path, definitions: dict[str, PedalDefinition]
-) -> tuple[
-    dict[str, list[DigitalPreset]], dict[str, list[AnalogPreset]], dict[str, list[HXStompPreset]]
-]:
-    digital: dict[str, list[DigitalPreset]] = {}
-    analog: dict[str, list[AnalogPreset]] = {}
-    hx: dict[str, list[HXStompPreset]] = {}
-
-    for pedal_id, pedal_def in definitions.items():
-        # Inline presets take priority over the filesystem layout
-        if pedal_def.presets:
-            for p in pedal_def.presets:
-                if isinstance(p, HXStompPreset):
-                    hx.setdefault(pedal_id, []).append(p)
-                elif isinstance(p, AnalogPreset):
-                    analog.setdefault(pedal_id, []).append(p)
-                else:
-                    digital.setdefault(pedal_id, []).append(p)
-            logger.debug("Loaded %d inline presets for '%s'", len(pedal_def.presets), pedal_id)
+def _merge_presets(devices_dir: Path, devices: dict[str, Device]) -> dict[str, Device]:
+    """Merge filesystem presets onto device objects (inline presets take priority)."""
+    updated: dict[str, Device] = {}
+    for device_id, device in devices.items():
+        if device.presets:
+            # Inline presets already present; no directory loading needed
+            updated[device_id] = device
+            logger.debug("Using %d inline presets for '%s'", len(device.presets), device_id)
             continue
 
-        preset_dir = pedals_dir / pedal_id / "presets"
+        preset_dir = devices_dir / device_id / "presets"
         if not preset_dir.is_dir():
-            logger.debug("No presets directory for pedal '%s' at %s", pedal_id, preset_dir)
+            updated[device_id] = device
             continue
-        logger.debug("Loading presets for pedal '%s' from: %s", pedal_id, preset_dir)
-        count = 0
+
+        presets: list[AnalogPreset | DigitalPreset | HXStompPreset] = []
         for path in sorted(preset_dir.glob("*.yaml")):
             data = _read_yaml(path)
-            pedal_type = pedal_def.type.value
-            if pedal_type == "analog":
-                p = AnalogPreset(**data)
-                analog.setdefault(pedal_id, []).append(p)
-            elif pedal_type == "modeler":
-                p = HXStompPreset(**data)
-                hx.setdefault(pedal_id, []).append(p)
+            if device.type == DeviceType.ANALOG:
+                presets.append(AnalogPreset(**data))
+            elif device.type == DeviceType.MODELER:
+                presets.append(HXStompPreset(**data))
             else:
-                p = DigitalPreset(**data)
-                digital.setdefault(pedal_id, []).append(p)
-            count += 1
-        logger.debug("Loaded %d presets for '%s'", count, pedal_id)
-    base = sum(len(v) for v in digital.values())
-    num_analog = sum(len(v) for v in analog.values())
-    num_hx = sum(len(v) for v in hx.values())
-    logger.info("Loaded %d digital, %d analog, %d HX presets", base, num_analog, num_hx)
-    return digital, analog, hx
+                presets.append(DigitalPreset(**data))
+
+        if presets:
+            device = device.model_copy(update={"presets": presets})
+            logger.debug("Loaded %d directory presets for '%s'", len(presets), device_id)
+        updated[device_id] = device
+
+    return updated
 
 
 def _load_scenes(scenes_dir: Path) -> dict[str, Scene]:
@@ -102,111 +114,114 @@ def _load_scenes(scenes_dir: Path) -> dict[str, Scene]:
         data = _read_yaml(path)
         scene = Scene(**data)
         scenes[scene.name] = scene
-        logger.debug("Loaded scene '%s' with %d pedal(s)", scene.name, len(scene.presets))
+        logger.debug("Loaded scene '%s' with %d device(s)", scene.name, len(scene.presets))
     logger.info("Loaded %d scenes", len(scenes))
     return scenes
 
 
-def _validate_references(
-    config: RigConfig,
-    pedal_ids: set[str],
-    digital_presets: dict[str, list[DigitalPreset]],
-    analog_presets: dict[str, list[AnalogPreset]],
-    hx_presets: dict[str, list[HXStompPreset]],
-):
-    known_presets: dict[str, set[str]] = {}
-    logger.debug("Building known preset index for %d pedals", len(pedal_ids))
-    for pid in pedal_ids:
-        known_presets[pid] = set()
-        for p in digital_presets.get(pid, []):
-            known_presets[pid].add(p.id)
-        for p in analog_presets.get(pid, []):
-            known_presets[pid].add(p.id)
-        for p in hx_presets.get(pid, []):
-            known_presets[pid].add(p.id)
+def _validate_references(rig: Rig):
+    device_ids = set(rig.devices.keys())
+    controller_id = rig.controller.id if rig.controller else None
+    # Signal chain may include the controller position
+    valid_chain_ids = device_ids | ({controller_id} if controller_id else set())
+
+    known_presets: dict[str, set[str]] = {
+        device_id: {p.id for p in device.presets} for device_id, device in rig.devices.items()
+    }
 
     logger.debug("Validating signal chain references")
-    for pos in config.signal_chain:
-        if pos.pedal_ref not in pedal_ids:
-            logger.error("Signal chain references unknown pedal '%s'", pos.pedal_ref)
-            raise MissingReferenceError(f"Signal chain references unknown pedal '{pos.pedal_ref}'")
+    for pos in rig.signal_chain:
+        if pos.device_ref not in valid_chain_ids:
+            logger.error("Signal chain references unknown device '%s'", pos.device_ref)
+            raise MissingReferenceError(
+                f"Signal chain references unknown device '{pos.device_ref}'"
+            )
 
     logger.debug("Validating scene preset references")
-    for scene_name, scene in config.scenes.items():
-        for pedal_id, preset_id in scene.presets.items():
-            if pedal_id not in pedal_ids:
-                logger.error("Scene '%s' references unknown pedal '%s'", scene_name, pedal_id)
+    for scene_name, scene in rig.scenes.items():
+        for device_id, preset_id in scene.presets.items():
+            if device_id not in device_ids:
+                logger.error("Scene '%s' references unknown device '%s'", scene_name, device_id)
                 raise MissingReferenceError(
-                    f"Scene '{scene_name}' references unknown pedal '{pedal_id}'"
+                    f"Scene '{scene_name}' references unknown device '{device_id}'"
                 )
-            if preset_id not in known_presets.get(pedal_id, set()):
+            if preset_id not in known_presets.get(device_id, set()):
                 logger.error(
-                    "Scene '%s': pedal '%s' has no preset '%s'", scene_name, pedal_id, preset_id
+                    "Scene '%s': device '%s' has no preset '%s'", scene_name, device_id, preset_id
                 )
                 raise MissingReferenceError(
-                    f"Scene '{scene_name}': pedal '{pedal_id}' has no preset '{preset_id}'"
+                    f"Scene '{scene_name}': device '{device_id}' has no preset '{preset_id}'"
                 )
-    logger.debug("Validating CBA preset parameter names against pedal controls")
-    for pedal_id, pedal in config.pedals.items():
-        if not isinstance(pedal.config, ChaseBlissConfig):
+
+    logger.debug("Validating CBA preset parameter names against device controls")
+    for device_id, device in rig.devices.items():
+        if not isinstance(device.config, ChaseBlissConfig):
             continue
-        control_names = {c.name for c in pedal.config.controls}
-        for preset in digital_presets.get(pedal_id, []):
+        control_names = {c.name for c in device.config.controls}
+        for preset in device.presets:
+            if not isinstance(preset, DigitalPreset):
+                continue
             unknown = set(preset.parameters) - control_names
             if unknown:
                 logger.error(
                     "Preset '%s' on '%s' has unknown parameters: %s",
                     preset.id,
-                    pedal_id,
+                    device_id,
                     unknown,
                 )
                 raise ValidationError(
-                    f"Preset '{preset.id}' on '{pedal_id}' has unknown parameters: {unknown}. "
+                    f"Preset '{preset.id}' on '{device_id}' has unknown parameters: {unknown}. "
                     f"Known controls: {sorted(control_names)}"
                 )
 
     logger.debug("All cross-references valid")
 
 
-def load_rig(root_path: str) -> RigConfig:
+def load_rig(root_path: str) -> Rig:
     root = Path(root_path).resolve()
     logger.info("Loading rig config from: %s", root)
 
     rig_data = _read_yaml(_resolve(root, "rig.yaml"))
     signal_data = _read_yaml(_resolve(root, "signal-chain.yaml"))
-    pedals_dir = _resolve(root, "pedals")
+
+    # Support both new (devices/) and legacy (pedals/) directory names
+    devices_dir = _resolve(root, "devices")
+    if not devices_dir.is_dir():
+        devices_dir = _resolve(root, "pedals")
     scenes_dir = _resolve(root, "scenes")
 
     chain = [SignalChainPosition(**pos) for pos in signal_data.get("chain", [])]
-    pedal_defs = _load_pedal_definitions(pedals_dir)
-    digital, analog, hx = _load_presets(pedals_dir, pedal_defs)
+
+    # Load MC6 bank config from controller.yaml (new) or mc6.yaml (legacy)
+    controller_path = _resolve(root, "controller.yaml")
+    mc6_path = _resolve(root, "mc6.yaml")
+    if controller_path.exists():
+        mc6_data = _read_yaml(controller_path) or {}
+        # controller.yaml holds the full Controller definition
+        controller: Controller | None = Controller(**mc6_data) if mc6_data else None
+        devices, _ = _load_devices_dir(devices_dir, {})
+    else:
+        mc6_data = _read_yaml(mc6_path) if mc6_path.exists() else {}
+        devices, controller = _load_devices_dir(devices_dir, mc6_data)
+
+    devices = _merge_presets(devices_dir, devices)
     scenes = _load_scenes(scenes_dir)
 
-    mc6_path = _resolve(root, "mc6.yaml")
-    if mc6_path.exists():
-        with open(mc6_path) as f:
-            mc6_data = yaml.safe_load(f) or {}
-    else:
-        mc6_data = {}
-
-    config = RigConfig(
+    rig = Rig(
         name=rig_data.get("name", ""),
         description=rig_data.get("description"),
         midi_channel=rig_data.get("midi_channel"),
         signal_chain=chain,
-        pedals=pedal_defs,
-        digital_presets=digital,
-        analog_presets=analog,
-        hx_presets=hx,
+        devices=devices,
+        controller=controller,
         scenes=scenes,
-        mc6=mc6_data,
     )
 
-    _validate_references(config, set(pedal_defs.keys()), digital, analog, hx)
+    _validate_references(rig)
     logger.info(
-        "Rig '%s' loaded successfully (%d pedals, %d scenes)",
-        config.name,
-        len(config.pedals),
-        len(config.scenes),
+        "Rig '%s' loaded successfully (%d devices, %d scenes)",
+        rig.name,
+        len(rig.devices),
+        len(rig.scenes),
     )
-    return config
+    return rig

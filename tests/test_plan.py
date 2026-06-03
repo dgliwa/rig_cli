@@ -1,48 +1,45 @@
 import json
 
 from rig.engine.plan import compute_plan
-from rig.models.pedal import ChaseBlissConfig, ManualConfig, MidiConfig, PedalDefinition, PedalType
+from rig.models.device import ChaseBlissConfig, Device, DeviceType, ManualConfig, MidiConfig
 from rig.models.preset import DigitalPreset, HXStompPreset
-from rig.models.rig import RigConfig
+from rig.models.rig import Rig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
 
 
-def _make_rig(scene_presets: dict | None = None) -> RigConfig:
-    hx = PedalDefinition(
+def _make_rig(scene_presets: dict | None = None) -> Rig:
+    hx = Device(
         id="hx-stomp",
         manufacturer="Line6",
         model="HX Stomp",
-        type=PedalType.MODELER,
+        type=DeviceType.MODELER,
         config=MidiConfig(midi_channel=1),
+        presets=[
+            HXStompPreset(
+                id="clean-edge", name="Clean Edge", preset_number=12, hlx_file="hlx/clean-edge.hlx"
+            )
+        ],
     )
-    bro = PedalDefinition(
+    bro = Device(
         id="brothers",
         manufacturer="CBA",
         model="Brothers",
-        type=PedalType.DIGITAL,
+        type=DeviceType.DIGITAL,
         config=ChaseBlissConfig(midi_channel=3),
+        presets=[DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)],
     )
-    tum = PedalDefinition(
+    tum = Device(
         id="tumnus",
         manufacturer="Wampler",
         model="Tumnus",
-        type=PedalType.ANALOG,
+        type=DeviceType.ANALOG,
         config=ManualConfig(),
     )
-    hx_preset = HXStompPreset(
-        id="clean-edge", name="Clean Edge", preset_number=12, hlx_file="hlx/clean-edge.hlx"
-    )
-    return RigConfig(
+    return Rig(
         name="test",
-        signal_chain=[SignalChainPosition(pedal_ref="hx-stomp", position=1)],
-        pedals={"hx-stomp": hx, "brothers": bro, "tumnus": tum},
-        hx_presets={"hx-stomp": [hx_preset]},
-        digital_presets={
-            "brothers": [
-                DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)
-            ]
-        },
+        signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+        devices={"hx-stomp": hx, "brothers": bro, "tumnus": tum},
         scenes={
             "test-scene": Scene(
                 name="test-scene",

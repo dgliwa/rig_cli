@@ -52,6 +52,11 @@ Tests live in `tests/`. Run them with `uv run pytest tests/ -q` for quiet output
 - `refactor(engine): ...`
 - `test(plan): ...`
 
+## Engineering standards
+
+- **Prefer protocols for abstractions.** Define behavior through `Protocol` classes (structural subtyping) rather than abstract base classes. This keeps implementations decoupled and testable without inheritance.
+- **Model the domain first.** Before implementing a new feature, nail down the domain model — what are the entities, what are their relationships, what invariants must hold. Clear models make the implementation obvious and keep the codebase extensible.
+
 ## Architecture
 
 ```

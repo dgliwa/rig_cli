@@ -1,42 +1,39 @@
 import json
 
 from rig.generators.mc6_presets import generate_mc6, write_mc6_config
-from rig.models.pedal import MidiConfig, PedalDefinition, PedalType
+from rig.models.controller import Controller, ControllerType, MC6Config
+from rig.models.device import Device, DeviceType, MidiConfig
 from rig.models.preset import HXStompPreset
-from rig.models.rig import RigConfig
+from rig.models.rig import Rig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
 
 
-def _make_rig() -> RigConfig:
-    hx = PedalDefinition(
+def _make_rig() -> Rig:
+    hx = Device(
         id="hx-stomp",
         manufacturer="Line6",
         model="HX Stomp",
-        type=PedalType.MODELER,
+        type=DeviceType.MODELER,
         config=MidiConfig(midi_channel=1),
+        presets=[
+            HXStompPreset(
+                id="clean-edge",
+                name="Clean Edge",
+                preset_number=12,
+                hlx_file="hlx/clean-edge.hlx",
+            ),
+            HXStompPreset(id="lead", name="Lead", preset_number=5, hlx_file="hlx/lead.hlx"),
+        ],
     )
-    return RigConfig(
-        name="test",
-        signal_chain=[SignalChainPosition(pedal_ref="hx-stomp", position=1)],
-        pedals={"hx-stomp": hx},
-        hx_presets={
-            "hx-stomp": [
-                HXStompPreset(
-                    id="clean-edge",
-                    name="Clean Edge",
-                    preset_number=12,
-                    hlx_file="hlx/clean-edge.hlx",
-                ),
-                HXStompPreset(id="lead", name="Lead", preset_number=5, hlx_file="hlx/lead.hlx"),
-            ],
-        },
-        scenes={
-            "billy-clean": Scene(name="billy-clean", presets={"hx-stomp": "clean-edge"}),
-            "lead": Scene(name="lead", presets={"hx-stomp": "lead"}),
-        },
-        mc6={
-            "banks": [
+    controller = Controller(
+        id="mc6",
+        manufacturer="Morningstar",
+        model="MC6",
+        type=ControllerType.MC6,
+        config=MC6Config(
+            midi_channel=1,
+            banks=[
                 {
                     "bank": 1,
                     "name": "Scenes",
@@ -47,6 +44,16 @@ def _make_rig() -> RigConfig:
                     },
                 },
             ],
+        ),
+    )
+    return Rig(
+        name="test",
+        signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+        devices={"hx-stomp": hx},
+        controller=controller,
+        scenes={
+            "billy-clean": Scene(name="billy-clean", presets={"hx-stomp": "clean-edge"}),
+            "lead": Scene(name="lead", presets={"hx-stomp": "lead"}),
         },
     )
 
@@ -80,7 +87,11 @@ class TestMc6Generator:
             assert parsed["presets"]["A"]["commands"][0]["value"] == 12
 
     def test_no_mc6_config_returns_empty(self):
-        rig = _make_rig()
-        rig.mc6 = {}
+        rig = Rig(
+            name="test",
+            signal_chain=[],
+            devices={},
+            controller=None,
+        )
         data = generate_mc6(rig)
         assert data == {}

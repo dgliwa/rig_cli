@@ -4,12 +4,12 @@ import logging
 from typing import Any
 
 from rig.engine.state import DeviceState, RigState, read_state
-from rig.models.rig import RigConfig
+from rig.models.rig import Rig
 
 logger = logging.getLogger(__name__)
 
 
-def compute_diff(config: RigConfig, root_path: str | None = None) -> dict[str, Any]:
+def compute_diff(config: Rig, root_path: str | None = None) -> dict[str, Any]:
     """Compare desired config against actual state and return a structured diff."""
     actual = RigState()
     if root_path:

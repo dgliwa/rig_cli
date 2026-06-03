@@ -1,0 +1,13 @@
+id: mc6
+manufacturer: Morningstar
+model: MC6
+type: mc6
+config:
+  type: mc6
+  midi_channel: 1
+  banks:
+    - bank: 1
+      name: Bank 1
+      switches:
+        A:
+          scene: lead
