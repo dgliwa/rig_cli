@@ -27,6 +27,7 @@ class ControlType(StrEnum):
 class Control(BaseModel):
     name: str
     type: ControlType
+    description: str | None = None
     min: float | None = None
     max: float | None = None
     positions: list[str] | None = None
