@@ -11,8 +11,12 @@ from rich.table import Table
 
 from rig.config.errors import ConfigError
 from rig.config.loader import load_rig
+from rig.engine.apply import apply_plan
+from rig.engine.diff import compute_diff, format_diff
+from rig.engine.plan import compute_plan
 from rig.generators.mc6_presets import generate_mc6, write_mc6_config
 from rig.log_setup import setup_logging
+from rig.midi.adapter import MidiManager
 
 
 # JSON output helper — uses raw sys.stdout to bypass Rich wrapping.
@@ -37,6 +41,12 @@ _FORMAT_OPTION = typer.Option(
     "--format",
     "-f",
     help="Output format: text or json",
+)
+_SCENE_OPTION = typer.Option(
+    None,
+    "--scene",
+    "-s",
+    help="Plan a single scene",
 )
 _VERBOSE_OPTION = typer.Option(
     0,
@@ -76,6 +86,104 @@ def validate(
         else:
             console.print(f"[red]✗[/red] {e}")
         raise typer.Exit(1)
+
+
+@app.command()
+def plan(
+    config: str = _CONFIG_OPTION,
+    scene: str | None = _SCENE_OPTION,
+    output_format: str = _FORMAT_OPTION,
+    verbose: int = _VERBOSE_OPTION,
+):
+    """Preview changes needed to reach desired state."""
+    setup_logging(verbose)
+    logger.info("Planning changes for config: %s", config)
+    try:
+        rig = load_rig(config)
+    except ConfigError as e:
+        console.print(f"[red]✗[/red] {e}")
+        raise typer.Exit(1)
+
+    plan = compute_plan(rig, root_path=Path(config).resolve() if config else None)
+
+    if output_format == "json":
+        _emit_json(plan.model_dump_json(indent=2))
+        return
+
+    scene_names = [scene] if scene else plan.scenes.keys()
+
+    for name in scene_names:
+        sp = plan.scenes.get(name)
+        if sp is None:
+            console.print(f"[yellow]Scene '{name}' not found[/yellow]")
+            continue
+
+        status_icon = {"new": "[cyan]+   ", "changed": "[yellow]~   ", "unchanged": "[green]    "}[
+            sp.status
+        ]
+        console.print(f"\n{status_icon}[bold]{sp.scene_name}[/bold] ({sp.status})")
+
+        for action in sp.device_actions:
+            if action.device_type == "analog":
+                console.print(
+                    f"  [yellow]⚠[/yellow] {action.device}: set to '{action.preset_name}' (manual)"
+                )
+            elif action.status == "configure":
+                pc_info = f" PC#{action.preset_number}" if action.preset_number else ""
+                ch_info = f" (ch {action.midi_channel})" if action.midi_channel else ""
+                console.print(
+                    f"  [cyan]→[/cyan] {action.device}:{pc_info} '{action.preset_name}'{ch_info}"
+                )
+            elif action.status == "verify":
+                console.print(
+                    f"  [green]✓[/green] {action.device}: '{action.preset_name}' (already set)"
+                )
+
+    if plan.cba_setup:
+        console.print("\n[bold]CBA Setup Required:[/bold]")
+        for action in plan.cba_setup:
+            if action.type == "establish_channel":
+                console.print(
+                    f"  [cyan]🔧[/cyan] {action.device}: establish MIDI channel {action.midi_channel}"
+                )
+            elif action.type == "build_preset":
+                console.print(
+                    f"  [cyan]🔧[/cyan] {action.device}: build preset #{action.preset_number} '{action.preset_name}'"
+                )
+            elif action.type == "register_scenes":
+                console.print(f"  [cyan]🔧[/cyan] {action.device}: register presets to scenes")
+
+    if not scene_names:
+        console.print("[yellow]No scenes found[/yellow]")
+
+    config_exists = config and Path(config).exists()
+    if config_exists:
+        console.print("\n[dim]State source: .rig/state.json[/dim]")
+
+
+@app.command()
+def apply(
+    config: str = _CONFIG_OPTION,
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would happen"),
+    scene: str | None = _SCENE_OPTION,
+    verbose: int = _VERBOSE_OPTION,
+):
+    """Apply changes — walks through each device with MIDI prompts."""
+    setup_logging(verbose)
+    logger.info("Applying plan for config: %s", config)
+    try:
+        rig = load_rig(config)
+    except ConfigError as e:
+        console.print(f"[red]✗[/red] {e}")
+        raise typer.Exit(1)
+
+    midi = MidiManager()
+    config_path = str(Path(config).resolve())
+    plan = compute_plan(rig, root_path=config_path)
+    try:
+        apply_plan(plan, rig=rig, config_path=config_path, dry_run=dry_run, scene=scene, midi=midi)
+    finally:
+        midi.disconnect_all()
 
 
 @app.command()
@@ -123,6 +231,30 @@ def status(
             str(preset_count),
         )
     console.print(table)
+
+
+@app.command()
+def diff(
+    config: str = _CONFIG_OPTION,
+    output_format: str = _FORMAT_OPTION,
+    verbose: int = _VERBOSE_OPTION,
+):
+    """Show differences between config and last-known state."""
+    setup_logging(verbose)
+    logger.info("Computing diff for config: %s", config)
+    try:
+        rig = load_rig(config)
+    except ConfigError as e:
+        console.print(f"[red]✗[/red] {e}")
+        raise typer.Exit(1)
+
+    config_path = str(Path(config).resolve())
+    changes = compute_diff(rig, root_path=config_path)
+    if output_format == "json":
+        _emit_json(json.dumps(changes, indent=2))
+        return
+    output = format_diff(changes)
+    console.print(output)
 
 
 gen_app = typer.Typer(help="Generate artifacts from config")

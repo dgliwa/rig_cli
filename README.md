@@ -27,7 +27,10 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 | Command | Description |
 |---------|-------------|
 | `rig validate` | Validate rig config YAML (cross-references, types) |
-| `rig status` | Show loaded rig state (pedals, scenes) |
+| `rig plan` | Preview changes needed to reach desired state |
+| `rig apply` | Apply changes to reach desired state |
+| `rig status` | Show current rig state |
+| `rig diff` | Show differences between config versions |
 | `rig ingest hx <file>` | Import HX Stomp .hlx presets to YAML |
 | `rig ingest mc6 <file>` | Import MC6 JSON config to scene YAML |
 | `rig ingest scene create/add/set` | Create/add/set device presets in scenes |

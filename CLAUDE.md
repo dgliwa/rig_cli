@@ -2,7 +2,7 @@
 
 ## What this is
 
-CLI for a guitar rig. The user maintains a separate **rig config repo** (YAML files) that describes their pedals, presets, and scenes. This tool validates, ingests, and generates configs from that repo.
+Infrastructure-as-Code CLI for a guitar rig. The user maintains a separate **rig config repo** (YAML files) that describes their pedals, presets, and scenes. This tool validates, plans, applies, and generates configs from that repo.
 
 ## Domain glossary
 
@@ -51,10 +51,6 @@ Tests live in `tests/`. Run them with `uv run pytest tests/ -q` for quiet output
 - `fix(loader): ...`
 - `refactor(engine): ...`
 - `test(plan): ...`
-
-## Doc rule
-
-Always update the README when adding, removing, or changing CLI commands, domain models, or architecture. Code changes without a corresponding README update are incomplete.
 
 ## Engineering standards
 

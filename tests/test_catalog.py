@@ -3,6 +3,7 @@ import pytest
 from rig.catalog.chase_bliss import MOOD_MKII_CONTROLS
 from rig.config.errors import ValidationError
 from rig.config.loader import load_rig
+from rig.engine.plan import compute_plan
 from rig.generators.mc6_presets import generate_mc6
 from rig.models.pedal import (
     ChaseBlissConfig,
@@ -158,6 +159,44 @@ class TestLoaderValidation:
         )
         with pytest.raises(ValidationError, match="unknown parameters"):
             load_rig(str(tmp_path))
+
+
+class TestPlanCcParams:
+    def test_build_preset_action_has_cc_params(self, tmp_path):
+        import json
+        import shutil
+
+        # Copy fixture into tmp_path so we can write state without mutating it
+        shutil.copytree(FIXTURE_PATH, tmp_path / "rig", dirs_exist_ok=True)
+        rig_root = str(tmp_path / "rig")
+
+        # Simulate channel already established so the plan advances to build_preset
+        state_dir = tmp_path / "rig" / ".rig"
+        state_dir.mkdir()
+        (state_dir / "state.json").write_text(
+            json.dumps(
+                {
+                    "devices": {
+                        "mood": {
+                            "channel_established": True,
+                            "midi_channel": 2,
+                            "presets_saved": {},
+                            "registration_done": False,
+                        }
+                    },
+                    "scenes": {},
+                }
+            )
+        )
+
+        rig = load_rig(rig_root)
+        plan = compute_plan(rig, rig_root)
+        build_actions = [a for a in plan.cba_setup if a.type == "build_preset"]
+        assert len(build_actions) == 1
+        assert len(build_actions[0].cc_params) > 0
+        cc_numbers = [p["cc"] for p in build_actions[0].cc_params]
+        assert 14 in cc_numbers  # time
+        assert 15 in cc_numbers  # mix
 
 
 class TestMc6GeneratorDigitalPedals:

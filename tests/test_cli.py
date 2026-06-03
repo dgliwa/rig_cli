@@ -107,6 +107,49 @@ class TestStatus:
         assert result.exit_code == 1
 
 
+# ── Plan ──────────────────────────────────────────────────────────────────
+
+
+class TestPlan:
+    def test_plan_text(self, tmp_path: Path):
+        _write_minimal_rig(tmp_path)
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path)])
+        assert result.exit_code == 0
+        # Either clean state or no scenes message
+        assert "No scenes" in result.stdout or "clean" in result.stdout.lower()
+
+    def test_plan_json(self, tmp_path: Path):
+        _write_minimal_rig(tmp_path)
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path), "--format", "json"])
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert "status" in data
+        assert data["status"] in ("clean", "changes_detected")
+        assert "scenes" in data
+
+    def test_plan_verbose(self, tmp_path: Path):
+        _write_minimal_rig(tmp_path)
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path), "-v"])
+        assert result.exit_code == 0
+
+
+# ── Diff ──────────────────────────────────────────────────────────────────
+
+
+class TestDiff:
+    def test_diff_text(self, tmp_path: Path):
+        _write_minimal_rig(tmp_path)
+        result = runner.invoke(app, ["diff", "--config", str(tmp_path)])
+        assert result.exit_code == 0
+
+    def test_diff_json(self, tmp_path: Path):
+        _write_minimal_rig(tmp_path)
+        result = runner.invoke(app, ["diff", "--config", str(tmp_path), "--format", "json"])
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert "scenes" in data
+
+
 # ── Generate MC6 ─────────────────────────────────────────────────────────
 
 
@@ -130,3 +173,9 @@ class TestFormatOption:
         assert result.exit_code == 0
         data = json.loads(result.stdout)
         assert data["status"] == "valid"
+
+    def test_plan_short_format_flag(self, tmp_path: Path):
+        _write_minimal_rig(tmp_path)
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path), "-f", "json"])
+        assert result.exit_code == 0
+        json.loads(result.stdout)
