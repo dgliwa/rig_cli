@@ -125,6 +125,7 @@ def _detect_cba_setup(rig: Rig, state: RigState) -> list[CbaSetupAction]:
     return actions
 
 
+# TODO: issue #13
 def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
     logger.debug("Computing plan for %d scenes", len(rig.scenes))
     actual = RigState()
@@ -215,8 +216,10 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
             device_actions=device_actions,
         )
 
+    # TODO: This shouldn't be here
     cba_setup = _detect_cba_setup(rig, actual)
     if cba_setup:
+        # TODO: let's revisit this - we should detect changes here
         any_changes = True
         logger.debug("CBA setup actions: %d", len(cba_setup))
 

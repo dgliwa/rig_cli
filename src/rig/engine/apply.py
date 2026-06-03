@@ -43,6 +43,7 @@ def _update_device_state(state: RigState, device: str, **fields) -> None:
     update_device_state(state, device, **fields)
 
 
+# TODO: i think this is too big a function
 def apply_plan(
     plan: Plan,
     rig: Rig | None = None,
@@ -72,6 +73,10 @@ def apply_plan(
     state_modified = False
     cba_results: list[DeviceApplyResult] = []
     scene_results: list[SceneApplyResult] = []
+
+    # TODO: We probably should identify the controller first
+    # For devices that can be configured via controller (CBA) that would be useful
+    # For devices that need direct connection (HX), we should maybe make that more obvious in the configuration or the "apply" implementation
 
     # --- Phase -1: MIDI connection per unique device ---
     midi_devices = collect_midi_devices(plan, rig) if midi else set()
@@ -109,6 +114,7 @@ def apply_plan(
         # If skipped → device not in connected_devices, falls back to manual prompts
 
     # --- Phase 0: CBA device setup ---
+    # TODO: again, don't like this being on the plan - should be specific on the device plan & apply?
     if plan.cba_setup:
         logger.info("CBA setup phase: %d action(s)", len(plan.cba_setup))
         console.print("\n[bold]Chase Bliss Setup Phase[/bold]")

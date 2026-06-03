@@ -84,10 +84,12 @@ class Device(BaseModel):
     model: str
     type: DeviceType
     config: Annotated[ManualConfig | MidiConfig | ChaseBlissConfig, Field(discriminator="type")]
+    # TODO: Can we just use Preset here?
     presets: list[AnalogPreset | DigitalPreset | HXStompPreset] = Field(default_factory=list)
     image: str | None = None
     notes: str | None = None
 
+    # TODO: I feel like "controls" should live in the configs?
     @model_validator(mode="after")
     def _populate_cba_controls(self) -> Device:
         if isinstance(self.config, ChaseBlissConfig) and not self.config.controls:
@@ -100,6 +102,7 @@ class Device(BaseModel):
                 )
         return self
 
+    # TODO: this part of the contract could use some thinking - probably makes more sense for "Scene" to own the PC commands for a given device (falls in line with other domain structure suggestions)
     def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
         ch = self.config.midi_channel
         if ch is None:

@@ -20,6 +20,7 @@ def _resolve(root: Path, *parts: str) -> Path:
     return result
 
 
+# TODO: If we pass pydantic model
 def _read_yaml(path: Path):
     logger.debug("Reading YAML file: %s", path)
     if not path.exists():
@@ -36,6 +37,7 @@ def _read_yaml(path: Path):
 
 
 def _parse_device(data: dict) -> Device:
+    # TODO:
     return Device(**data)
 
 
@@ -56,7 +58,9 @@ def _parse_controller_legacy(pedal_data: dict, mc6_data: dict) -> Controller:
 
 def _load_devices_dir(
     devices_dir: Path, mc6_data: dict
-) -> tuple[dict[str, Device], Controller | None]:
+) -> tuple[
+    dict[str, Device], Controller | None
+]:  # TODO: Once we resolve the legacy stuff this can just return devices by id?
     """Load all device YAML files; route controller-typed entries to Controller."""
     devices: dict[str, Device] = {}
     controller: Controller | None = None
@@ -64,6 +68,7 @@ def _load_devices_dir(
     for path in sorted(devices_dir.glob("*.yaml")):
         data = _read_yaml(path)
         if data.get("type") == "controller":
+            # TODO: get rid of this legacy stuff?
             controller = _parse_controller_legacy(data, mc6_data)
             logger.debug("Loaded controller '%s'", controller.id)
         else:
@@ -74,6 +79,7 @@ def _load_devices_dir(
     return devices, controller
 
 
+# TODO: if we require presets be inline this is not necessary?
 def _merge_presets(devices_dir: Path, devices: dict[str, Device]) -> dict[str, Device]:
     """Merge filesystem presets onto device objects (inline presets take priority)."""
     updated: dict[str, Device] = {}
@@ -84,12 +90,14 @@ def _merge_presets(devices_dir: Path, devices: dict[str, Device]) -> dict[str, D
             logger.debug("Using %d inline presets for '%s'", len(device.presets), device_id)
             continue
 
+        # TODO: Maybe everything underneath this is unnecessary? I think the inline presets is the way to go
         preset_dir = devices_dir / device_id / "presets"
         if not preset_dir.is_dir():
             updated[device_id] = device
             continue
 
         presets: list[AnalogPreset | DigitalPreset | HXStompPreset] = []
+        # TODO: There's _gotta_ be a better way to parse this than big sets of conditionals
         for path in sorted(preset_dir.glob("*.yaml")):
             data = _read_yaml(path)
             if device.type == DeviceType.ANALOG:
@@ -98,8 +106,10 @@ def _merge_presets(devices_dir: Path, devices: dict[str, Device]) -> dict[str, D
                 presets.append(HXStompPreset(**data))
             else:
                 presets.append(DigitalPreset(**data))
+        # TODO: assert_never
 
         if presets:
+            # TODO: why this?
             device = device.model_copy(update={"presets": presets})
             logger.debug("Loaded %d directory presets for '%s'", len(presets), device_id)
         updated[device_id] = device
@@ -119,6 +129,7 @@ def _load_scenes(scenes_dir: Path) -> dict[str, Scene]:
     return scenes
 
 
+# TODO: This should in general leverage the abstractions to determine if the individual pieces are valid
 def _validate_references(rig: Rig):
     device_ids = set(rig.devices.keys())
     controller_id = rig.controller.id if rig.controller else None
@@ -153,6 +164,7 @@ def _validate_references(rig: Rig):
                     f"Scene '{scene_name}': device '{device_id}' has no preset '{preset_id}'"
                 )
 
+    # TODO: for example, this instance based thing shouldn't happen - these should all conform to a protocol
     logger.debug("Validating CBA preset parameter names against device controls")
     for device_id, device in rig.devices.items():
         if not isinstance(device.config, ChaseBlissConfig):
@@ -185,6 +197,7 @@ def load_rig(root_path: str) -> Rig:
     signal_data = _read_yaml(_resolve(root, "signal-chain.yaml"))
 
     # Support both new (devices/) and legacy (pedals/) directory names
+    # TODO: Get rid of the pedal resolution
     devices_dir = _resolve(root, "devices")
     if not devices_dir.is_dir():
         devices_dir = _resolve(root, "pedals")
@@ -193,8 +206,11 @@ def load_rig(root_path: str) -> Rig:
     chain = [SignalChainPosition(**pos) for pos in signal_data.get("chain", [])]
 
     # Load MC6 bank config from controller.yaml (new) or mc6.yaml (legacy)
+    # TODO: The entire rig should be resolved from a single file for now
     controller_path = _resolve(root, "controller.yaml")
     mc6_path = _resolve(root, "mc6.yaml")
+
+    # TODO: The controller _may_ be an mc6 or something else. This should be a more flexible domain modeling solution
     if controller_path.exists():
         mc6_data = _read_yaml(controller_path) or {}
         # controller.yaml holds the full Controller definition
@@ -206,6 +222,9 @@ def load_rig(root_path: str) -> Rig:
 
     devices = _merge_presets(devices_dir, devices)
     scenes = _load_scenes(scenes_dir)
+
+    # TODO: I think an overarching theme here is I don't like the implied yaml structure that rig-cli enforces.
+    # I want it more terraform-like
 
     rig = Rig(
         name=rig_data.get("name", ""),
