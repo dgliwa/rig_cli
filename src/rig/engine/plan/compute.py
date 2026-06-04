@@ -1,46 +1,14 @@
+from __future__ import annotations
+
 import logging
 from typing import Literal
 
-from pydantic import BaseModel
-
+from rig.engine.plan.models import CbaSetupAction, DeviceAction, Plan, ScenePlan
 from rig.engine.state import DeviceState, RigState, read_state
 from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 
 logger = logging.getLogger(__name__)
-
-
-class DeviceAction(BaseModel):
-    device: str
-    device_type: str
-    status: Literal["configure", "verify", "analog"]
-    preset_name: str = ""
-    preset_number: int | None = None
-    midi_channel: int | None = None
-    instructions: list[str] = []
-
-
-class ScenePlan(BaseModel):
-    scene_name: str
-    status: Literal["new", "changed", "unchanged"]
-    device_actions: list[DeviceAction] = []
-
-
-class CbaSetupAction(BaseModel):
-    device: str
-    midi_channel: int
-    type: Literal["establish_channel", "build_preset", "register_scenes"]
-    preset_id: str | None = None
-    preset_name: str | None = None
-    preset_number: int | None = None
-    scene_refs: list[str] = []
-    cc_params: list[dict[str, int]] = []
-
-
-class Plan(BaseModel):
-    status: Literal["clean", "changes_detected"]
-    scenes: dict[str, ScenePlan] = {}
-    cba_setup: list[CbaSetupAction] = []
 
 
 def _get_preset_number(rig: Rig, pedal_id: str, preset_id: str) -> int | None:
