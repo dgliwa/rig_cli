@@ -13,7 +13,7 @@ Three-phase milestone: clean CBA tech-debt first, then introduce Protocol-typed 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: CBA Tech-Debt Cleanup** - Remove private-symbol leakage and raw dict mutation in ChaseBlissApplier before protocol work begins
+- [x] **Phase 1: CBA Tech-Debt Cleanup** - Remove private-symbol leakage and raw dict mutation in ChaseBlissApplier before protocol work begins (completed 2026-06-04)
 - [ ] **Phase 2: Engine I/O Decoupling** - Introduce three narrow Protocol ports so the apply engine is fully testable without MIDI hardware
 - [ ] **Phase 3: Plan Command** - Ship a trustworthy `rig plan` command with correct no_change detection, exit codes, and stable JSON output
 
@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Plans**: 1 planPlans:
 
-- [ ] 01-01-PLAN.md — Extract mark_preset_saved helper, make detect_cba_setup public, inline _is_cba (CBA-01/02/03)
+- [x] 01-01-PLAN.md — Extract mark_preset_saved helper, make detect_cba_setup public, inline _is_cba (CBA-01/02/03)
 
 ### Phase 2: Engine I/O Decoupling
 
@@ -69,6 +69,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. CBA Tech-Debt Cleanup | 0/1 | Not started | - |
+| 1. CBA Tech-Debt Cleanup | 1/1 | Complete   | 2026-06-04 |
 | 2. Engine I/O Decoupling | 0/TBD | Not started | - |
 | 3. Plan Command | 0/TBD | Not started | - |
