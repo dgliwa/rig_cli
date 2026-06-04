@@ -12,7 +12,6 @@ from rig.engine.appliers.base import (
 )
 from rig.engine.appliers.midi_device import MidiApplier
 from rig.engine.plan import CbaSetupAction, DeviceAction, detect_cba_setup
-from rig.interaction.cba import prompt_cba_build_preset, prompt_cba_channel, prompt_cba_register
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -96,7 +95,7 @@ class ChaseBlissApplier:
 
         # Step 1: guide user to power-cycle + enter learn mode
         while True:
-            res = prompt_cba_channel(action.device, action.midi_channel, midi_sent=False)
+            res = ctx.confirmation_io.prompt_cba_channel(action.device, action.midi_channel, False)
             if res != "retry":
                 break
         if res == "quit":
@@ -119,7 +118,9 @@ class ChaseBlissApplier:
         if midi_sent:
             # Step 3: prompt user to hold footswitches to save
             while True:
-                res = prompt_cba_channel(action.device, action.midi_channel, midi_sent=True)
+                res = ctx.confirmation_io.prompt_cba_channel(
+                    action.device, action.midi_channel, True
+                )
                 if res == "retry":
                     try:
                         ctx.midi.send_program_change(action.device, 0, action.midi_channel)
@@ -177,7 +178,7 @@ class ChaseBlissApplier:
             console.print(f"  [green]✓[/green] {cc_sent}/{len(action.cc_params)} CC params sent")
 
         while True:
-            res = prompt_cba_build_preset(
+            res = ctx.confirmation_io.prompt_cba_preset(
                 action.device, action.preset_name, action.preset_number, action.midi_channel
             )
             if res == "retry":
@@ -228,7 +229,7 @@ class ChaseBlissApplier:
             )
             return DeviceApplyResult(device=action.device, status="skipped", preset=None)
 
-        res = prompt_cba_register(action.device, action.scene_refs)
+        res = ctx.confirmation_io.prompt_cba_register(action.device, action.scene_refs)
         if res == "quit":
             console.print("[red]Apply cancelled by user[/red]")
             return None

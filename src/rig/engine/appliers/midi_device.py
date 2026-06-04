@@ -6,7 +6,6 @@ from rich.console import Console
 
 from rig.engine.appliers.base import ApplyContext, DeviceApplyResult, update_device_state
 from rig.engine.plan import DeviceAction
-from rig.interaction.midi import prompt_device
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -50,12 +49,12 @@ class MidiApplier:
         _try_send_pc()
 
         while True:
-            result = prompt_device(
+            result = ctx.confirmation_io.prompt_device(
                 action.device,
                 action.preset_name,
                 action.preset_number,
                 action.midi_channel,
-                midi_connected=midi_connected,
+                midi_connected,
             )
             if result == "confirm":
                 update_device_state(ctx.state, action.device, last_preset=action.preset_name)

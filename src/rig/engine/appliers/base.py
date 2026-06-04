@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Literal, Protocol
 
 from pydantic import BaseModel
 
+from rig.engine.ports import ConfirmationIO
 from rig.engine.state import DeviceState, RigState
 from rig.midi.adapter import MidiManager
 
@@ -25,6 +26,7 @@ class DeviceApplyResult(BaseModel):
 @dataclass
 class ApplyContext:
     dry_run: bool
+    confirmation_io: ConfirmationIO
     midi: MidiManager | None = None
     connected_devices: set[str] = field(default_factory=set)
     state: RigState = field(default_factory=RigState)

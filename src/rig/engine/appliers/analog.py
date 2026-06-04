@@ -6,7 +6,6 @@ from rich.console import Console
 
 from rig.engine.appliers.base import ApplyContext, DeviceApplyResult, update_device_state
 from rig.engine.plan import DeviceAction
-from rig.interaction.analog import prompt_analog
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -27,7 +26,7 @@ class AnalogApplier:
                 device=action.device, status="skipped", preset=action.preset_name
             )
 
-        res = prompt_analog(action.device, action.preset_name)
+        res = ctx.confirmation_io.prompt_analog(action.device, action.preset_name)
         if res == "quit":
             return DeviceApplyResult(
                 device=action.device, status="error", preset=action.preset_name, error="quit"
