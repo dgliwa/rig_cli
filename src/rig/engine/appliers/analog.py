@@ -6,7 +6,7 @@ from rich.console import Console
 
 from rig.engine.appliers.base import ApplyContext, DeviceApplyResult, update_device_state
 from rig.engine.plan import DeviceAction
-from rig.interaction import prompt_analog
+from rig.interaction.analog import prompt_analog
 
 logger = logging.getLogger(__name__)
 console = Console()

@@ -12,7 +12,7 @@ from rig.engine.appliers.base import (
 )
 from rig.engine.appliers.midi_device import MidiApplier
 from rig.engine.plan import CbaSetupAction, DeviceAction, detect_cba_setup
-from rig.interaction import prompt_cba_build_preset, prompt_cba_channel, prompt_cba_register
+from rig.interaction.cba import prompt_cba_build_preset, prompt_cba_channel, prompt_cba_register
 
 logger = logging.getLogger(__name__)
 console = Console()

@@ -6,7 +6,7 @@ from rich.console import Console
 
 from rig.engine.appliers.base import ApplyContext, update_device_state
 from rig.engine.state import DeviceState
-from rig.interaction import prompt_midi_connect
+from rig.interaction.midi import prompt_midi_connect
 from rig.midi.mc6 import SWITCH_INDEX, clear_preset_messages, update_preset_name, update_preset_pc
 
 logger = logging.getLogger(__name__)

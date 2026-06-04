@@ -14,7 +14,7 @@ from rig.engine.appliers.base import (
 from rig.engine.appliers.registry import get_cba_applier, get_mc6_applier, get_scene_applier
 from rig.engine.plan import Plan
 from rig.engine.state import DeviceState, RigState, read_state, write_state
-from rig.interaction import collect_midi_devices, prompt_midi_connect
+from rig.interaction.midi import collect_midi_devices, prompt_midi_connect
 from rig.midi.adapter import MidiManager
 from rig.models.rig import Rig
 
