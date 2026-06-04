@@ -19,13 +19,7 @@ from rig.models.rig import Rig, RigConfig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
 
-# Backward-compat aliases
-PedalConfig = DeviceConfig
-PedalDefinition = Device
-PedalType = DeviceType
-
 __all__ = [
-    # New names
     "Device",
     "DeviceConfig",
     "DeviceType",
@@ -34,22 +28,15 @@ __all__ = [
     "MC6Config",
     "Rig",
     "Preset",
-    # Config types
     "Control",
     "ControlType",
     "ManualConfig",
     "MidiConfig",
     "ChaseBlissConfig",
-    # Preset types
     "AnalogPreset",
     "DigitalPreset",
     "HXStompPreset",
-    # Other models
     "Scene",
     "SignalChainPosition",
-    # Backward-compat aliases
-    "PedalConfig",
-    "PedalDefinition",
-    "PedalType",
     "RigConfig",
 ]
