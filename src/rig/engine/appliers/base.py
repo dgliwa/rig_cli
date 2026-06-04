@@ -40,3 +40,11 @@ def update_device_state(state: RigState, device: str, **fields) -> None:
     """Update a device's state fields in-place."""
     current = state.devices.get(device, DeviceState())
     state.devices[device] = current.model_copy(update=fields)
+
+
+def mark_preset_saved(state: RigState, device: str, preset_id: str) -> None:
+    """Mark one preset as saved through the single state-write path."""
+    current = state.devices.get(device, DeviceState())
+    updated = dict(current.presets_saved)
+    updated[preset_id] = True
+    update_device_state(state, device, presets_saved=updated)
