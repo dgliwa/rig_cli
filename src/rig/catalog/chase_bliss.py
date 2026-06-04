@@ -121,7 +121,7 @@ MOOD_MKII_CONTROLS: list[Control] = [
     ),
     # Footswitch actions (CC 102–107)
     Control(
-        name="loop_bypass",  # bypass switch for the micro looper channel: 0 = engaged, >=1 = bypassed
+        name="micro_bypass",  # bypass switch for the micro looper channel: 0 = engaged, >=1 = bypassed
         type=ControlType.SWITCH,
         midi_cc=102,
         min=0,
@@ -157,56 +157,56 @@ MOOD_MKII_CONTROLS: list[Control] = [
     ),
     # Left dip switch bank (CC 61–68) — ramp/expression assign and loop behavior
     Control(
-        name="dip_time",  # on = time knob is assigned to the ramp/expression input
+        name="dip_l_time",  # on = time knob is assigned to the ramp/expression input
         type=ControlType.DIPSWITCH,
         midi_cc=61,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_wet_modify",  # on = wet modify knob is assigned to the ramp/expression input
+        name="dip_l_wet_modify",  # on = wet modify knob is assigned to the ramp/expression input
         type=ControlType.DIPSWITCH,
         midi_cc=62,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_clock",  # on = clock knob is assigned to the ramp/expression input
+        name="dip_l_clock",  # on = clock knob is assigned to the ramp/expression input
         type=ControlType.DIPSWITCH,
         midi_cc=63,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_loop_modify",  # on = loop modify knob is assigned to the ramp/expression input
+        name="dip_l_loop_modify",  # on = loop modify knob is assigned to the ramp/expression input
         type=ControlType.DIPSWITCH,
         midi_cc=64,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_length",  # on = length knob is assigned to the ramp/expression input
+        name="dip_l_length",  # on = length knob is assigned to the ramp/expression input
         type=ControlType.DIPSWITCH,
         midi_cc=65,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_bounce",  # on = looper plays forward then reverses (bounce/ping-pong playback)
+        name="dip_l_bounce",  # on = looper plays forward then reverses (bounce/ping-pong playback)
         type=ControlType.DIPSWITCH,
         midi_cc=66,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_sweep",  # on = enables sweep mode; the ramp continuously oscillates back and forth
+        name="dip_l_sweep",  # on = enables sweep mode; the ramp continuously oscillates back and forth
         type=ControlType.DIPSWITCH,
         midi_cc=67,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_polarity",  # on = inverts the ramp/expression direction (high becomes low, low becomes high)
+        name="dip_l_polarity",  # on = inverts the ramp/expression direction (high becomes low, low becomes high)
         type=ControlType.DIPSWITCH,
         midi_cc=68,
         min=0,
@@ -214,56 +214,56 @@ MOOD_MKII_CONTROLS: list[Control] = [
     ),
     # Right dip switch bank (CC 71–78) — output and MIDI behavior
     Control(
-        name="dip_classic",  # on = classic MOOD v1 algorithm behavior for the wet channel
+        name="dip_r_classic",  # on = classic MOOD v1 algorithm behavior for the wet channel
         type=ControlType.DIPSWITCH,
         midi_cc=71,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_miso",  # on = MISO mode (MIDI in / serial out); pedal receives MIDI and passes clock downstream
+        name="dip_r_miso",  # on = MISO mode (MIDI in / serial out); pedal receives MIDI and passes clock downstream
         type=ControlType.DIPSWITCH,
         midi_cc=72,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_spread",  # on = stereo spread; left and right outputs carry different wet signals
+        name="dip_r_spread",  # on = stereo spread; left and right outputs carry different wet signals
         type=ControlType.DIPSWITCH,
         midi_cc=73,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_dry_kill",  # on = dry signal is removed; wet output only
+        name="dip_r_dry_kill",  # on = dry signal is removed; wet output only
         type=ControlType.DIPSWITCH,
         midi_cc=74,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_trails",  # on = wet channel trails off naturally after bypass instead of cutting abruptly
+        name="dip_r_trails",  # on = wet channel trails off naturally after bypass instead of cutting abruptly
         type=ControlType.DIPSWITCH,
         midi_cc=75,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_latch",  # on = loop record/play footswitch latches (press once to start, once to stop)
+        name="dip_r_latch",  # on = loop record/play footswitch latches (press once to start, once to stop)
         type=ControlType.DIPSWITCH,
         midi_cc=76,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_no_dub",  # on = disables overdubbing; loop plays back but new audio is not layered in
+        name="dip_r_no_dub",  # on = disables overdubbing; loop plays back but new audio is not layered in
         type=ControlType.DIPSWITCH,
         midi_cc=77,
         min=0,
         max=127,
     ),
     Control(
-        name="dip_smooth",  # on = smooths transitions when switching loop or wet channel modes
+        name="dip_r_smooth",  # on = smooths transitions when switching loop or wet channel modes
         type=ControlType.DIPSWITCH,
         midi_cc=78,
         min=0,
