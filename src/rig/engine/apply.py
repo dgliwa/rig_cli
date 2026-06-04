@@ -79,7 +79,7 @@ def apply_plan(
     # For devices that need direct connection (HX), we should maybe make that more obvious in the configuration or the "apply" implementation
 
     # --- Phase -1: MIDI connection per unique device ---
-    midi_devices = collect_midi_devices(plan, rig) if midi else set()
+    midi_devices = collect_midi_devices(plan) if midi else set()
 
     if midi_devices and not dry_run:
         logger.info("MIDI connection phase: %d device(s)", len(midi_devices))
@@ -149,9 +149,6 @@ def apply_plan(
         cancelled = False
 
         for action in sp.device_actions:
-            if action.status == "no_change":
-                continue
-
             device = rig.devices.get(action.device) if rig else None
             config_type = device.config.type if device else "midi"
 

@@ -5,14 +5,18 @@ from rig.config.errors import ValidationError
 from rig.config.loader import load_rig
 from rig.engine.plan import compute_plan
 from rig.generators.mc6_presets import generate_mc6
-from rig.models.pedal import (
+from rig.models.device import (
     ChaseBlissConfig,
     Control,
     ControlType,
     ManualConfig,
     MidiConfig,
-    PedalDefinition,
-    PedalType,
+)
+from rig.models.device import (
+    Device as PedalDefinition,
+)
+from rig.models.device import (
+    DeviceType as PedalType,
 )
 from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import RigConfig

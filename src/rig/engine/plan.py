@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class DeviceAction(BaseModel):
     device: str
     device_type: str
-    status: Literal["configure", "verify", "analog", "no_change"]
+    status: Literal["configure", "verify", "analog"]
     preset_name: str = ""
     preset_number: int | None = None
     midi_channel: int | None = None
@@ -43,14 +43,6 @@ class Plan(BaseModel):
     cba_setup: list[CbaSetupAction] = []
 
 
-def _hx_preset_number(rig: Rig, hx_preset_id: str) -> int | None:
-    for device in rig.devices.values():
-        for p in device.presets:
-            if isinstance(p, HXStompPreset) and p.id == hx_preset_id:
-                return p.preset_number
-    return None
-
-
 def _get_preset_number(rig: Rig, pedal_id: str, preset_id: str) -> int | None:
     device = rig.devices.get(pedal_id)
     if device is None:
@@ -65,7 +57,7 @@ def detect_cba_setup(rig: Rig, state: RigState) -> list[CbaSetupAction]:
     """Detect CBA setup actions needed based on current state."""
     actions: list[CbaSetupAction] = []
 
-    from rig.models.pedal import ChaseBlissConfig
+    from rig.models.device import ChaseBlissConfig
 
     for pedal_id, pedal in rig.devices.items():
         if not isinstance(pedal.config, ChaseBlissConfig):

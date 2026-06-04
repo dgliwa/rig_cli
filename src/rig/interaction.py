@@ -14,7 +14,6 @@ from rich.console import Console
 from rig.config.errors import ConfigError
 from rig.engine.plan import Plan
 from rig.midi.adapter import MidiManager
-from rig.models.rig import Rig
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -213,7 +212,7 @@ def prompt_midi_connect(
             continue
 
 
-def collect_midi_devices(plan: Plan, rig: Rig) -> set[str]:
+def collect_midi_devices(plan: Plan) -> set[str]:
     """Return the set of device IDs that need MIDI connections."""
     devices: set[str] = set()
     for sp in plan.scenes.values():

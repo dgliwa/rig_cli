@@ -131,7 +131,7 @@ class ChaseBlissApplier:
                 console.print("[red]Apply cancelled by user[/red]")
                 return None
 
-        if res == "confirm":
+        if res == "confirm" and midi_sent:
             update_device_state(
                 ctx.state,
                 action.device,
@@ -140,7 +140,7 @@ class ChaseBlissApplier:
             )
         return DeviceApplyResult(
             device=action.device,
-            status="confirmed" if res == "confirm" else "skipped",
+            status="confirmed" if (res == "confirm" and midi_sent) else "skipped",
             preset=None,
         )
 

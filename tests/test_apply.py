@@ -257,9 +257,21 @@ class TestCbaApply:
     def test_cba_channel_establishment_writes_state(self, tmp_path):
         rig = _make_config()
         plan = compute_plan(rig)
-        # confirm CBA channel, then "c" for each device in scene
-        with patch("builtins.input", return_value="c"):
-            apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False)
+        fake_port = MagicMock()
+        # brothers MIDI connect, hx-stomp MIDI connect,
+        # CBA: step1 ready, step2 channel-saved, build_preset, register_scenes,
+        # scene: hx-stomp confirm, brothers confirm
+        inputs = ["1", "1", "c", "c", "c", "c", "c", "c"]
+        with (
+            patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
+            patch("rig.midi.adapter.mido.open_output", return_value=fake_port),
+            patch("builtins.input", side_effect=inputs),
+        ):
+            from rig.midi.adapter import MidiManager
+
+            midi = MidiManager()
+            apply_plan(plan, rig=rig, config_path=str(tmp_path), dry_run=False, midi=midi)
+            midi.disconnect_all()
         state = json.loads((tmp_path / ".rig" / "state.json").read_text())
         dev = state["devices"]["brothers"]
         assert dev["channel_established"] is True
