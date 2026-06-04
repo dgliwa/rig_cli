@@ -7,9 +7,9 @@
 
 ### CBA Tech-Debt (#11, #12)
 
-- [ ] **CBA-01**: `ChaseBlissApplier._build_preset` uses a named `mark_preset_saved(state, device, preset_id)` helper in `base.py` instead of raw dict construction — all `presets_saved` updates go through one auditable path
-- [ ] **CBA-02**: `_detect_cba_setup` is renamed to `detect_cba_setup` (public) in `plan.py` so `ChaseBlissApplier` no longer imports a private symbol across module boundaries
-- [ ] **CBA-03**: `_is_cba` is renamed to `is_cba` (public) or inlined if only used internally — no private symbols leaking across module boundaries
+- [x] **CBA-01**: `ChaseBlissApplier._build_preset` uses a named `mark_preset_saved(state, device, preset_id)` helper in `base.py` instead of raw dict construction — all `presets_saved` updates go through one auditable path
+- [x] **CBA-02**: `_detect_cba_setup` is renamed to `detect_cba_setup` (public) in `plan.py` so `ChaseBlissApplier` no longer imports a private symbol across module boundaries
+- [x] **CBA-03**: `_is_cba` is renamed to `is_cba` (public) or inlined if only used internally — no private symbols leaking across module boundaries
 
 ### Engine Decoupling (#1)
 
@@ -69,9 +69,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CBA-01 | Phase 1 | Pending |
-| CBA-02 | Phase 1 | Pending |
-| CBA-03 | Phase 1 | Pending |
+| CBA-01 | Phase 1 | Complete |
+| CBA-02 | Phase 1 | Complete |
+| CBA-03 | Phase 1 | Complete |
 | DEC-01 | Phase 2 | Pending |
 | DEC-02 | Phase 2 | Pending |
 | DEC-03 | Phase 2 | Pending |
