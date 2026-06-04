@@ -24,9 +24,12 @@ A single command should bring the physical rig to the exact state described in t
 ### Active
 
 - [ ] **Decouple apply engine from I/O** — separate prompt, state-write, and MIDI calls from engine logic so engine can be tested without hardware and reused by alternative frontends (#1)
-- [ ] **Fix inconsistent ctx.state mutation in ChaseBlissApplier** — replace direct dict assignment with `update_device_state` helper for consistent auditable state writes (#11)
-- [ ] **Promote `_detect_cba_setup` to public API** — rename to `detect_cba_setup` or move to shared module; remove cross-module private symbol dependency (#12)
 - [ ] **Rig planning engine (`plan` command)** — diff desired scene/preset config against persisted device state and emit a typed, structured action list (configure / verify / analog / no_change) in text and JSON formats (#13)
+
+### Validated in Phase 1: CBA Tech-Debt Cleanup (2026-06-04)
+
+- ✓ **`mark_preset_saved` helper extracted** — all `presets_saved` dict mutations now flow through `update_device_state` via this named helper; no raw dict assignments remain (#11)
+- ✓ **`detect_cba_setup` promoted to public API** — renamed from `_detect_cba_setup`, `_is_cba` inlined and removed; no cross-module private symbol imports in engine package (#12)
 
 ### Out of Scope
 
@@ -82,4 +85,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-04 after initialization*
+*Last updated: 2026-06-04 — Phase 1 complete (CBA tech-debt cleanup)*
