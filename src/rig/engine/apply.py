@@ -13,8 +13,9 @@ from rig.engine.appliers.base import (
 )
 from rig.engine.appliers.registry import get_cba_applier, get_mc6_applier, get_scene_applier
 from rig.engine.plan import Plan
-from rig.engine.state import DeviceState, RigState, read_state, write_state
-from rig.interaction.midi import collect_midi_devices, prompt_midi_connect
+from rig.engine.ports import ConfirmationIO, MidiConnectionIO, RichConfirmationIO, StateWriter
+from rig.engine.state import DeviceState, RigState
+from rig.interaction.midi import collect_midi_devices
 from rig.midi.adapter import MidiManager
 from rig.models.rig import Rig
 
@@ -46,6 +47,9 @@ def _update_device_state(state: RigState, device: str, **fields) -> None:
 # TODO: i think this is too big a function
 def apply_plan(
     plan: Plan,
+    state_writer: StateWriter,
+    midi_connection_io: MidiConnectionIO,
+    confirmation_io: ConfirmationIO | None = None,
     rig: Rig | None = None,
     config_path: str | None = None,
     dry_run: bool = False,
@@ -60,10 +64,11 @@ def apply_plan(
     logger.debug("Reading current state")
     state = RigState()
     if config_path:
-        state = read_state(config_path)
+        state = state_writer.read(config_path)
 
     ctx = ApplyContext(
         dry_run=dry_run,
+        confirmation_io=confirmation_io or RichConfirmationIO(),
         midi=midi,
         state=state,
         config_path=config_path,
@@ -103,7 +108,7 @@ def apply_plan(
             ctx.connected_devices.add(device_id)
             continue
 
-        res, port_name = prompt_midi_connect(device_id, ch, midi, cached_port)
+        res, port_name = midi_connection_io.prompt_connect(device_id, ch, midi, cached_port)
         if res == "quit":
             console.print("[red]Apply cancelled by user[/red]")
             return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
@@ -168,8 +173,9 @@ def apply_plan(
         if cancelled:
             return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
 
-        state.scenes[sp.scene_name] = {}
-        state_modified = True
+        if any(r.status == "confirmed" for r in device_results):
+            state.scenes[sp.scene_name] = {}
+            state_modified = True
 
         scene_results.append(
             SceneApplyResult(
@@ -190,7 +196,7 @@ def apply_plan(
 
     if config_path and not dry_run and state_modified:
         logger.info("Saving state to .rig/state.json")
-        write_state(config_path, state)
+        state_writer.write(config_path, state)
         console.print("[green]✓[/green] State saved to .rig/state.json")
 
     return ApplyResult(status="completed", cba_setup=cba_results, scenes=scene_results)
