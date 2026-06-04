@@ -61,19 +61,14 @@ def _get_preset_number(rig: Rig, pedal_id: str, preset_id: str) -> int | None:
     return None
 
 
-def _is_cba(pedal) -> bool:
-    """Check if a pedal is a Chase Bliss Audio device."""
-    from rig.models.pedal import ChaseBlissConfig
-
-    return isinstance(pedal.config, ChaseBlissConfig)
-
-
-def _detect_cba_setup(rig: Rig, state: RigState) -> list[CbaSetupAction]:
+def detect_cba_setup(rig: Rig, state: RigState) -> list[CbaSetupAction]:
     """Detect CBA setup actions needed based on current state."""
     actions: list[CbaSetupAction] = []
 
+    from rig.models.pedal import ChaseBlissConfig
+
     for pedal_id, pedal in rig.devices.items():
-        if not _is_cba(pedal):
+        if not isinstance(pedal.config, ChaseBlissConfig):
             continue
 
         ch = pedal.config.midi_channel or 1
@@ -217,7 +212,7 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
         )
 
     # TODO: This shouldn't be here
-    cba_setup = _detect_cba_setup(rig, actual)
+    cba_setup = detect_cba_setup(rig, actual)
     if cba_setup:
         # TODO: let's revisit this - we should detect changes here
         any_changes = True
