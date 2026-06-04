@@ -4,10 +4,14 @@ import logging
 
 from rich.console import Console
 
-from rig.engine.appliers.base import ApplyContext, DeviceApplyResult, update_device_state
+from rig.engine.appliers.base import (
+    ApplyContext,
+    DeviceApplyResult,
+    mark_preset_saved,
+    update_device_state,
+)
 from rig.engine.appliers.midi_device import MidiApplier
-from rig.engine.plan import CbaSetupAction, DeviceAction, _detect_cba_setup
-from rig.engine.state import DeviceState
+from rig.engine.plan import CbaSetupAction, DeviceAction, detect_cba_setup
 from rig.interaction import prompt_cba_build_preset, prompt_cba_channel, prompt_cba_register
 
 logger = logging.getLogger(__name__)
@@ -37,7 +41,7 @@ class ChaseBlissApplier:
         def _enqueue_new_actions() -> None:
             if ctx.rig is None:
                 return
-            for a in _detect_cba_setup(ctx.rig, ctx.state):
+            for a in detect_cba_setup(ctx.rig, ctx.state):
                 key = (a.device, a.type, a.preset_id)
                 if key not in seen:
                     pending.append(a)
@@ -206,10 +210,7 @@ class ChaseBlissApplier:
                     logger.error("Failed PC send to %s: %s", action.device, e)
                     console.print(f"  [red]✗[/red] PC send failed: {e}")
             update_device_state(ctx.state, action.device, last_preset=action.preset_name)
-            ds = ctx.state.devices.get(action.device, DeviceState())
-            ps = dict(ds.presets_saved)
-            ps[action.preset_id] = True
-            ctx.state.devices[action.device] = ds.model_copy(update={"presets_saved": ps})
+            mark_preset_saved(ctx.state, action.device, action.preset_id)
         return DeviceApplyResult(
             device=action.device,
             status="confirmed" if res == "confirm" else "skipped",
