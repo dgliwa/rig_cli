@@ -69,6 +69,23 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CBA-01, CBA-02, CBA-03 | Phase 1 | Pending |
-| DEC-01–DEC-07 | Phase 2 | Pending |
-| PLAN-01–PLAN-10 | Phase 3 | Pending |
+| CBA-01 | Phase 1 | Pending |
+| CBA-02 | Phase 1 | Pending |
+| CBA-03 | Phase 1 | Pending |
+| DEC-01 | Phase 2 | Pending |
+| DEC-02 | Phase 2 | Pending |
+| DEC-03 | Phase 2 | Pending |
+| DEC-04 | Phase 2 | Pending |
+| DEC-05 | Phase 2 | Pending |
+| DEC-06 | Phase 2 | Pending |
+| DEC-07 | Phase 2 | Pending |
+| PLAN-01 | Phase 3 | Pending |
+| PLAN-02 | Phase 3 | Pending |
+| PLAN-03 | Phase 3 | Pending |
+| PLAN-04 | Phase 3 | Pending |
+| PLAN-05 | Phase 3 | Pending |
+| PLAN-06 | Phase 3 | Pending |
+| PLAN-07 | Phase 3 | Pending |
+| PLAN-08 | Phase 3 | Pending |
+| PLAN-09 | Phase 3 | Pending |
+| PLAN-10 | Phase 3 | Pending |
