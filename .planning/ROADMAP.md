@@ -26,7 +26,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. `_build_preset` calls `mark_preset_saved(state, device, preset_id)` — no raw `state["presets_saved"][...]` dict assignments remain in ChaseBlissApplier
   2. `detect_cba_setup` is a public symbol in `plan.py`; `ChaseBlissApplier` imports it without a leading underscore
   3. No private symbol (`_name`) is referenced across module boundaries anywhere in the engine package
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 01-01-PLAN.md — Extract mark_preset_saved helper, make detect_cba_setup public, inline _is_cba (CBA-01/02/03)
 
 ### Phase 2: Engine I/O Decoupling
 **Goal**: The apply engine is fully testable without MIDI hardware via three narrow Protocol-typed I/O ports
@@ -57,6 +59,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. CBA Tech-Debt Cleanup | 0/TBD | Not started | - |
+| 1. CBA Tech-Debt Cleanup | 0/1 | Not started | - |
 | 2. Engine I/O Decoupling | 0/TBD | Not started | - |
 | 3. Plan Command | 0/TBD | Not started | - |
