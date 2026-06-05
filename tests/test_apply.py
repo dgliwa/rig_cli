@@ -65,14 +65,31 @@ def _write_state_file(tmp_path: Path, data: dict):
 
 
 class TestApplyPlan:
-    def test_clean_plan_prints_no_changes(self, capsys):
+    def test_clean_plan_prints_no_changes(self, tmp_path, capsys):
         config = _make_config()
-        plan = compute_plan(config)
+        _write_state_file(
+            tmp_path,
+            {
+                "devices": {
+                    "hx-stomp": {"last_preset": "clean-edge"},
+                    "brothers": {
+                        "last_preset": "low-gain",
+                        "channel_established": True,
+                        "midi_channel": 3,
+                        "presets_saved": {"low-gain": True},
+                        "registration_done": True,
+                    },
+                },
+                "scenes": {"test-scene": {}},
+            },
+        )
+        plan = compute_plan(config, root_path=str(tmp_path))
+        assert plan.status == "clean"
         state_adapter = InMemoryStateAdapter()
         midi_io = InMemoryMidiConnectionIO()
         apply_plan(plan, state_writer=state_adapter, midi_connection_io=midi_io, dry_run=True)
         captured = capsys.readouterr()
-        assert "No changes needed" not in captured.out
+        assert "No changes needed" in captured.out
 
     def test_dry_run_does_not_write_state(self, tmp_path):
         config = _make_config()
