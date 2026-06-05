@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import TYPE_CHECKING, Annotated, Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
-
-if TYPE_CHECKING:
-    pass
+from rig.models.scene import Scene
 
 
 class DeviceType(StrEnum):
@@ -26,7 +24,7 @@ class ControlType(StrEnum):
 
 
 class Control(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1)
     type: ControlType
     min: float | None = None
     max: float | None = None
@@ -81,7 +79,7 @@ class ControllerConfig(DeviceConfig):
 
     type: Literal["controller"] = "controller"
     banks: list[dict[str, Any]] = []
-    scenes: dict[str, Any] = {}
+    scenes: dict[str, Scene] = {}
 
 
 Preset = AnalogPreset | DigitalPreset | HXStompPreset
