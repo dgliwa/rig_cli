@@ -40,38 +40,162 @@ def test_plugin_context_all_fields_required() -> None:
 
 
 # ---------------------------------------------------------------------------
-# DevicePlugin structural protocol tests
+# Device Protocol tests (replaces DevicePlugin tests)
 # ---------------------------------------------------------------------------
 
 
-def test_device_plugin_protocol_satisfied_by_class_with_all_methods() -> None:
-    class GoodPlugin:
-        def plan(self, device: object, ctx: object) -> object:
+def test_device_protocol_is_a_typing_protocol() -> None:
+    import typing
+
+    from rig.engine.plugin import Device
+
+    assert issubclass(Device, typing.Protocol)
+
+
+def test_device_protocol_satisfied_by_class_with_all_members() -> None:
+    from rig.engine.plugin import DeviceApplyContext
+
+    class GoodDevice:
+        @property
+        def id(self) -> str:
+            return "test-id"
+
+        @property
+        def name(self) -> str:
+            return "Test Device"
+
+        @property
+        def config(self) -> object:
             return None
 
-        def diff(self, device: object, ctx: object) -> object:
+        def plan(self, ctx: PluginContext) -> object:
             return None
 
-        def apply(self, device: object, ctx: object) -> object:
+        def diff(self, ctx: PluginContext) -> object:
             return None
 
-    plugin = GoodPlugin()
-    assert hasattr(plugin, "plan")
-    assert hasattr(plugin, "diff")
-    assert hasattr(plugin, "apply")
-
-
-def test_device_plugin_protocol_missing_method_detected_via_hasattr() -> None:
-    class BadPlugin:
-        def plan(self, device: object, ctx: object) -> object:
+        def apply(self, ctx: DeviceApplyContext) -> object:
             return None
 
-        # missing diff and apply
+    device = GoodDevice()
+    assert hasattr(device, "id")
+    assert hasattr(device, "name")
+    assert hasattr(device, "config")
+    assert hasattr(device, "plan")
+    assert hasattr(device, "diff")
+    assert hasattr(device, "apply")
 
-    plugin = BadPlugin()
-    assert hasattr(plugin, "plan")
-    assert not hasattr(plugin, "diff")
-    assert not hasattr(plugin, "apply")
+
+def test_device_protocol_missing_property_detected_via_hasattr() -> None:
+    class MissingConfigDevice:
+        @property
+        def id(self) -> str:
+            return "test"
+
+        @property
+        def name(self) -> str:
+            return "Test"
+
+        # missing config, plan, diff, apply
+
+    device = MissingConfigDevice()
+    assert hasattr(device, "id")
+    assert hasattr(device, "name")
+    assert not hasattr(device, "config")
+    assert not hasattr(device, "plan")
+    assert not hasattr(device, "diff")
+    assert not hasattr(device, "apply")
+
+
+def test_device_protocol_has_distinct_context_types() -> None:
+    """plan/diff take PluginContext; apply takes DeviceApplyContext."""
+    from rig.engine.plugin import Device
+
+    hints = Device.plan.__annotations__  # type: ignore[attr-defined]
+    assert "ctx" in hints
+    plan_ctx_annotation = hints["ctx"]
+    assert "PluginContext" in str(plan_ctx_annotation)
+
+    apply_hints = Device.apply.__annotations__  # type: ignore[attr-defined]
+    assert "ctx" in apply_hints
+    apply_ctx_annotation = apply_hints["ctx"]
+    assert "DeviceApplyContext" in str(apply_ctx_annotation)
+
+
+def test_device_plugin_is_absent_or_deprecated() -> None:
+    """DevicePlugin should no longer be importable from plugin.py."""
+    import rig.engine.plugin as plugin_module
+
+    assert not hasattr(plugin_module, "DevicePlugin"), (
+        "DevicePlugin should be removed — Device Protocol replaces it"
+    )
+
+
+# ---------------------------------------------------------------------------
+# DeviceApplyContext tests
+# ---------------------------------------------------------------------------
+
+
+def test_device_apply_context_is_dataclass() -> None:
+    from rig.engine.plugin import DeviceApplyContext
+
+    assert dataclasses.is_dataclass(DeviceApplyContext)
+
+
+def test_device_apply_context_is_not_pydantic_model() -> None:
+    from pydantic import BaseModel
+
+    from rig.engine.plugin import DeviceApplyContext
+
+    assert not issubclass(DeviceApplyContext, BaseModel)
+
+
+def test_device_apply_context_required_fields() -> None:
+    field_names = [
+        f.name
+        for f in dataclasses.fields(
+            __import__("rig.engine.plugin", fromlist=["DeviceApplyContext"]).DeviceApplyContext
+        )
+    ]
+    assert "action" in field_names
+    assert "state" in field_names
+    assert "rig" in field_names
+    assert "dry_run" in field_names
+    assert "confirmation_io" in field_names
+
+
+def test_device_apply_context_optional_fields_have_defaults() -> None:
+    from rig.engine.plugin import DeviceApplyContext
+
+    fields_by_name = {f.name: f for f in dataclasses.fields(DeviceApplyContext)}
+    import dataclasses as dc
+
+    # midi should default to None
+    assert (
+        fields_by_name["midi"].default is None
+        or fields_by_name["midi"].default_factory is not dc.MISSING
+    )  # type: ignore[misc]
+    # connected_devices should default to a factory (empty set)
+    assert fields_by_name["connected_devices"].default_factory is not dc.MISSING  # type: ignore[misc]
+    # config_path should default to None
+    assert fields_by_name["config_path"].default is None
+
+
+def test_device_apply_context_has_all_eight_fields() -> None:
+    from rig.engine.plugin import DeviceApplyContext
+
+    field_names = [f.name for f in dataclasses.fields(DeviceApplyContext)]
+    expected = {
+        "action",
+        "state",
+        "rig",
+        "dry_run",
+        "confirmation_io",
+        "midi",
+        "connected_devices",
+        "config_path",
+    }
+    assert set(field_names) == expected
 
 
 # ---------------------------------------------------------------------------
@@ -126,3 +250,63 @@ def test_plugin_registry_no_module_level_registrations() -> None:
     assert registry.get("manual") is None
     assert registry.get("midi") is None
     assert registry.get("chase_bliss") is None
+
+
+# ---------------------------------------------------------------------------
+# PluginRegistry model-class registration tests
+# ---------------------------------------------------------------------------
+
+
+def test_plugin_registry_register_model_stores_class() -> None:
+    registry = PluginRegistry()
+
+    class FakeMidiDevice:
+        pass
+
+    registry.register_model("midi", FakeMidiDevice)
+    assert registry.get_model("midi") is FakeMidiDevice
+
+
+def test_plugin_registry_get_model_unregistered_returns_none() -> None:
+    registry = PluginRegistry()
+    assert registry.get_model("unknown") is None
+
+
+def test_plugin_registry_get_model_independent_from_get() -> None:
+    """register_model/get_model are independent from register/get."""
+    registry = PluginRegistry()
+
+    class FakePlugin:
+        pass
+
+    class FakeModelClass:
+        pass
+
+    plugin_stub = object()
+    registry.register("midi", plugin_stub)  # type: ignore[arg-type]
+    registry.register_model("midi", FakeModelClass)
+
+    assert registry.get("midi") is plugin_stub
+    assert registry.get_model("midi") is FakeModelClass
+
+
+def test_plugin_registry_stores_multiple_model_types() -> None:
+    registry = PluginRegistry()
+
+    class FakeAnalog:
+        pass
+
+    class FakeMidi:
+        pass
+
+    class FakeCba:
+        pass
+
+    registry.register_model("manual", FakeAnalog)
+    registry.register_model("midi", FakeMidi)
+    registry.register_model("chase_bliss", FakeCba)
+
+    assert registry.get_model("manual") is FakeAnalog
+    assert registry.get_model("midi") is FakeMidi
+    assert registry.get_model("chase_bliss") is FakeCba
+    assert registry.get_model("controller") is None
