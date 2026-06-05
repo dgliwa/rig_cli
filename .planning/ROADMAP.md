@@ -14,7 +14,7 @@ Three-phase milestone: clean CBA tech-debt first, then introduce Protocol-typed 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: CBA Tech-Debt Cleanup** - Remove private-symbol leakage and raw dict mutation in ChaseBlissApplier before protocol work begins (completed 2026-06-04)
-- [ ] **Phase 2: Engine I/O Decoupling** - Introduce three narrow Protocol ports so the apply engine is fully testable without MIDI hardware
+- [x] **Phase 2: Engine I/O Decoupling** - Introduce three narrow Protocol ports so the apply engine is fully testable without MIDI hardware (completed 2026-06-05)
 - [ ] **Phase 3: Plan Command** - Ship a trustworthy `rig plan` command with correct no_change detection, exit codes, and stable JSON output
 
 ## Phase Details
@@ -33,6 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 1 plan
 
 Plans:
+
 - [x] 01-01-PLAN.md — Extract mark_preset_saved helper, make detect_cba_setup public, inline _is_cba (CBA-01/02/03)
 
 ### Phase 2: Engine I/O Decoupling
@@ -50,8 +51,9 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Create ports.py (Protocols + adapters), fakes.py, update ApplyContext + appliers (DEC-01/02/03/04)
-- [ ] 02-02-PLAN.md — Wire adapters into apply_plan and CLI, fix scene-write bug, rewrite patched tests (DEC-05/06/07)
+
+- [x] 02-01-PLAN.md — Create ports.py (Protocols + adapters), fakes.py, update ApplyContext + appliers (DEC-01/02/03/04)
+- [x] 02-02-PLAN.md — Wire adapters into apply_plan and CLI, fix scene-write bug, rewrite patched tests (DEC-05/06/07)
 
 ### Phase 3: Plan Command
 
@@ -75,5 +77,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. CBA Tech-Debt Cleanup | 1/1 | Complete    | 2026-06-04 |
-| 2. Engine I/O Decoupling | 0/2 | Not started | - |
+| 2. Engine I/O Decoupling | 2/2 | Complete   | 2026-06-05 |
 | 3. Plan Command | 0/TBD | Not started | - |
