@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 3 context gathered
-last_updated: "2026-06-05T01:50:28.336Z"
-last_activity: 2026-06-05
+last_updated: "2026-06-05T12:06:08.847Z"
+last_activity: 2026-06-05 -- Phase 03 execution started
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 3
+  total_plans: 7
   completed_plans: 3
   percent: 40
 ---
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-04)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** Phase 01 — cba-tech-debt-cleanup
+**Current focus:** Phase 03 — core-domain-refactor
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
-Status: Executing Phase 01
-Last activity: 2026-06-05
+Phase: 03 (core-domain-refactor) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 03
+Last activity: 2026-06-05 -- Phase 03 execution started
 
 Progress: [░░░░░░░░░░] 0%
 

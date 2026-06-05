@@ -76,7 +76,7 @@ Plans:
 - [ ] 03-P1-PLAN.md — Add ControllerConfig + DeviceType.CONTROLLER to device.py; controller.py compat shim; migrate sample_rig fixture (D-04, D-06)
 - [ ] 03-P2-PLAN.md — Remove controller/scenes fields from Rig; add apply_order() + compat properties; fix test_models + test_mc6_generator (D-01, D-02, D-03, D-05)
 - [ ] 03-P3-PLAN.md — Update loader to route controller YAML through _parse_device; inject scenes into ControllerConfig; fix test_loader (D-06, D-07)
-- [ ] 03-P4-PLAN.md — Create engine/plugin.py (DevicePlugin Protocol + PluginContext); engine/plugin_registry.py (PluginRegistry empty); tests/test_plugin.py (D-08, D-09, D-10)
+- [x] 03-P4-PLAN.md — Create engine/plugin.py (DevicePlugin Protocol + PluginContext); engine/plugin_registry.py (PluginRegistry empty); tests/test_plugin.py (D-08, D-09, D-10)
 
 ### Phase 4: Plugin Migration
 
@@ -114,6 +114,6 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. CBA Tech-Debt Cleanup | 1/1 | Complete    | 2026-06-04 |
 | 2. Engine I/O Decoupling | 2/2 | Complete    | 2026-06-05 |
-| 3. Core Domain Refactor | 0/4 | Not started | - |
+| 3. Core Domain Refactor | 1/4 | In Progress|  |
 | 4. Plugin Migration | 0/TBD | Not started | - |
 | 5. Dependency Graph & Plan Command | 0/TBD | Not started | - |
