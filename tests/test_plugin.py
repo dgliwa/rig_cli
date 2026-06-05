@@ -3,7 +3,6 @@ from __future__ import annotations
 import dataclasses
 
 from rig.engine.plugin import PluginContext
-
 from rig.engine.state import RigState
 
 # ---------------------------------------------------------------------------
@@ -73,3 +72,57 @@ def test_device_plugin_protocol_missing_method_detected_via_hasattr() -> None:
     assert hasattr(plugin, "plan")
     assert not hasattr(plugin, "diff")
     assert not hasattr(plugin, "apply")
+
+
+# ---------------------------------------------------------------------------
+# PluginRegistry tests
+# ---------------------------------------------------------------------------
+
+from rig.engine.plugin_registry import PluginRegistry  # noqa: E402
+
+
+def test_plugin_registry_empty_on_creation() -> None:
+    registry = PluginRegistry()
+    assert registry.get("manual") is None
+    assert registry.get("midi") is None
+    assert registry.get("chase_bliss") is None
+
+
+def test_plugin_registry_get_unregistered_returns_none() -> None:
+    registry = PluginRegistry()
+    assert registry.get("nonexistent") is None
+
+
+def test_plugin_registry_register_then_get() -> None:
+    registry = PluginRegistry()
+    stub = object()
+    registry.register("manual", stub)  # type: ignore[arg-type]
+    assert registry.get("manual") is stub
+
+
+def test_plugin_registry_overwrite_registration() -> None:
+    registry = PluginRegistry()
+    first = object()
+    second = object()
+    registry.register("midi", first)  # type: ignore[arg-type]
+    registry.register("midi", second)  # type: ignore[arg-type]
+    assert registry.get("midi") is second
+
+
+def test_plugin_registry_get_after_multiple_registrations() -> None:
+    registry = PluginRegistry()
+    a = object()
+    b = object()
+    registry.register("manual", a)  # type: ignore[arg-type]
+    registry.register("midi", b)  # type: ignore[arg-type]
+    assert registry.get("manual") is a
+    assert registry.get("midi") is b
+    assert registry.get("nonexistent") is None
+
+
+def test_plugin_registry_no_module_level_registrations() -> None:
+    """New registry must always start empty — no side effects at import time."""
+    registry = PluginRegistry()
+    assert registry.get("manual") is None
+    assert registry.get("midi") is None
+    assert registry.get("chase_bliss") is None
