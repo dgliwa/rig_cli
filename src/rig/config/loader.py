@@ -5,7 +5,7 @@ import yaml
 
 from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
 from rig.models.controller import Controller, ControllerType, MC6Config
-from rig.models.device import ChaseBlissConfig, Device, DeviceType
+from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, DeviceType
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
@@ -77,6 +77,8 @@ def _load_devices_dir(
             # TODO: get rid of this legacy stuff?
             controller = _parse_controller_legacy(data, mc6_data)
             logger.debug("Loaded controller '%s'", controller.id)
+            # Also register as a Device so it appears in rig.devices and rig.controller
+            devices[data["id"]] = _parse_device(data)
         else:
             device = _parse_device(data)
             devices[device.id] = device
@@ -232,14 +234,20 @@ def load_rig(root_path: str) -> Rig:
     # TODO: I think an overarching theme here is I don't like the implied yaml structure that rig-cli enforces.
     # I want it more terraform-like
 
+    # Wire scenes into the controller device's ControllerConfig so Rig.scenes resolves correctly.
+    # Scenes are "owned" by the controller in the new device-graph model.
+    if scenes:
+        ctrl_device = next((d for d in devices.values() if d.type == DeviceType.CONTROLLER), None)
+        if ctrl_device is not None and isinstance(ctrl_device.config, ControllerConfig):
+            updated_config = ctrl_device.config.model_copy(update={"scenes": scenes})
+            devices[ctrl_device.id] = ctrl_device.model_copy(update={"config": updated_config})
+
     rig = Rig(
         name=rig_data.get("name", ""),
         description=rig_data.get("description"),
         midi_channel=rig_data.get("midi_channel"),
         signal_chain=chain,
         devices=devices,
-        controller=controller,
-        scenes=scenes,
     )
 
     _validate_references(rig)

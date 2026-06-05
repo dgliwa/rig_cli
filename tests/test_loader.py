@@ -43,6 +43,12 @@ def rig_dir(tmp_path):
         "pedals/tumnus/presets/edge.yaml",
         "id: edge\npedal: tumnus\nname: Edge of Breakup\nvalues:\n  Gain: 3.5\n",
     )
+    # Controller device: scenes are wired to ControllerConfig by the loader
+    _write(
+        d,
+        "pedals/mc6.yaml",
+        "id: mc6\nmanufacturer: Morningstar\nmodel: MC6\ntype: controller\nconfig:\n  type: controller\n  midi_channel: 1\n  banks: []\n",
+    )
     _write(d, "scenes/billy-clean.yaml", "name: billy-clean\npresets:\n  brothers: low-gain\n")
     return d
 

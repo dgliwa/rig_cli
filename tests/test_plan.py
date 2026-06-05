@@ -1,7 +1,14 @@
 import json
 
 from rig.engine.plan import compute_plan
-from rig.models.device import ChaseBlissConfig, Device, DeviceType, ManualConfig, MidiConfig
+from rig.models.device import (
+    ChaseBlissConfig,
+    ControllerConfig,
+    Device,
+    DeviceType,
+    ManualConfig,
+    MidiConfig,
+)
 from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
@@ -36,16 +43,25 @@ def _make_rig(scene_presets: dict | None = None) -> Rig:
         type=DeviceType.ANALOG,
         config=ManualConfig(),
     )
+    ctrl = Device(
+        id="mc6",
+        manufacturer="Morningstar",
+        model="MC6",
+        type=DeviceType.CONTROLLER,
+        config=ControllerConfig(
+            midi_channel=1,
+            scenes={
+                "test-scene": Scene(
+                    name="test-scene",
+                    presets=scene_presets or {"hx-stomp": "clean-edge", "brothers": "low-gain"},
+                )
+            },
+        ),
+    )
     return Rig(
         name="test",
         signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
-        devices={"hx-stomp": hx, "brothers": bro, "tumnus": tum},
-        scenes={
-            "test-scene": Scene(
-                name="test-scene",
-                presets=scene_presets or {"hx-stomp": "clean-edge", "brothers": "low-gain"},
-            )
-        },
+        devices={"hx-stomp": hx, "brothers": bro, "tumnus": tum, "mc6": ctrl},
     )
 
 
