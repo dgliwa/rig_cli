@@ -13,13 +13,13 @@
 
 ### Engine Decoupling (#1)
 
-- [ ] **DEC-01**: `ConfirmationIO` Protocol defined — captures user-confirmation calls (`prompt_*`) so appliers can call through an interface rather than directly invoking `interaction.py`
-- [ ] **DEC-02**: `StateWriter` Protocol defined — captures `read_state`/`write_state` calls so `apply_plan` can work against an in-memory fake in tests
-- [ ] **DEC-03**: `MidiConnectionIO` Protocol defined — captures the Phase -1 MIDI port selection prompt in `apply_plan`
-- [ ] **DEC-04**: `ApplyContext` gains a `confirmation_io: ConfirmationIO` field; all three appliers (`AnalogApplier`, `MidiApplier`, `ChaseBlissApplier`) call through it instead of calling `interaction.py` directly
-- [ ] **DEC-05**: `apply_plan` accepts `state_writer: StateWriter` and `midi_connection_io: MidiConnectionIO` parameters; production adapters (`FileStateWriter`, `InteractiveMidiConnectionIO`) wired at CLI boundary in `cli.py`
-- [ ] **DEC-06**: Scene state is only written when at least one device action returned `status == "confirmed"` — eliminates silent `{}` write for skipped-device scenes
-- [ ] **DEC-07**: `tests/fakes.py` provides `InMemoryStateAdapter` and `InMemoryPromptAdapter` that satisfy the Protocols structurally; existing tests that `patch("builtins.input")` are updated to use fakes
+- [x] **DEC-01**: `ConfirmationIO` Protocol defined — captures user-confirmation calls (`prompt_*`) so appliers can call through an interface rather than directly invoking `interaction.py`
+- [x] **DEC-02**: `StateWriter` Protocol defined — captures `read_state`/`write_state` calls so `apply_plan` can work against an in-memory fake in tests
+- [x] **DEC-03**: `MidiConnectionIO` Protocol defined — captures the Phase -1 MIDI port selection prompt in `apply_plan`
+- [x] **DEC-04**: `ApplyContext` gains a `confirmation_io: ConfirmationIO` field; all three appliers (`AnalogApplier`, `MidiApplier`, `ChaseBlissApplier`) call through it instead of calling `interaction.py` directly
+- [x] **DEC-05**: `apply_plan` accepts `state_writer: StateWriter` and `midi_connection_io: MidiConnectionIO` parameters; production adapters (`FileStateWriter`, `InteractiveMidiConnectionIO`) wired at CLI boundary in `cli.py`
+- [x] **DEC-06**: Scene state is only written when at least one device action returned `status == "confirmed"` — eliminates silent `{}` write for skipped-device scenes
+- [x] **DEC-07**: `tests/fakes.py` provides `InMemoryStateAdapter` and `InMemoryPromptAdapter` that satisfy the Protocols structurally; existing tests that `patch("builtins.input")` are updated to use fakes
 
 ### Plan Command (#13)
 
@@ -72,13 +72,13 @@
 | CBA-01 | Phase 1 | Complete |
 | CBA-02 | Phase 1 | Complete |
 | CBA-03 | Phase 1 | Complete |
-| DEC-01 | Phase 2 | Pending |
-| DEC-02 | Phase 2 | Pending |
-| DEC-03 | Phase 2 | Pending |
-| DEC-04 | Phase 2 | Pending |
-| DEC-05 | Phase 2 | Pending |
-| DEC-06 | Phase 2 | Pending |
-| DEC-07 | Phase 2 | Pending |
+| DEC-01 | Phase 2 | Complete |
+| DEC-02 | Phase 2 | Complete |
+| DEC-03 | Phase 2 | Complete |
+| DEC-04 | Phase 2 | Complete |
+| DEC-05 | Phase 2 | Complete |
+| DEC-06 | Phase 2 | Complete |
+| DEC-07 | Phase 2 | Complete |
 | PLAN-01 | Phase 3 | Pending |
 | PLAN-02 | Phase 3 | Pending |
 | PLAN-03 | Phase 3 | Pending |
