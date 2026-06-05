@@ -1,8 +1,8 @@
-# Roadmap: rig-cli — I/O Decoupling & Plan Command
+# Roadmap: rig-cli — I/O Decoupling & Core Architecture
 
 ## Overview
 
-Three-phase milestone: clean CBA tech-debt first, then introduce Protocol-typed I/O ports to make the apply engine testable without hardware, then ship a trustworthy `rig plan` command that previews required changes before apply.
+Five-phase milestone: clean CBA tech-debt (done), decouple apply engine I/O (done), then rebuild the domain around a graph-based device model with a plugin registry, migrate existing appliers to plugins, and ship a trustworthy `rig plan` command driven by the dependency graph.
 
 ## Phases
 
@@ -15,7 +15,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: CBA Tech-Debt Cleanup** - Remove private-symbol leakage and raw dict mutation in ChaseBlissApplier before protocol work begins (completed 2026-06-04)
 - [x] **Phase 2: Engine I/O Decoupling** - Introduce three narrow Protocol ports so the apply engine is fully testable without MIDI hardware (completed 2026-06-05)
-- [ ] **Phase 3: Plan Command** - Ship a trustworthy `rig plan` command with correct no_change detection, exit codes, and stable JSON output
+- [ ] **Phase 3: Core Domain Refactor** - Rebuild the domain around a graph-based device model with a Controller type, config/behavior separation, and a plugin registry interface
+- [ ] **Phase 4: Plugin Migration** - Migrate existing appliers (CBA, MC6, HX Stomp, Analog) to the plugin architecture; CLI and engine route through registry
+- [ ] **Phase 5: Dependency Graph & Plan Command** - Build apply ordering from graph topology, detect unused/missing presets, ship `rig plan` driven by dependency-sorted actions
 
 ## Phase Details
 
@@ -55,17 +57,51 @@ Plans:
 - [x] 02-01-PLAN.md — Create ports.py (Protocols + adapters), fakes.py, update ApplyContext + appliers (DEC-01/02/03/04)
 - [x] 02-02-PLAN.md — Wire adapters into apply_plan and CLI, fix scene-write bug, rewrite patched tests (DEC-05/06/07)
 
-### Phase 3: Plan Command
+### Phase 3: Core Domain Refactor
 
-**Goal**: `rig plan` is a trustworthy, read-only preview of required rig changes with correct no_change detection, CI-friendly exit codes, and stable JSON output
+**Goal**: The rig is modeled as a directed graph of `Device` nodes with `Controller` as a special root type; config objects are pure data; behavior (plan/diff/apply) lives in plugin services registered against a `DevicePlugin` protocol; no existing behavior regresses
 **Depends on**: Phase 2
-**Requirements**: PLAN-01, PLAN-02, PLAN-03, PLAN-04, PLAN-05, PLAN-06, PLAN-07, PLAN-08, PLAN-09, PLAN-10
+**Requirements**: TBD (gather in discuss phase)
 **Success Criteria** (what must be TRUE):
 
-  1. `rig plan` correctly identifies scenes with no drifted preset assignments as unchanged; `compute_diff` no longer marks every scene as changed
-  2. `rig plan` exits non-zero when changes are detected and exits `0` when the rig is up to date; a cold-start warning is printed when `.rig/state.json` does not exist
-  3. `rig plan` prints human-readable output with visual markers (`~` configure, `✓` verify, `⚠` analog, `·` no change) and a summary line; `--format json` emits stable `Plan.model_dump_json()` output; `--show-unchanged` and `--scene <name>` flags work correctly
-  4. `apply` does not re-call `detect_cba_setup` mid-execution — the plan output is the canonical action list consumed by apply without regeneration
+  1. A `DeviceGraph` type models devices as nodes with directed edges; `Controller` is a root-node subtype that owns `scenes`; a device can satisfy both roles (e.g. HX Stomp references its own presets in scenes)
+  2. A `DevicePlugin` protocol defines `plan(device, context)`, `diff(device, context)`, `apply(device, context)` — no behavior lives on domain models
+  3. A `PluginRegistry` maps device config type strings to `DevicePlugin` implementations; existing appliers are not yet migrated (that is Phase 4), but the registry exists and is wirable
+  4. All existing tests pass; the loader produces the new graph structure from existing YAML without requiring config-repo changes
+
+**Plans**: 4 plans
+
+Plans:
+
+- [ ] 03-P1-PLAN.md — Add ControllerConfig + DeviceType.CONTROLLER to device.py; controller.py compat shim; migrate sample_rig fixture (D-04, D-06)
+- [ ] 03-P2-PLAN.md — Remove controller/scenes fields from Rig; add apply_order() + compat properties; fix test_models + test_mc6_generator (D-01, D-02, D-03, D-05)
+- [ ] 03-P3-PLAN.md — Update loader to route controller YAML through _parse_device; inject scenes into ControllerConfig; fix test_loader (D-06, D-07)
+- [ ] 03-P4-PLAN.md — Create engine/plugin.py (DevicePlugin Protocol + PluginContext); engine/plugin_registry.py (PluginRegistry empty); tests/test_plugin.py (D-08, D-09, D-10)
+
+### Phase 4: Plugin Migration
+
+**Goal**: All existing appliers (AnalogApplier, MidiApplier, ChaseBlissApplier, MC6Applier) are re-registered as `DevicePlugin` implementations; the engine routes exclusively through the registry; no direct applier imports remain in CLI or engine
+**Depends on**: Phase 3
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+
+  1. Each applier module exports a `DevicePlugin`-compliant class registered under its config type key
+  2. `apply.py` calls `registry.get(device.config.type).apply(...)` — no `isinstance` dispatch
+  3. All existing apply behavior is preserved end-to-end; test suite passes
+
+**Plans**: TBD
+
+### Phase 5: Dependency Graph & Plan Command
+
+**Goal**: `rig plan` outputs a dependency-sorted, read-only preview of required changes; apply ordering respects graph topology; unused and missing preset references are surfaced
+**Depends on**: Phase 4
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+
+  1. `DeviceGraph.apply_order()` returns devices in topological order (controllers after their dependencies); cycle detection raises a clear error
+  2. `rig plan` identifies unused presets (defined but never referenced in any scene) and missing presets (referenced in scenes but not defined)
+  3. `rig plan` exits non-zero when changes are detected, `0` when up to date; `--format json` emits stable output; cold-start warning when `.rig/state.json` absent
+  4. `rig plan` human-readable output uses visual markers (`~` configure, `✓` verify, `⚠` analog, `·` no change) with a summary line
 
 **Plans**: TBD
 
@@ -78,4 +114,6 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. CBA Tech-Debt Cleanup | 1/1 | Complete    | 2026-06-04 |
 | 2. Engine I/O Decoupling | 2/2 | Complete    | 2026-06-05 |
-| 3. Plan Command | 0/TBD | Not started | - |
+| 3. Core Domain Refactor | 0/4 | Not started | - |
+| 4. Plugin Migration | 0/TBD | Not started | - |
+| 5. Dependency Graph & Plan Command | 0/TBD | Not started | - |
