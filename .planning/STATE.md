@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-06-05T00:41:16.041Z"
+stopped_at: Phase 3 context gathered
+last_updated: "2026-06-05T01:50:28.336Z"
 last_activity: 2026-06-05
 progress:
-  total_phases: 3
+  total_phases: 5
   completed_phases: 2
   total_plans: 3
   completed_plans: 3
-  percent: 67
+  percent: 40
 ---
 
 # Project State
@@ -64,6 +64,7 @@ Recent decisions affecting current work:
 - Decouple engine before adding plan command — clean seam makes plan and apply independently testable
 - Plan command is read-only (no MIDI) — apply is the explicit commit step
 - Three narrow Protocols preferred over one fat Protocol wrapping ApplyContext
+- Phase 3 replanned (2026-06-04): graph-based domain model + plugin registry replaces the original Plan Command phase; Plan Command moved to Phase 5
 
 ### Pending Todos
 
@@ -71,7 +72,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- Research open question: exit code values for `rig plan` — confirm whether `1` = changes, `2` = error before Phase 3 implementation
+None.
 
 ## Deferred Items
 
@@ -81,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-04T21:28:51.839Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-engine-i-o-decoupling/02-CONTEXT.md
+Last session: 2026-06-05T01:50:28.332Z
+Stopped at: Phase 3 context gathered
+Resume file: .planning/phases/03-core-domain-refactor/03-CONTEXT.md
