@@ -114,8 +114,5 @@ class InMemoryMidiConnectionIO:
         device_port: str | None,
     ) -> tuple[str, str | None]:
         if self.result == "confirm" and self.port_name is not None:
-            try:
-                midi.connect(self.port_name, device)
-            except Exception:
-                pass
+            midi.connect(self.port_name, device)
         return (self.result, self.port_name)
