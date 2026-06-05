@@ -10,6 +10,7 @@ from rig.config.errors import ConfigError
 from rig.config.loader import load_rig
 from rig.engine.apply import apply_plan
 from rig.engine.plan import compute_plan
+from rig.engine.ports import FileStateWriter, InteractiveMidiConnectionIO
 from rig.log_setup import setup_logging
 from rig.midi.adapter import MidiManager
 
@@ -35,9 +36,18 @@ def apply(
     midi = MidiManager()
     config_path = str(Path(config).resolve())
     result = compute_plan(rig, root_path=config_path)
+    state_writer = FileStateWriter()
+    midi_connection_io = InteractiveMidiConnectionIO()
     try:
         apply_plan(
-            result, rig=rig, config_path=config_path, dry_run=dry_run, scene=scene, midi=midi
+            result,
+            state_writer=state_writer,
+            midi_connection_io=midi_connection_io,
+            rig=rig,
+            config_path=config_path,
+            dry_run=dry_run,
+            scene=scene,
+            midi=midi,
         )
     finally:
         midi.disconnect_all()
