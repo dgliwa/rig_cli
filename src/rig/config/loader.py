@@ -42,8 +42,14 @@ def _parse_device(data: dict) -> Device:
 
 
 def _parse_controller_legacy(pedal_data: dict, mc6_data: dict) -> Controller:
-    """Build a Controller from the old pedals/mc6.yaml + mc6.yaml layout."""
-    midi_channel = (pedal_data.get("config") or {}).get("midi_channel", 1)
+    """Build a Controller from the old pedals/mc6.yaml + mc6.yaml layout.
+
+    Banks come from the device YAML itself when present (new layout), falling
+    back to the top-level mc6.yaml banks (legacy layout).
+    """
+    device_config = pedal_data.get("config") or {}
+    midi_channel = device_config.get("midi_channel", 1)
+    banks = device_config.get("banks") or mc6_data.get("banks", [])
     return Controller(
         id=pedal_data["id"],
         manufacturer=pedal_data.get("manufacturer", "Morningstar"),
@@ -51,7 +57,7 @@ def _parse_controller_legacy(pedal_data: dict, mc6_data: dict) -> Controller:
         type=ControllerType.MC6,
         config=MC6Config(
             midi_channel=midi_channel,
-            banks=mc6_data.get("banks", []),
+            banks=banks,
         ),
     )
 

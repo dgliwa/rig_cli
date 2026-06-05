@@ -5,6 +5,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
+from rig.models.device import ControllerConfig as ControllerConfig
+
 
 class ControllerType(StrEnum):
     MC6 = "mc6"
