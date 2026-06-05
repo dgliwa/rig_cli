@@ -23,7 +23,7 @@ A single command should bring the physical rig to the exact state described in t
 
 ### Active
 
-- [ ] **Decouple apply engine from I/O** — separate prompt, state-write, and MIDI calls from engine logic so engine can be tested without hardware and reused by alternative frontends (#1)
+- ✓ **Decouple apply engine from I/O** — ConfirmationIO, StateWriter, MidiConnectionIO Protocols in `ports.py`; all appliers route through `ApplyContext.confirmation_io`; zero `builtins.input` patches in tests — Validated in Phase 2: engine-i-o-decoupling (2026-06-05)
 - [ ] **Rig planning engine (`plan` command)** — diff desired scene/preset config against persisted device state and emit a typed, structured action list (configure / verify / analog / no_change) in text and JSON formats (#13)
 
 ### Validated in Phase 1: CBA Tech-Debt Cleanup (2026-06-04)
