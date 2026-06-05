@@ -73,6 +73,11 @@ def _merge_presets(devices_dir: Path, devices: dict[str, Device]) -> dict[str, D
             continue
 
         # TODO: Maybe everything underneath this is unnecessary? I think the inline presets is the way to go
+        if device.type == DeviceType.CONTROLLER:
+            # Controllers carry scenes in their config, not preset files.
+            updated[device_id] = device
+            continue
+
         preset_dir = devices_dir / device_id / "presets"
         if not preset_dir.is_dir():
             updated[device_id] = device
