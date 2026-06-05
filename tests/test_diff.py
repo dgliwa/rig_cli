@@ -1,7 +1,7 @@
 import json
 
 from rig.engine.diff import compute_diff, format_diff
-from rig.models.device import ChaseBlissConfig, Device, DeviceType, MidiConfig
+from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, DeviceType, MidiConfig
 from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
@@ -32,15 +32,24 @@ def _make_rig() -> Rig:
         config=ChaseBlissConfig(midi_channel=3),
         presets=[DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)],
     )
+    ctrl = Device(
+        id="mc6",
+        manufacturer="Morningstar",
+        model="MC6",
+        type=DeviceType.CONTROLLER,
+        config=ControllerConfig(
+            midi_channel=1,
+            scenes={
+                "test-scene": Scene(
+                    name="test-scene", presets={"hx-stomp": "clean-edge", "brothers": "low-gain"}
+                )
+            },
+        ),
+    )
     return Rig(
         name="test",
         signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
-        devices={"hx-stomp": hx, "brothers": bro},
-        scenes={
-            "test-scene": Scene(
-                name="test-scene", presets={"hx-stomp": "clean-edge", "brothers": "low-gain"}
-            )
-        },
+        devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
     )
 
 

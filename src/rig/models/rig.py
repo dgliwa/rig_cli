@@ -4,8 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from rig.models.controller import Controller
-from rig.models.device import Device
+from rig.models.device import ControllerConfig, Device, DeviceType
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
@@ -16,8 +15,6 @@ class Rig(BaseModel):
     description: str | None = None
     signal_chain: list[SignalChainPosition]
     devices: dict[str, Device] = {}
-    controller: Controller | None = None
-    scenes: dict[str, Scene] = {}
     midi_channel: int | None = None
 
     # --- backward-compat properties used by code pending migration ---
@@ -25,6 +22,27 @@ class Rig(BaseModel):
     @property
     def pedals(self) -> dict[str, Device]:
         return self.devices
+
+    @property
+    def _controller_device(self) -> Device | None:
+        """Return the first Device with type==CONTROLLER, or None."""
+        for device in self.devices.values():
+            if device.type == DeviceType.CONTROLLER:
+                return device
+        return None
+
+    @property
+    def controller(self) -> Device | None:
+        """Compat property: returns the CONTROLLER device, or None."""
+        return self._controller_device
+
+    @property
+    def scenes(self) -> dict[str, Scene]:
+        """Compat property: returns scenes from ControllerConfig when a CONTROLLER device exists."""
+        ctrl = self._controller_device
+        if ctrl is not None and isinstance(ctrl.config, ControllerConfig):
+            return ctrl.config.scenes
+        return {}
 
     @property
     def digital_presets(self) -> dict[str, list[DigitalPreset]]:
@@ -49,9 +67,36 @@ class Rig(BaseModel):
 
     @property
     def mc6(self) -> dict[str, Any]:
-        if self.controller:
-            return {"banks": self.controller.config.banks}
+        ctrl = self._controller_device
+        if ctrl is not None and isinstance(ctrl.config, ControllerConfig):
+            return {"banks": ctrl.config.banks}
         return {}
+
+    def apply_order(self) -> list[Device]:
+        """Return devices in apply order: signal-chain devices by position, off-chain devices, then controller last."""
+        if not self.devices:
+            return []
+
+        ctrl = self._controller_device
+        chain_positions: dict[str, int] = {sc.device_ref: sc.position for sc in self.signal_chain}
+
+        in_chain: list[Device] = []
+        off_chain: list[Device] = []
+
+        for device in self.devices.values():
+            if ctrl is not None and device.id == ctrl.id:
+                continue
+            if device.id in chain_positions:
+                in_chain.append(device)
+            else:
+                off_chain.append(device)
+
+        in_chain.sort(key=lambda d: chain_positions[d.id])
+
+        result = in_chain + off_chain
+        if ctrl is not None:
+            result.append(ctrl)
+        return result
 
 
 # Backward-compat alias
