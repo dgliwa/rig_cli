@@ -28,6 +28,8 @@ def _read_yaml(path: Path):
     try:
         with open(path) as f:
             data = yaml.safe_load(f)
+        if data is None:
+            raise ParseError(f"Empty or blank YAML file: {path}")
         logger.debug("Loaded YAML from %s (%d bytes)", path, path.stat().st_size)
         return data
     except yaml.YAMLError as e:
