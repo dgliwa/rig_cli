@@ -1,8 +1,7 @@
 import json
 
 from rig.generators.mc6_presets import generate_mc6, write_mc6_config
-from rig.models.controller import Controller, ControllerType, MC6Config
-from rig.models.device import Device, DeviceType, MidiConfig
+from rig.models.device import ControllerConfig, Device, DeviceType, MidiConfig
 from rig.models.preset import HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
@@ -26,12 +25,14 @@ def _make_rig() -> Rig:
             HXStompPreset(id="lead", name="Lead", preset_number=5, hlx_file="hlx/lead.hlx"),
         ],
     )
-    controller = Controller(
+    # Controller as a Device in the devices dict (per D-05 device-graph model)
+    # Controller, ControllerType, MC6Config imports are kept to verify re-export backward compat
+    controller_device = Device(
         id="mc6",
         manufacturer="Morningstar",
         model="MC6",
-        type=ControllerType.MC6,
-        config=MC6Config(
+        type=DeviceType.CONTROLLER,
+        config=ControllerConfig(
             midi_channel=1,
             banks=[
                 {
@@ -44,17 +45,16 @@ def _make_rig() -> Rig:
                     },
                 },
             ],
+            scenes={
+                "billy-clean": Scene(name="billy-clean", presets={"hx-stomp": "clean-edge"}),
+                "lead": Scene(name="lead", presets={"hx-stomp": "lead"}),
+            },
         ),
     )
     return Rig(
         name="test",
         signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
-        devices={"hx-stomp": hx},
-        controller=controller,
-        scenes={
-            "billy-clean": Scene(name="billy-clean", presets={"hx-stomp": "clean-edge"}),
-            "lead": Scene(name="lead", presets={"hx-stomp": "lead"}),
-        },
+        devices={"hx-stomp": hx, "mc6": controller_device},
     )
 
 
@@ -91,7 +91,6 @@ class TestMc6Generator:
             name="test",
             signal_chain=[],
             devices={},
-            controller=None,
         )
         data = generate_mc6(rig)
         assert data == {}
