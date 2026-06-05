@@ -1,49 +1,66 @@
 ---
 phase: 03-core-domain-refactor
-reviewed: 2026-06-05T00:00:00Z
+reviewed: 2026-06-05T18:27:30Z
 depth: standard
-files_reviewed: 13
+files_reviewed: 14
 files_reviewed_list:
-  - src/rig/models/device.py
-  - src/rig/models/controller.py
-  - src/rig/models/rig.py
   - src/rig/config/loader.py
   - src/rig/engine/plugin.py
   - src/rig/engine/plugin_registry.py
-  - tests/test_models.py
-  - tests/test_loader.py
-  - tests/test_plugin.py
-  - tests/test_mc6_generator.py
-  - tests/test_diff.py
-  - tests/test_plan.py
+  - src/rig/models/controller.py
+  - src/rig/models/device.py
+  - src/rig/models/rig.py
+  - tests/fixtures/sample_rig/devices/mc6.yaml
   - tests/test_apply.py
+  - tests/test_diff.py
+  - tests/test_loader.py
+  - tests/test_mc6_generator.py
+  - tests/test_models.py
+  - tests/test_plan.py
+  - tests/test_plugin.py
 findings:
-  critical: 3
+  critical: 2
   warning: 5
-  info: 0
-  total: 8
+  info: 3
+  total: 10
 status: issues_found
 ---
 
 # Phase 03: Code Review Report
 
-**Reviewed:** 2026-06-05
+**Reviewed:** 2026-06-05T18:27:30Z
 **Depth:** standard
-**Files Reviewed:** 13
+**Files Reviewed:** 14
 **Status:** issues_found
 
 ## Summary
 
-The phase 3 refactor successfully consolidates the controller model into the `Device` graph (via `ControllerConfig` and `DeviceType.CONTROLLER`), introduces the `DevicePlugin` Protocol and `PluginRegistry` scaffolding, and adds reasonable test coverage. The new models, plugin protocol, and registry are structurally sound. However, three critical defects exist: two in the loader that can cause crashes or silent data loss, and one misleading test whose assertion passes vacuously and does not cover the behavior implied by its name. Five additional warnings degrade type safety, dead code hygiene, and test reliability.
+This phase refactored the domain model to unify the controller (MC6) as a `Device` with `ControllerConfig`, replacing the standalone `Controller` class, and introduced `DevicePlugin` / `PluginRegistry` scaffolding for Phase 4. The structural changes are sound: the discriminated union in `Device.config` correctly handles all four config types, `Rig.scenes` properly delegates to `ControllerConfig.scenes`, and the `apply_order()` logic correctly places the controller last.
+
+Two BLOCKER-level bugs were found: one in the loader that crashes on empty YAML files, and one dead test that silently never runs. Five additional warnings cover a vacuous test assertion, an untestable direct `input()` call, a type mismatch in `ControllerConfig.scenes`, a latent `_merge_presets` branch that misclassifies `CONTROLLER` preset directories, and an exception-swallowing pattern in the test fake. Three info-level items cover dead code and a naming confusion in `controller.py`.
+
+All 101 test executions pass with the current code.
+
+---
 
 ## Critical Issues
 
-### CR-01: Empty YAML files cause TypeError instead of ParseError
+### CR-01: `yaml.safe_load` return value never checked for `None` — crashes on empty YAML
 
-**File:** `src/rig/config/loader.py:23`
-**Issue:** `_read_yaml` calls `yaml.safe_load()` which returns `None` for empty or comment-only YAML files. The result is passed directly to `Device(**data)`, `Scene(**data)`, or `AnalogPreset(**data)` without a None guard. Python raises `TypeError: argument after ** must be a mapping, not NoneType` — an unhandled exception that does not produce the expected `ParseError` and gives the user no actionable message.
+**File:** `src/rig/config/loader.py:176-206`
+**Issue:** `yaml.safe_load()` returns `None` when the file is empty or contains only whitespace. `_read_yaml` returns this `None` directly without any guard. The callers on lines 176-177 then call `.get()` on `None`:
 
-**Fix:**
+```python
+rig_data = _read_yaml(_resolve(root, "rig.yaml"))       # can be None
+signal_data = _read_yaml(_resolve(root, "signal-chain.yaml"))  # can be None
+...
+name=rig_data.get("name", ""),    # AttributeError: 'NoneType' object has no attribute 'get'
+```
+
+The same crash path exists in `_parse_device` (`Device(**data)` where `data` is `None`) and in `_load_scenes` (`Scene(**data)` where `data` is `None`). The user sees an unhandled `AttributeError` with no context about which file is the problem.
+
+**Fix:** Add a `None` check and raise `ParseError` with a clear message in `_read_yaml`, after the `yaml.safe_load` call:
+
 ```python
 def _read_yaml(path: Path):
     ...
@@ -52,7 +69,6 @@ def _read_yaml(path: Path):
             data = yaml.safe_load(f)
         if data is None:
             raise ParseError(f"Empty or blank YAML file: {path}")
-        ...
         return data
     except yaml.YAMLError as e:
         ...
@@ -60,154 +76,209 @@ def _read_yaml(path: Path):
 
 ---
 
-### CR-02: Scenes are silently dropped when no controller device is present
-
-**File:** `src/rig/config/loader.py:195-201`
-**Issue:** In `load_rig`, scene YAML files are loaded correctly into the `scenes` dict. They are then wired into the `ControllerConfig` of the first device with `DeviceType.CONTROLLER`. If no such device exists (e.g., a user does not define an MC6), the scenes dict is discarded without any warning or error. Downstream code reads `rig.scenes` via `Rig._controller_device`, which returns `{}`. As a consequence, `_validate_references` skips all scene-level validation and the caller sees an empty scene set — a silent data loss.
-
-**Fix:** Raise a warning (or error) when scenes are loaded but no controller device exists:
-```python
-if scenes:
-    ctrl_device = next((d for d in devices.values() if d.type == DeviceType.CONTROLLER), None)
-    if ctrl_device is None:
-        logger.warning(
-            "Loaded %d scene(s) but no CONTROLLER device found — scenes will not be applied",
-            len(scenes),
-        )
-        # or: raise ValidationError("Scenes defined but no controller device found")
-    elif isinstance(ctrl_device.config, ControllerConfig):
-        updated_config = ctrl_device.config.model_copy(update={"scenes": scenes})
-        devices[ctrl_device.id] = ctrl_device.model_copy(update={"config": updated_config})
-```
-
----
-
-### CR-03: `test_clean_plan_prints_no_changes` tests the wrong plan state
-
-**File:** `tests/test_apply.py:68-75`
-**Issue:** The test name implies it verifies that a **clean** plan prints "No changes needed." In reality, `compute_plan(config)` is called without `root_path`, so the state is empty. Every scene is therefore `"new"` and `plan.status` is `"changes_detected"` — not `"clean"`. The assertion `assert "No changes needed" not in captured.out` passes trivially because `apply_plan` never prints that message when status is `changes_detected`. The actual behavior of a clean plan is never tested.
-
-**Fix:** Provide a state file that matches the desired config so `plan.status == "clean"`, then assert the expected message:
-```python
-def test_clean_plan_prints_no_changes(self, tmp_path, capsys):
-    config = _make_config()
-    _write_state_file(
-        tmp_path,
-        {
-            "devices": {
-                "hx-stomp": {"last_preset": "clean-edge"},
-                "brothers": {
-                    "last_preset": "low-gain",
-                    "channel_established": True,
-                    "midi_channel": 3,
-                    "presets_saved": {"low-gain": True},
-                    "registration_done": True,
-                },
-            },
-            "scenes": {"test-scene": {}},
-        },
-    )
-    plan = compute_plan(config, root_path=str(tmp_path))
-    assert plan.status == "clean"
-    state_adapter = InMemoryStateAdapter()
-    midi_io = InMemoryMidiConnectionIO()
-    apply_plan(plan, state_writer=state_adapter, midi_connection_io=midi_io, dry_run=True)
-    captured = capsys.readouterr()
-    assert "No changes needed" in captured.out
-```
-
----
-
-## Warnings
-
-### WR-01: `invalid_control_rejected` is never collected by pytest — missing `test_` prefix
+### CR-02: `invalid_control_rejected` test never runs — missing `test_` prefix
 
 **File:** `tests/test_models.py:87`
-**Issue:** The method `def invalid_control_rejected(self):` inside `TestPedalModels` is missing the `test_` prefix. pytest never collects or runs it. The validation it is meant to assert (that an empty `name` is rejected by Pydantic) is not tested at all.
+**Issue:** The method is named `invalid_control_rejected` instead of `test_invalid_control_rejected`. Pytest's default collection rule requires the `test_` prefix. This test is silently skipped by the runner on every CI run, meaning the `Control(name="", type=ControlType.KNOB)` rejection behavior is completely untested.
 
-**Fix:**
+```python
+def invalid_control_rejected(self):   # <- never collected by pytest
+    with pytest.raises(ValidationError):
+        Control(name="", type=ControlType.KNOB)
+```
+
+**Fix:** Rename the method:
+
 ```python
 def test_invalid_control_rejected(self):
     with pytest.raises(ValidationError):
         Control(name="", type=ControlType.KNOB)
 ```
 
+Note: Once renamed, this test may itself fail because Pydantic `BaseModel` does not reject empty strings by default. Verify that a validator enforcing non-empty `name` exists on `Control`, or add one.
+
 ---
 
-### WR-02: `ControllerConfig.scenes` typed as `dict[str, Any]` but semantically holds `dict[str, Scene]`
+## Warnings
 
-**File:** `src/rig/models/device.py:84`
-**Issue:** `ControllerConfig.scenes: dict[str, Any] = {}` accepts and stores `Scene` objects correctly at construction time, but after a `model_dump()` / `Device(**dumped)` round-trip, the stored values degrade to plain `dict`s. Any code that calls `.presets` on those values after such a round-trip would get `AttributeError: 'dict' object has no attribute 'presets'`. Even without a round-trip, the `Any` type forces callers to add their own isinstance checks and suppresses static type errors.
+### WR-01: `test_clean_plan_prints_no_changes` is vacuously true — tests nothing meaningful
 
-**Fix:** Use the correct type and add a `model_validator` or `field_validator` to coerce dicts back to `Scene` objects:
+**File:** `tests/test_apply.py:68-75`
+**Issue:** The test name says "clean plan prints no changes" but the plan computed inside is **not** clean. `compute_plan(config)` with no `root_path` produces `status="changes_detected"` (no state file, all scenes are new). `apply_plan` only prints `"No changes needed"` when `plan.status == "clean"`, so the assertion `assert "No changes needed" not in captured.out` is always true regardless of any code change. The actual "clean plan" output path has zero test coverage.
+
+**Fix:** Set up state that matches the config so the plan is genuinely clean, then assert that the message IS printed:
+
 ```python
-from rig.models.scene import Scene  # import here or in TYPE_CHECKING block
+def test_clean_plan_prints_no_changes_message(self, tmp_path, capsys):
+    config = _make_config()
+    _write_state_file(tmp_path, {
+        "devices": {
+            "hx-stomp": {"last_preset": "clean-edge"},
+            "brothers": {
+                "channel_established": True,
+                "midi_channel": 3,
+                "presets_saved": {"low-gain": True},
+                "registration_done": True,
+            },
+        },
+        "scenes": {"test-scene": {}},
+    })
+    plan = compute_plan(config, root_path=str(tmp_path))
+    assert plan.status == "clean"
+    state_adapter = InMemoryStateAdapter()
+    midi_io = InMemoryMidiConnectionIO()
+    apply_plan(plan, state_writer=state_adapter, midi_connection_io=midi_io, dry_run=False)
+    captured = capsys.readouterr()
+    assert "No changes needed" in captured.out
+```
+
+---
+
+### WR-02: `_merge_presets` falls through to `DigitalPreset` for `CONTROLLER` device type
+
+**File:** `src/rig/config/loader.py:83-88`
+**Issue:** The preset type dispatch in `_merge_presets` handles `ANALOG` and `MODELER` explicitly, but the `else` branch catches both `DIGITAL` and `CONTROLLER`:
+
+```python
+if device.type == DeviceType.ANALOG:
+    presets.append(AnalogPreset(**data))
+elif device.type == DeviceType.MODELER:
+    presets.append(HXStompPreset(**data))
+else:
+    presets.append(DigitalPreset(**data))  # silently catches CONTROLLER too
+```
+
+If a user creates `devices/mc6/presets/something.yaml`, the loader silently tries to parse it as a `DigitalPreset` (requiring `preset_number`, `id`, `name`). This produces a confusing Pydantic `ValidationError` rather than a clear message that controller devices do not use filesystem presets.
+
+**Fix:** Add an explicit guard for `CONTROLLER`:
+
+```python
+elif device.type == DeviceType.CONTROLLER:
+    logger.warning(
+        "Controller device '%s' has a presets directory — skipping (controllers do not use presets).",
+        device_id,
+    )
+    continue
+else:
+    presets.append(DigitalPreset(**data))
+```
+
+---
+
+### WR-03: `ControllerConfig.scenes` typed as `dict[str, Any]` while `Rig.scenes` returns `dict[str, Scene]`
+
+**File:** `src/rig/models/device.py:84` / `src/rig/models/rig.py:40`
+**Issue:** `ControllerConfig.scenes` is declared as `dict[str, Any]` but the `Rig.scenes` property promises `dict[str, Scene]`:
+
+```python
+# device.py
+scenes: dict[str, Any] = {}   # accepts anything at validation time
+
+# rig.py
+def scenes(self) -> dict[str, Scene]:   # lies about the actual stored type
+    ...
+    return ctrl.config.scenes           # is actually dict[str, Any]
+```
+
+Any caller of `rig.scenes` believes it is receiving `Scene` objects with no static-analysis protection against misuse. Pydantic would not catch a non-`Scene` value being injected into `ControllerConfig.scenes` at validation time.
+
+**Fix:** Tighten `ControllerConfig.scenes` to `dict[str, Scene]`. If the import creates a circular dependency, use a `TYPE_CHECKING` guard with a string annotation, or restructure the import.
+
+```python
+from rig.models.scene import Scene
 
 class ControllerConfig(DeviceConfig):
-    type: Literal["controller"] = "controller"
-    banks: list[dict[str, Any]] = []
+    ...
     scenes: dict[str, Scene] = {}
 ```
-Note: this requires resolving the import (currently `scene` is not imported in `device.py`). Alternatively, keep `dict[str, Any]` but document the degradation risk and add a round-trip test.
 
 ---
 
-### WR-03: `diff.py` initializes `"pedals"` key that is never populated — dead code
+### WR-04: `MC6Applier.apply_banks` calls `input()` directly, bypassing `ConfirmationIO`
 
-**File:** `src/rig/engine/diff.py:19-21`
-**Issue:** `compute_diff` returns `{"scenes": ..., "pedals": {}}`. The `"pedals"` key is initialized but no code populates it. No consumer in `src/` reads `diff["pedals"]`. This is dead code that creates a misleading API contract — callers may expect per-pedal diff data that does not exist.
+**File:** `src/rig/engine/appliers/mc6.py:48`
+**Issue:** The MC6 bank-programming loop calls `input()` directly to pause for user navigation:
 
-**Fix:** Remove the unused key:
 ```python
-changes: dict[str, Any] = {
-    "scenes": {},
-}
+console.print(f"\n  Navigate the MC6 to [bold]Bank {bank_num}[/bold], then press Enter...")
+input()
 ```
-If per-device diff is planned, add a TODO comment and leave it out of the return value until implemented.
+
+Every other user interaction in the codebase routes through `ctx.confirmation_io` (the `ConfirmationIO` protocol). This lone `input()` call makes `apply_banks` untestable without monkeypatching `builtins.input`, violates the I/O isolation boundary established by `InMemoryPromptAdapter`, and means the MC6 programming path has no unit-level coverage.
+
+**Fix:** Add a `prompt_mc6_navigate` method to the `ConfirmationIO` protocol and implement it in both `RichConfirmationIO` (using `input()`) and `InMemoryPromptAdapter` (returning immediately). Route the pause through `ctx.confirmation_io.prompt_mc6_navigate(bank_num)`.
 
 ---
 
-### WR-04: Empty `TYPE_CHECKING` block in `device.py` — unused import
+### WR-05: `InMemoryMidiConnectionIO.prompt_connect` swallows all exceptions silently
+
+**File:** `tests/fakes.py:114-117`
+**Issue:** The fake's `prompt_connect` catches all exceptions from `midi.connect` and discards them without logging:
+
+```python
+try:
+    midi.connect(self.port_name, device)
+except Exception:
+    pass
+```
+
+If `midi.connect` raises for an unexpected reason, the fake still returns `("confirm", port_name)` and the test proceeds as though the connection succeeded. Tests asserting on MIDI state (e.g., `state.devices["brothers"].midi_port == "USB Interface"`) can produce false positives — the assertion passes because the fake pretended success even though the underlying connection failed.
+
+**Fix:** At minimum, log the swallowed exception so test failures surface in CI output:
+
+```python
+except Exception as exc:
+    logger.debug(
+        "InMemoryMidiConnectionIO: connect suppressed (expected in unit tests): %s", exc
+    )
+```
+
+---
+
+## Info
+
+### IN-01: Dead `if TYPE_CHECKING: pass` block in `device.py`
 
 **File:** `src/rig/models/device.py:10-11`
-**Issue:** `TYPE_CHECKING` is imported from `typing` and used in an `if TYPE_CHECKING: pass` block that contains only `pass`. This is dead code: nothing is guarded under `TYPE_CHECKING`, making the import of `TYPE_CHECKING` itself unused.
+**Issue:** The `TYPE_CHECKING` guard exists but contains only `pass`. It performs no work and was likely left over from a refactor that moved imports out of the guard:
 
-**Fix:** Remove the dead block entirely:
 ```python
-# Before:
-from typing import TYPE_CHECKING, Annotated, Any, Literal
-...
 if TYPE_CHECKING:
     pass
-
-# After:
-from typing import Annotated, Any, Literal
 ```
+
+`TYPE_CHECKING` is also imported at line 4 but serves no purpose here.
+
+**Fix:** Remove both the `TYPE_CHECKING` import and the empty `if` block entirely.
 
 ---
 
-### WR-05: `MidiConfig.get_cc_params` raises `ValueError` for non-numeric string parameter values
+### IN-02: `controller.py` `MC6Config` and `Controller` classes are orphaned legacy models
 
-**File:** `src/rig/models/device.py:67`
-**Issue:** `int(v)` is called on values from `preset.parameters` which is typed `dict[str, float | str | bool]`. If a parameter value is a non-numeric string (e.g., `"on"`, `"half"`) — a valid YAML value — `int()` raises an unhandled `ValueError`. This propagates out of `detect_cba_setup` in the plan engine with no user-facing message.
+**File:** `src/rig/models/controller.py`
+**Issue:** `controller.py` defines `MC6Config` (with `type: Literal["mc6"]`) and `Controller` (a `BaseModel` holding `config: MC6Config`). Neither class is part of the discriminated union in `Device.config`, neither is instantiated by the loader, and neither participates in any plan or apply logic. They exist only as re-exports for backward compatibility from `models/__init__.py`.
 
-**Fix:** Guard the conversion and skip or log the invalid value:
+The conceptual confusion is real: `MC6Config.type = "mc6"` vs `ControllerConfig.type = "controller"` — two different Literal values for the same physical device — and both `MC6Config.banks` and `ControllerConfig.banks` exist as parallel fields.
+
+**Fix:** Mark these explicitly as deprecated shims pending removal. Add a module-level comment: `# Deprecated: Controller and MC6Config are legacy stubs. Use ControllerConfig from rig.models.device.` Schedule removal once all callers are confirmed migrated.
+
+---
+
+### IN-03: `PluginContext.rig` annotation is `Rig` but tests pass `object()`
+
+**File:** `src/rig/engine/plugin.py:21` / `tests/test_plugin.py:23,31`
+**Issue:** `PluginContext` is a `@dataclass` with `rig: Rig`, but the tests pass `object()` as the `rig` value:
+
 ```python
-def get_cc_params(self, parameters: dict[str, Any]) -> list[dict[str, int]]:
-    by_name = {c.name: c for c in self.controls if c.midi_cc is not None}
-    result = []
-    for k, v in parameters.items():
-        if k not in by_name:
-            continue
-        try:
-            result.append({"cc": by_name[k].midi_cc, "value": int(v)})
-        except (TypeError, ValueError):
-            logger.warning("Parameter '%s' value '%s' cannot be coerced to int; skipping", k, v)
-    return result
+ctx = PluginContext(state=RigState(), rig=object(), dry_run=True)
 ```
+
+Dataclasses do not enforce types at runtime, so this works today. However, if mypy or a type-checking CI step is added, these tests will fail immediately. More importantly, the tests do not validate that `PluginContext` works correctly with an actual `Rig` instance, leaving any `rig`-consuming logic in future `DevicePlugin` implementations without test coverage at the context level.
+
+**Fix:** Pass a minimal `Rig(name="test", signal_chain=[])` instance in the tests, or create a `_make_rig()` helper consistent with the pattern used in other test files.
 
 ---
 
-_Reviewed: 2026-06-05_
+_Reviewed: 2026-06-05T18:27:30Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
