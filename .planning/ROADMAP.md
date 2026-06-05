@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: CBA Tech-Debt Cleanup** - Remove private-symbol leakage and raw dict mutation in ChaseBlissApplier before protocol work begins (completed 2026-06-04)
 - [x] **Phase 2: Engine I/O Decoupling** - Introduce three narrow Protocol ports so the apply engine is fully testable without MIDI hardware (completed 2026-06-05)
-- [ ] **Phase 3: Core Domain Refactor** - Rebuild the domain around a graph-based device model with a Controller type, config/behavior separation, and a plugin registry interface
+- [x] **Phase 3: Core Domain Refactor** - Rebuild the domain around a graph-based device model with a Controller type, config/behavior separation, and a plugin registry interface (completed 2026-06-05)
 - [ ] **Phase 4: Plugin Migration** - Migrate existing appliers (CBA, MC6, HX Stomp, Analog) to the plugin architecture; CLI and engine route through registry
 - [ ] **Phase 5: Dependency Graph & Plan Command** - Build apply ordering from graph topology, detect unused/missing presets, ship `rig plan` driven by dependency-sorted actions
 
@@ -73,7 +73,7 @@ Plans:
 
 Plans:
 
-- [ ] 03-P1-PLAN.md — Add ControllerConfig + DeviceType.CONTROLLER to device.py; controller.py compat shim; migrate sample_rig fixture (D-04, D-06)
+- [x] 03-P1-PLAN.md — Add ControllerConfig + DeviceType.CONTROLLER to device.py; controller.py compat shim; migrate sample_rig fixture (D-04, D-06)
 - [x] 03-P2-PLAN.md — Remove controller/scenes fields from Rig; add apply_order() + compat properties; fix test_models + test_mc6_generator (D-01, D-02, D-03, D-05)
 - [x] 03-P3-PLAN.md — Update loader to route controller YAML through _parse_device; inject scenes into ControllerConfig; fix test_loader (D-06, D-07)
 - [x] 03-P4-PLAN.md — Create engine/plugin.py (DevicePlugin Protocol + PluginContext); engine/plugin_registry.py (PluginRegistry empty); tests/test_plugin.py (D-08, D-09, D-10)
@@ -114,6 +114,6 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. CBA Tech-Debt Cleanup | 1/1 | Complete    | 2026-06-04 |
 | 2. Engine I/O Decoupling | 2/2 | Complete    | 2026-06-05 |
-| 3. Core Domain Refactor | 3/4 | In Progress|  |
+| 3. Core Domain Refactor | 4/4 | Complete    | 2026-06-05 |
 | 4. Plugin Migration | 0/TBD | Not started | - |
 | 5. Dependency Graph & Plan Command | 0/TBD | Not started | - |
