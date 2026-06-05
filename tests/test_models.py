@@ -4,6 +4,7 @@ from pydantic import ValidationError
 from rig.models.controller import ControllerType
 from rig.models.device import (
     Control,
+    ControllerConfig,
     ControlType,
     Device,
     DeviceType,
@@ -17,6 +18,48 @@ from rig.models.preset import (
 from rig.models.rig import Rig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
+
+
+class TestControllerConfig:
+    def test_device_type_controller_value(self):
+        assert DeviceType.CONTROLLER == "controller"
+
+    def test_controller_config_defaults(self):
+        cfg = ControllerConfig()
+        assert cfg.type == "controller"
+        assert cfg.banks == []
+        assert cfg.scenes == {}
+
+    def test_device_with_controller_type_constructs(self):
+        device = Device(
+            id="mc6",
+            manufacturer="Morningstar",
+            model="MC6",
+            type=DeviceType.CONTROLLER,
+            config={"type": "controller", "midi_channel": 1, "banks": [], "scenes": {}},
+        )
+        assert device.type == DeviceType.CONTROLLER
+        assert isinstance(device.config, ControllerConfig)
+
+    def test_controller_config_round_trips_via_discriminated_union(self):
+        device = Device(
+            id="mc6",
+            manufacturer="Morningstar",
+            model="MC6",
+            type=DeviceType.CONTROLLER,
+            config=ControllerConfig(midi_channel=1, banks=[], scenes={}),
+        )
+        dumped = device.model_dump()
+        restored = Device(**dumped)
+        assert restored.type == DeviceType.CONTROLLER
+        assert isinstance(restored.config, ControllerConfig)
+
+    def test_controller_py_backward_compat_exports(self):
+        from rig.models.controller import Controller, ControllerType, MC6Config
+
+        assert ControllerType.MC6 == "mc6"
+        assert MC6Config is not None
+        assert Controller is not None
 
 
 class TestPedalModels:
