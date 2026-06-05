@@ -4,7 +4,6 @@ from pathlib import Path
 import yaml
 
 from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
-from rig.models.controller import Controller, ControllerType, MC6Config
 from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, DeviceType
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
@@ -41,50 +40,23 @@ def _parse_device(data: dict) -> Device:
     return Device(**data)
 
 
-def _parse_controller_legacy(pedal_data: dict, mc6_data: dict) -> Controller:
-    """Build a Controller from the old pedals/mc6.yaml + mc6.yaml layout.
-
-    Banks come from the device YAML itself when present (new layout), falling
-    back to the top-level mc6.yaml banks (legacy layout).
-    """
-    device_config = pedal_data.get("config") or {}
-    midi_channel = device_config.get("midi_channel", 1)
-    banks = device_config.get("banks") or mc6_data.get("banks", [])
-    return Controller(
-        id=pedal_data["id"],
-        manufacturer=pedal_data.get("manufacturer", "Morningstar"),
-        model=pedal_data.get("model", "MC6"),
-        type=ControllerType.MC6,
-        config=MC6Config(
-            midi_channel=midi_channel,
-            banks=banks,
-        ),
-    )
-
-
-def _load_devices_dir(
-    devices_dir: Path, mc6_data: dict
-) -> tuple[
-    dict[str, Device], Controller | None
-]:  # TODO: Once we resolve the legacy stuff this can just return devices by id?
-    """Load all device YAML files; route controller-typed entries to Controller."""
+def _load_devices_dir(devices_dir: Path) -> dict[str, Device]:
+    """Load all device YAML files; Pydantic discriminated union handles all device types including controller."""
     devices: dict[str, Device] = {}
-    controller: Controller | None = None
     logger.debug("Loading device definitions from: %s", devices_dir)
     for path in sorted(devices_dir.glob("*.yaml")):
         data = _read_yaml(path)
-        if data.get("type") == "controller":
-            # TODO: get rid of this legacy stuff?
-            controller = _parse_controller_legacy(data, mc6_data)
-            logger.debug("Loaded controller '%s'", controller.id)
-            # Also register as a Device so it appears in rig.devices and rig.controller
-            devices[data["id"]] = _parse_device(data)
-        else:
-            device = _parse_device(data)
-            devices[device.id] = device
-            logger.debug("Loaded device '%s' (%s %s)", device.id, device.manufacturer, device.model)
+        device = _parse_device(data)
+        devices[device.id] = device
+        logger.debug(
+            "Loaded device '%s' (%s %s, type: %s)",
+            device.id,
+            device.manufacturer,
+            device.model,
+            device.type,
+        )
     logger.info("Loaded %d devices", len(devices))
-    return devices, controller
+    return devices
 
 
 # TODO: if we require presets be inline this is not necessary?
@@ -213,21 +185,7 @@ def load_rig(root_path: str) -> Rig:
 
     chain = [SignalChainPosition(**pos) for pos in signal_data.get("chain", [])]
 
-    # Load MC6 bank config from controller.yaml (new) or mc6.yaml (legacy)
-    # TODO: The entire rig should be resolved from a single file for now
-    controller_path = _resolve(root, "controller.yaml")
-    mc6_path = _resolve(root, "mc6.yaml")
-
-    # TODO: The controller _may_ be an mc6 or something else. This should be a more flexible domain modeling solution
-    if controller_path.exists():
-        mc6_data = _read_yaml(controller_path) or {}
-        # controller.yaml holds the full Controller definition
-        controller: Controller | None = Controller(**mc6_data) if mc6_data else None
-        devices, _ = _load_devices_dir(devices_dir, {})
-    else:
-        mc6_data = _read_yaml(mc6_path) if mc6_path.exists() else {}
-        devices, controller = _load_devices_dir(devices_dir, mc6_data)
-
+    devices = _load_devices_dir(devices_dir)
     devices = _merge_presets(devices_dir, devices)
     scenes = _load_scenes(scenes_dir)
 

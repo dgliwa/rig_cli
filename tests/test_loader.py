@@ -173,3 +173,16 @@ class TestLoadRig:
         assert len(hx_presets) == 1
         assert hx_presets[0].preset_number == 12
         assert hx_presets[0].hlx_file == "hlx/clean-edge.hlx"
+
+    def test_loads_controller_as_device(self, rig_dir):
+        from rig.models.device import DeviceType
+
+        config = load_rig(str(rig_dir))
+        assert "mc6" in config.devices
+        assert config.devices["mc6"].type == DeviceType.CONTROLLER
+        assert config.controller is not None
+        assert config.controller.id == "mc6"
+
+    def test_scenes_accessible_via_controller(self, rig_dir):
+        config = load_rig(str(rig_dir))
+        assert "billy-clean" in config.scenes
