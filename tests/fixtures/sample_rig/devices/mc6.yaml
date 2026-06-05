@@ -1,9 +1,9 @@
 id: mc6
 manufacturer: Morningstar
 model: MC6
-type: mc6
+type: controller
 config:
-  type: mc6
+  type: controller
   midi_channel: 1
   banks:
     - bank: 1

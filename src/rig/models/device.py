@@ -15,6 +15,7 @@ class DeviceType(StrEnum):
     DIGITAL = "digital"
     ANALOG = "analog"
     MODELER = "modeler"
+    CONTROLLER = "controller"
 
 
 class ControlType(StrEnum):
@@ -75,6 +76,14 @@ class ChaseBlissConfig(MidiConfig):
     type: Literal["chase_bliss"] = "chase_bliss"
 
 
+class ControllerConfig(DeviceConfig):
+    """Configuration for a MIDI controller device (e.g. MC6)."""
+
+    type: Literal["controller"] = "controller"
+    banks: list[dict[str, Any]] = []
+    scenes: dict[str, Any] = {}
+
+
 Preset = AnalogPreset | DigitalPreset | HXStompPreset
 
 
@@ -83,7 +92,10 @@ class Device(BaseModel):
     manufacturer: str
     model: str
     type: DeviceType
-    config: Annotated[ManualConfig | MidiConfig | ChaseBlissConfig, Field(discriminator="type")]
+    config: Annotated[
+        ManualConfig | MidiConfig | ChaseBlissConfig | ControllerConfig,
+        Field(discriminator="type"),
+    ]
     # TODO: Can we just use Preset here?
     presets: list[AnalogPreset | DigitalPreset | HXStompPreset] = Field(default_factory=list)
     image: str | None = None
