@@ -92,7 +92,12 @@ class InMemoryStateAdapter:
 
 
 class InMemoryMidiConnectionIO:
-    """Fake MidiConnectionIO that returns a configured (result, port_name) pair."""
+    """Fake MidiConnectionIO that returns a configured (result, port_name) pair.
+
+    When ``result`` is ``"confirm"`` and ``port_name`` is not None, also calls
+    ``midi.connect(port_name, device)`` so that subsequent MIDI sends work on the
+    mock MIDI port — mirroring what the production ``prompt_midi_connect`` does.
+    """
 
     def __init__(self, result: str = "confirm", port_name: str | None = "FakePort") -> None:
         self.result = result
@@ -105,4 +110,9 @@ class InMemoryMidiConnectionIO:
         midi: MidiManager,
         device_port: str | None,
     ) -> tuple[str, str | None]:
+        if self.result == "confirm" and self.port_name is not None:
+            try:
+                midi.connect(self.port_name, device)
+            except Exception:
+                pass
         return (self.result, self.port_name)
