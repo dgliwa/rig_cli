@@ -42,10 +42,7 @@ class MC6Applier:
 
         for bank in banks:
             bank_num = bank["bank"]
-            console.print(
-                f"\n  Navigate the MC6 to [bold]Bank {bank_num}[/bold], then press Enter..."
-            )
-            input()
+            ctx.confirmation_io.prompt_mc6_navigate(bank_num)
 
             for switch_label, switch_data in bank.get("switches", {}).items():
                 scene_name = switch_data.get("scene", "")

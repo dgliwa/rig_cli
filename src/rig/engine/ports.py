@@ -51,6 +51,8 @@ class ConfirmationIO(Protocol):
 
     def prompt_cba_register(self, device: str, scene_refs: list[str]) -> _ConfirmResult: ...
 
+    def prompt_mc6_navigate(self, bank_num: int) -> _ConfirmResult: ...
+
 
 class StateWriter(Protocol):
     """Protocol for reading and writing rig state."""
@@ -104,6 +106,10 @@ class RichConfirmationIO:
 
     def prompt_cba_register(self, device: str, scene_refs: list[str]) -> _ConfirmResult:
         return prompt_cba_register(device, scene_refs)
+
+    def prompt_mc6_navigate(self, bank_num: int) -> _ConfirmResult:
+        input(f"  Navigate the MC6 to Bank {bank_num}, then press Enter...")
+        return "confirm"
 
 
 class FileStateWriter:
