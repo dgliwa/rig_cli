@@ -84,7 +84,7 @@ class TestPedalModels:
     def test_controller_type_enum_values(self):
         assert ControllerType.MC6.value == "mc6"
 
-    def invalid_control_rejected(self):
+    def test_invalid_control_rejected(self):
         with pytest.raises(ValidationError):
             Control(name="", type=ControlType.KNOB)
 
