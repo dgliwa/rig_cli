@@ -199,12 +199,104 @@ class TestSignalChainModel:
         assert pos.pedal_ref == "tumnus"
 
 
+def _make_controller_device(scenes: dict | None = None) -> Device:
+    """Helper: build a Device with DeviceType.CONTROLLER and ControllerConfig."""
+    return Device(
+        id="mc6",
+        manufacturer="Morningstar",
+        model="MC6",
+        type=DeviceType.CONTROLLER,
+        config=ControllerConfig(midi_channel=1, banks=[], scenes=scenes or {}),
+    )
+
+
+def _make_analog_device(device_id: str) -> Device:
+    """Helper: build a minimal analog device."""
+    return Device(
+        id=device_id,
+        manufacturer="Wampler",
+        model="Tumnus",
+        type=DeviceType.ANALOG,
+        config=ManualConfig(controls=[]),
+    )
+
+
 class TestRigConfig:
     def test_rig_config_minimal(self):
         config = Rig(name="Test", signal_chain=[])
         assert config.name == "Test"
 
-    def test_rig_config_with_scenes(self):
+    def test_rig_scenes_returns_empty_when_no_controller(self):
+        rig = Rig(name="Test", signal_chain=[], devices={})
+        assert rig.scenes == {}
+
+    def test_rig_scenes_returns_controller_config_scenes(self):
         scene = Scene(name="test", presets={"hx-stomp": "x"})
-        config = Rig(name="Test", signal_chain=[], scenes={"test": scene})
-        assert config.scenes["test"].name == "test"
+        ctrl = _make_controller_device(scenes={"test": scene})
+        rig = Rig(name="Test", signal_chain=[], devices={"mc6": ctrl})
+        assert rig.scenes["test"].name == "test"
+
+    def test_rig_controller_returns_none_when_absent(self):
+        rig = Rig(name="Test", signal_chain=[], devices={})
+        assert rig.controller is None
+
+    def test_rig_controller_returns_controller_device(self):
+        ctrl = _make_controller_device()
+        rig = Rig(name="Test", signal_chain=[], devices={"mc6": ctrl})
+        assert rig.controller is not None
+        assert rig.controller.id == "mc6"
+        assert rig.controller.type == DeviceType.CONTROLLER
+
+
+class TestApplyOrder:
+    def test_apply_order_empty_devices_returns_empty(self):
+        rig = Rig(name="Test", signal_chain=[], devices={})
+        assert rig.apply_order() == []
+
+    def test_apply_order_no_controller_returns_devices_by_position(self):
+        d1 = _make_analog_device("tumnus")
+        d2 = _make_analog_device("brothers")
+        rig = Rig(
+            name="Test",
+            signal_chain=[
+                SignalChainPosition(device_ref="brothers", position=2),
+                SignalChainPosition(device_ref="tumnus", position=1),
+            ],
+            devices={"tumnus": d1, "brothers": d2},
+        )
+        order = rig.apply_order()
+        assert [d.id for d in order] == ["tumnus", "brothers"]
+
+    def test_apply_order_controller_comes_last(self):
+        d1 = _make_analog_device("tumnus")
+        ctrl = _make_controller_device()
+        rig = Rig(
+            name="Test",
+            signal_chain=[
+                SignalChainPosition(device_ref="tumnus", position=1),
+            ],
+            devices={"tumnus": d1, "mc6": ctrl},
+        )
+        order = rig.apply_order()
+        assert [d.id for d in order] == ["tumnus", "mc6"]
+
+    def test_apply_order_device_not_in_chain_after_chain_ordered(self):
+        d1 = _make_analog_device("tumnus")
+        d2 = _make_analog_device("extra")
+        rig = Rig(
+            name="Test",
+            signal_chain=[
+                SignalChainPosition(device_ref="tumnus", position=1),
+            ],
+            devices={"tumnus": d1, "extra": d2},
+        )
+        order = rig.apply_order()
+        assert order[0].id == "tumnus"
+        assert order[1].id == "extra"
+
+    def test_apply_order_only_controller_returns_controller(self):
+        ctrl = _make_controller_device()
+        rig = Rig(name="Test", signal_chain=[], devices={"mc6": ctrl})
+        order = rig.apply_order()
+        assert len(order) == 1
+        assert order[0].id == "mc6"
