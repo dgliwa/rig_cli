@@ -275,7 +275,6 @@ class MC6Device(BaseModel):
     config: Any
     type: DeviceType = DeviceType.CONTROLLER
     presets: list[Any] = Field(default_factory=list)
-    banks: list[dict] = []
 
     def plan(self, ctx: PluginContext) -> object:
         raise NotImplementedError
@@ -298,13 +297,13 @@ class MC6Device(BaseModel):
 
         device_id = ctx.action.device
 
-        if not self.banks or ctx.midi is None:
+        if not getattr(self.config, "banks", None) or ctx.midi is None:
             return DeviceApplyResult(device=device_id, status="skipped")
 
         mc6_port = ctx.state.devices.get("mc6", DeviceState()).midi_port
 
         if ctx.dry_run:
-            for bank in self.banks:
+            for bank in self.config.banks:
                 for switch_label, switch_data in bank.get("switches", {}).items():
                     scene_name = switch_data.get("scene", "")
                     console.print(
@@ -324,7 +323,7 @@ class MC6Device(BaseModel):
 
         update_device_state(ctx.state, "mc6", midi_port=port_name)
 
-        for bank in self.banks:
+        for bank in self.config.banks:
             bank_num = bank["bank"]
             ctx.confirmation_io.prompt_mc6_navigate(bank_num)
 
