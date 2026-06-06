@@ -10,20 +10,13 @@ from rig.engine.appliers.base import (
     mark_preset_saved,
     update_device_state,
 )
-from rig.engine.appliers.midi_device import MidiApplier
-from rig.engine.plan import CbaSetupAction, DeviceAction, detect_cba_setup
+from rig.engine.plan import CbaSetupAction, detect_cba_setup
 
 logger = logging.getLogger(__name__)
 console = Console()
 
-_midi_applier = MidiApplier()
-
 
 class ChaseBlissApplier:
-    def apply_scene(self, action: DeviceAction, ctx: ApplyContext) -> DeviceApplyResult:
-        """Delegate CBA scene apply to MidiApplier — it's just a PC message."""
-        return _midi_applier.apply_scene(action, ctx)
-
     def apply_setup(
         self,
         actions: list[CbaSetupAction],
