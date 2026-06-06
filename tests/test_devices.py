@@ -6,6 +6,7 @@ the Device Protocol and are registered in a default PluginRegistry instance.
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -14,6 +15,8 @@ from rig.engine.plan.models import DeviceAction
 from rig.engine.plugin import DeviceApplyContext, PluginContext
 from rig.engine.state import RigState
 from tests.fakes import InMemoryPromptAdapter
+
+FIXTURE_PATH = Path(__file__).parent / "fixtures" / "sample_rig"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -324,6 +327,23 @@ def test_mc6_device_apply_dry_run_with_banks_returns_skipped() -> None:
     # dry_run with midi=None: apply_banks returns early
     ctx.midi = None
     result = dev.apply(ctx)
+    assert result.device == "mc6"
+
+
+def test_mc6_device_apply_dry_run_uses_config_banks() -> None:
+    """Verify apply() reads banks from config.banks (not the removed banks field)."""
+    from rig.config.loader import load_rig
+    from rig.engine.devices import MC6Device
+
+    rig = load_rig(str(FIXTURE_PATH))
+    mc6 = rig.devices["mc6"]
+    assert isinstance(mc6, MC6Device)
+    # Fixture has banks populated in config — proves loader wired data correctly
+    assert mc6.config.banks
+
+    ctx = _make_apply_ctx(device_id="mc6", preset_name="", dry_run=True)
+    ctx.midi = None
+    result = mc6.apply(ctx)
     assert result.device == "mc6"
 
 
