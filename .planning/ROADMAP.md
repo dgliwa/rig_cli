@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: CBA Tech-Debt Cleanup** - Remove private-symbol leakage and raw dict mutation in ChaseBlissApplier before protocol work begins (completed 2026-06-04)
 - [x] **Phase 2: Engine I/O Decoupling** - Introduce three narrow Protocol ports so the apply engine is fully testable without MIDI hardware (completed 2026-06-05)
 - [x] **Phase 3: Core Domain Refactor** - Rebuild the domain around a graph-based device model with a Controller type, config/behavior separation, and a plugin registry interface (completed 2026-06-05)
-- [ ] **Phase 4: Plugin Migration** - Migrate existing appliers (CBA, MC6, HX Stomp, Analog) to the plugin architecture; CLI and engine route through registry
+- [x] **Phase 4: Plugin Migration** - Migrate existing appliers (CBA, MC6, HX Stomp, Analog) to the plugin architecture; CLI and engine route through registry (completed 2026-06-06)
 - [ ] **Phase 5: Dependency Graph & Plan Command** - Build apply ordering from graph topology, detect unused/missing presets, ship `rig plan` driven by dependency-sorted actions
 
 ## Phase Details
@@ -115,5 +115,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | 1. CBA Tech-Debt Cleanup | 1/1 | Complete    | 2026-06-04 |
 | 2. Engine I/O Decoupling | 2/2 | Complete    | 2026-06-05 |
 | 3. Core Domain Refactor | 4/4 | Complete    | 2026-06-05 |
-| 4. Plugin Migration | 2/3 | In Progress|  |
+| 4. Plugin Migration | 3/3 | Complete   | 2026-06-06 |
 | 5. Dependency Graph & Plan Command | 0/TBD | Not started | - |
