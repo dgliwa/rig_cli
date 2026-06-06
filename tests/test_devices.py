@@ -305,8 +305,9 @@ def test_mc6_device_diff_raises_not_implemented() -> None:
 
 def test_mc6_device_apply_no_banks_is_noop() -> None:
     from rig.engine.devices import MC6Device
+    from rig.models.device import ControllerConfig
 
-    dev = MC6Device(id="mc6", name="MC6 MkII", config=object(), banks=[])
+    dev = MC6Device(id="mc6", name="MC6 MkII", config=ControllerConfig(midi_channel=1, banks=[]))
     ctx = _make_apply_ctx(device_id="mc6", preset_name="", dry_run=True)
     result = dev.apply(ctx)
     # MC6 apply with no banks returns a skipped/noop result
@@ -315,9 +316,10 @@ def test_mc6_device_apply_no_banks_is_noop() -> None:
 
 def test_mc6_device_apply_dry_run_with_banks_returns_skipped() -> None:
     from rig.engine.devices import MC6Device
+    from rig.models.device import ControllerConfig
 
     banks = [{"bank": 1, "switches": {"A": {"scene": "Scene1"}}}]
-    dev = MC6Device(id="mc6", name="MC6 MkII", config=object(), banks=banks)
+    dev = MC6Device(id="mc6", name="MC6 MkII", config=ControllerConfig(midi_channel=1, banks=banks))
     ctx = _make_apply_ctx(device_id="mc6", preset_name="", dry_run=True)
     # dry_run with midi=None: apply_banks returns early
     ctx.midi = None
