@@ -13,6 +13,8 @@ class DeviceAction(BaseModel):
     preset_number: int | None = None
     midi_channel: int | None = None
     instructions: list[str] = []
+    before: str | None = None
+    after: str | None = None
 
 
 class ScenePlan(BaseModel):
@@ -36,3 +38,5 @@ class Plan(BaseModel):
     status: Literal["clean", "changes_detected"]
     scenes: dict[str, ScenePlan] = {}
     cba_setup: list[CbaSetupAction] = []
+    missing_refs: list[str] = []
+    unused_presets: list[str] = []
