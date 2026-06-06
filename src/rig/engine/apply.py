@@ -11,13 +11,16 @@ from rig.engine.appliers.base import (
     DeviceApplyResult,
     update_device_state,
 )
-from rig.engine.appliers.registry import get_cba_applier, get_mc6_applier, get_scene_applier
+from rig.engine.appliers.chase_bliss import ChaseBlissApplier
 from rig.engine.plan import Plan
+from rig.engine.plugin import DeviceApplyContext
 from rig.engine.ports import ConfirmationIO, MidiConnectionIO, RichConfirmationIO, StateWriter
 from rig.engine.state import DeviceState, RigState
 from rig.interaction.midi import collect_midi_devices
 from rig.midi.adapter import MidiManager
 from rig.models.rig import Rig
+
+_cba_applier = ChaseBlissApplier()
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -124,7 +127,7 @@ def apply_plan(
         logger.info("CBA setup phase: %d action(s)", len(plan.cba_setup))
         console.print("\n[bold]Chase Bliss Setup Phase[/bold]")
 
-    cba_setup_result = get_cba_applier().apply_setup(plan.cba_setup, ctx)
+    cba_setup_result = _cba_applier.apply_setup(plan.cba_setup, ctx)
     if cba_setup_result is None:
         # User cancelled during CBA setup
         return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
@@ -155,10 +158,26 @@ def apply_plan(
 
         for action in sp.device_actions:
             device = rig.devices.get(action.device) if rig else None
-            config_type = device.config.type if device else "midi"
 
-            applier = get_scene_applier(config_type)
-            action_result = applier.apply_scene(action, ctx)
+            if device is None or not hasattr(device, "apply"):
+                logger.warning(
+                    "Device '%s' not found or missing apply() — skipping action", action.device
+                )
+                action_result = DeviceApplyResult(
+                    device=action.device, status="skipped", preset=action.preset_name
+                )
+            else:
+                device_ctx = DeviceApplyContext(
+                    action=action,
+                    state=ctx.state,
+                    rig=rig,
+                    dry_run=ctx.dry_run,
+                    confirmation_io=ctx.confirmation_io,
+                    midi=ctx.midi,
+                    connected_devices=ctx.connected_devices,
+                    config_path=ctx.config_path,
+                )
+                action_result = device.apply(device_ctx)
 
             if action_result.error == "quit":
                 console.print("[red]Apply cancelled by user[/red]")
@@ -187,10 +206,29 @@ def apply_plan(
 
     # --- Phase 2: MC6 programming ---
     if rig and rig.controller and not scene:
-        mc6_banks = rig.controller.config.banks
-        if mc6_banks and midi:
+        mc6_device = rig.controller
+        mc6_banks = mc6_device.config.banks if hasattr(mc6_device.config, "banks") else []
+        if mc6_banks and midi and hasattr(mc6_device, "apply"):
             console.print("\n[bold]MC6 Programming Phase[/bold]")
-            get_mc6_applier().apply_banks(mc6_banks, ctx)
+            from rig.engine.plan.models import DeviceAction
+
+            mc6_action = DeviceAction(
+                device=mc6_device.id,
+                device_type="controller",
+                status="configure",
+                preset_name="",
+            )
+            mc6_ctx = DeviceApplyContext(
+                action=mc6_action,
+                state=ctx.state,
+                rig=rig,
+                dry_run=ctx.dry_run,
+                confirmation_io=ctx.confirmation_io,
+                midi=ctx.midi,
+                connected_devices=ctx.connected_devices,
+                config_path=ctx.config_path,
+            )
+            mc6_device.apply(mc6_ctx)
             if state.devices.get("mc6"):
                 state_modified = True
 

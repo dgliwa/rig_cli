@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from rig.engine.apply import apply_plan
+from rig.engine.devices import ChaseBlissDevice, MidiDevice
 from rig.engine.plan import compute_plan
 from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, DeviceType, MidiConfig
 from rig.models.preset import DigitalPreset, HXStompPreset
@@ -12,10 +13,8 @@ from tests.fakes import InMemoryMidiConnectionIO, InMemoryPromptAdapter, InMemor
 
 
 def _make_config() -> Rig:
-    hx = Device(
+    hx = MidiDevice(
         id="hx-stomp",
-        manufacturer="Line6",
-        model="HX Stomp",
         type=DeviceType.MODELER,
         config=MidiConfig(midi_channel=1),
         presets=[
@@ -27,10 +26,8 @@ def _make_config() -> Rig:
             )
         ],
     )
-    bro = Device(
+    bro = ChaseBlissDevice(
         id="brothers",
-        manufacturer="CBA",
-        model="Brothers",
         type=DeviceType.DIGITAL,
         config=ChaseBlissConfig(midi_channel=3),
         presets=[DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)],
@@ -117,6 +114,7 @@ class TestApplyPlan:
             state_writer=state_adapter,
             midi_connection_io=midi_io,
             confirmation_io=prompt_io,
+            rig=config,
             config_path=str(tmp_path),
             dry_run=False,
         )
