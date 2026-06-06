@@ -28,3 +28,10 @@ class PluginRegistry:
 
     def get_model(self, config_type: str) -> type | None:
         return self._model_classes.get(config_type)
+
+
+def get_registry() -> PluginRegistry:
+    """Return the default PluginRegistry instance with all four device types registered."""
+    from rig.engine.devices import default_registry  # lazy to avoid circular import
+
+    return default_registry
