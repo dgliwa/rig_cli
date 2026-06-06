@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Engine I/O Decoupling** - Introduce three narrow Protocol ports so the apply engine is fully testable without MIDI hardware (completed 2026-06-05)
 - [x] **Phase 3: Core Domain Refactor** - Rebuild the domain around a graph-based device model with a Controller type, config/behavior separation, and a plugin registry interface (completed 2026-06-05)
 - [x] **Phase 4: Plugin Migration** - Migrate existing appliers (CBA, MC6, HX Stomp, Analog) to the plugin architecture; CLI and engine route through registry (completed 2026-06-06)
-- [ ] **Phase 5: Dependency Graph & Plan Command** - Build apply ordering from graph topology, detect unused/missing presets, ship `rig plan` driven by dependency-sorted actions
+- [x] **Phase 5: Dependency Graph & Plan Command** - Build apply ordering from graph topology, detect unused/missing presets, ship `rig plan` driven by dependency-sorted actions (completed 2026-06-06)
 
 ## Phase Details
 
@@ -116,4 +116,4 @@ Phases execute in numeric order: 1 → 2 → 3
 | 2. Engine I/O Decoupling | 2/2 | Complete    | 2026-06-05 |
 | 3. Core Domain Refactor | 4/4 | Complete    | 2026-06-05 |
 | 4. Plugin Migration | 4/4 | Complete    | 2026-06-06 |
-| 5. Dependency Graph & Plan Command | 0/TBD | Not started | - |
+| 5. Dependency Graph & Plan Command | 5/5 | Complete   | 2026-06-06 |
