@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from rig.models.device import ControllerConfig, Device, DeviceType
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
@@ -11,10 +11,14 @@ from rig.models.signal_chain import SignalChainPosition
 
 
 class Rig(BaseModel):
+    # arbitrary_types_allowed so concrete Device plugin types (AnalogDevice, MidiDevice, etc.)
+    # can be stored alongside the legacy Device model during the P3 migration.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     name: str
     description: str | None = None
     signal_chain: list[SignalChainPosition]
-    devices: dict[str, Device] = {}
+    devices: dict[str, Any] = {}
     midi_channel: int | None = None
 
     # --- backward-compat properties used by code pending migration ---

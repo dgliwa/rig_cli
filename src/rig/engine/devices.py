@@ -5,6 +5,10 @@ the Device Protocol as Pydantic BaseModel subclasses.  Each type carries its own
 id/name/config and delegates apply() to the logic previously in the applier classes.
 
 plan() and diff() raise NotImplementedError — Phase 5 fills these in.
+
+Phase 4 P3: Extra fields allowed (extra="allow") so instances accept the full
+device YAML structure (manufacturer, model, type, presets, etc.) without breaking
+existing call sites that read those attributes.
 """
 
 from __future__ import annotations
@@ -12,12 +16,14 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from rich.console import Console
 
 from rig.engine.appliers.base import DeviceApplyResult, update_device_state
 from rig.engine.plugin import DeviceApplyContext, PluginContext
 from rig.engine.plugin_registry import PluginRegistry
+from rig.models.device import DeviceType
+from rig.models.preset import DigitalPreset, HXStompPreset
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -32,19 +38,27 @@ class AnalogDevice(BaseModel):
     """Manual (analog) device — knobs and switches set by hand.
 
     apply() replicates AnalogApplier.apply_scene logic; plan/diff deferred to Phase 5.
+    extra="allow" so the full device YAML (manufacturer, model, type, presets, etc.)
+    is accepted and accessible; Pydantic coerces DeviceType strings automatically.
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
     id: str
-    name: str
+    name: str = ""
     config: Any
+    type: DeviceType = DeviceType.ANALOG
+    presets: list[Any] = Field(default_factory=list)
 
     def plan(self, ctx: PluginContext) -> object:
         raise NotImplementedError
 
     def diff(self, ctx: PluginContext) -> object:
         raise NotImplementedError
+
+    def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
+        """Analog devices have no MIDI — always returns None."""
+        return None
 
     def apply(self, ctx: DeviceApplyContext) -> DeviceApplyResult:
         action = ctx.action
@@ -84,19 +98,41 @@ class MidiDevice(BaseModel):
     """MIDI-controlled device — sends PC messages.
 
     apply() replicates MidiApplier.apply_scene logic; plan/diff deferred to Phase 5.
+    extra="allow" so the full device YAML is accepted and accessible.
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
     id: str
-    name: str
+    name: str = ""
     config: Any
+    type: DeviceType = DeviceType.DIGITAL
+    presets: list[Any] = Field(default_factory=list)
 
     def plan(self, ctx: PluginContext) -> object:
         raise NotImplementedError
 
     def diff(self, ctx: PluginContext) -> object:
         raise NotImplementedError
+
+    def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
+        """Return a PC command dict for the given preset_id, or None if not applicable."""
+        ch = self.config.midi_channel if self.config is not None else None
+        if ch is None:
+            return None
+        for preset in self.presets:
+            if (
+                preset.id == preset_id
+                and isinstance(preset, (DigitalPreset, HXStompPreset))
+                and preset.preset_number is not None
+            ):
+                return {
+                    "type": "pc",
+                    "channel": ch,
+                    "value": preset.preset_number,
+                    "label": f"{self.id}: {preset_id}",
+                }
+        return None
 
     def apply(self, ctx: DeviceApplyContext) -> DeviceApplyResult:
         action = ctx.action
@@ -177,13 +213,16 @@ class ChaseBlissDevice(BaseModel):
 
     3-phase CBA setup (establish_channel / build_preset / register_scenes) remains in
     ChaseBlissApplier for now; Phase 4 only migrates scene-level apply.
+    extra="allow" so the full device YAML is accepted and accessible.
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
     id: str
-    name: str
+    name: str = ""
     config: Any
+    type: DeviceType = DeviceType.DIGITAL
+    presets: list[Any] = Field(default_factory=list)
 
     # Shared MidiDevice apply logic — CBA scene switching is just a PC message.
     _midi_device: MidiDevice = MidiDevice(id="", name="", config=None)
@@ -193,6 +232,25 @@ class ChaseBlissDevice(BaseModel):
 
     def diff(self, ctx: PluginContext) -> object:
         raise NotImplementedError
+
+    def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
+        """Return a PC command dict for the given preset_id (same as MidiDevice)."""
+        ch = self.config.midi_channel if self.config is not None else None
+        if ch is None:
+            return None
+        for preset in self.presets:
+            if (
+                preset.id == preset_id
+                and isinstance(preset, (DigitalPreset, HXStompPreset))
+                and preset.preset_number is not None
+            ):
+                return {
+                    "type": "pc",
+                    "channel": ch,
+                    "value": preset.preset_number,
+                    "label": f"{self.id}: {preset_id}",
+                }
+        return None
 
     def apply(self, ctx: DeviceApplyContext) -> DeviceApplyResult:
         return self._midi_device.apply(ctx)
@@ -207,13 +265,16 @@ class MC6Device(BaseModel):
     """Morningstar MC6 MIDI controller device.
 
     apply() replicates MC6Applier.apply_banks logic inline; plan/diff deferred to Phase 5.
+    extra="allow" so the full device YAML is accepted and accessible.
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
     id: str
-    name: str
+    name: str = ""
     config: Any
+    type: DeviceType = DeviceType.CONTROLLER
+    presets: list[Any] = Field(default_factory=list)
     banks: list[dict] = []
 
     def plan(self, ctx: PluginContext) -> object:
@@ -221,6 +282,10 @@ class MC6Device(BaseModel):
 
     def diff(self, ctx: PluginContext) -> object:
         raise NotImplementedError
+
+    def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
+        """MC6 is a controller — it programs other devices, not a target itself."""
+        return None
 
     def apply(self, ctx: DeviceApplyContext) -> DeviceApplyResult:
         from rig.engine.state import DeviceState

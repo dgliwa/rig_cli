@@ -1,9 +1,11 @@
 import logging
 from pathlib import Path
+from typing import Any
 
 import yaml
 
 from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
+from rig.engine.plugin_registry import get_registry
 from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, DeviceType
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
@@ -37,14 +39,23 @@ def _read_yaml(path: Path):
         raise ParseError(f"Invalid YAML in {path}: {e}")
 
 
-def _parse_device(data: dict) -> Device:
-    # TODO:
-    return Device(**data)
+def _parse_device(data: dict):
+    config_data = data.get("config") or {}
+    config_type = config_data.get("type") if isinstance(config_data, dict) else None
+    model_class = get_registry().get_model(config_type)
+    if model_class is None:
+        raise ValidationError(
+            f"Unknown device config type '{config_type}' — is the plugin registered?"
+        )
+    # Parse the config using Device's discriminated union so the config field is a typed
+    # model (MidiConfig, ChaseBlissConfig, etc.) rather than a raw dict.
+    temp = Device(**data)
+    return model_class(**{**data, "config": temp.config})
 
 
-def _load_devices_dir(devices_dir: Path) -> dict[str, Device]:
-    """Load all device YAML files; Pydantic discriminated union handles all device types including controller."""
-    devices: dict[str, Device] = {}
+def _load_devices_dir(devices_dir: Path) -> dict[str, Any]:
+    """Load all device YAML files; registry-driven dispatch produces concrete plugin device types."""
+    devices: dict[str, Any] = {}
     logger.debug("Loading device definitions from: %s", devices_dir)
     for path in sorted(devices_dir.glob("*.yaml")):
         data = _read_yaml(path)
@@ -53,8 +64,8 @@ def _load_devices_dir(devices_dir: Path) -> dict[str, Device]:
         logger.debug(
             "Loaded device '%s' (%s %s, type: %s)",
             device.id,
-            device.manufacturer,
-            device.model,
+            getattr(device, "manufacturer", ""),
+            getattr(device, "model", ""),
             device.type,
         )
     logger.info("Loaded %d devices", len(devices))
@@ -62,9 +73,9 @@ def _load_devices_dir(devices_dir: Path) -> dict[str, Device]:
 
 
 # TODO: if we require presets be inline this is not necessary?
-def _merge_presets(devices_dir: Path, devices: dict[str, Device]) -> dict[str, Device]:
+def _merge_presets(devices_dir: Path, devices: dict[str, Any]) -> dict[str, Any]:
     """Merge filesystem presets onto device objects (inline presets take priority)."""
-    updated: dict[str, Device] = {}
+    updated: dict[str, Any] = {}
     for device_id, device in devices.items():
         if device.presets:
             # Inline presets already present; no directory loading needed
