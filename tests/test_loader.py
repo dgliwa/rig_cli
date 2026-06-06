@@ -186,3 +186,54 @@ class TestLoadRig:
     def test_scenes_accessible_via_controller(self, rig_dir):
         config = load_rig(str(rig_dir))
         assert "billy-clean" in config.scenes
+
+
+class TestRegistryDispatch:
+    """Loader produces concrete plugin device types via registry-driven dispatch."""
+
+    def test_manual_config_produces_analog_device(self, rig_dir):
+        from rig.engine.devices import AnalogDevice
+
+        config = load_rig(str(rig_dir))
+        assert isinstance(config.devices["tumnus"], AnalogDevice)
+
+    def test_midi_config_produces_midi_device(self, rig_dir):
+        from rig.engine.devices import MidiDevice
+
+        config = load_rig(str(rig_dir))
+        assert isinstance(config.devices["brothers"], MidiDevice)
+
+    def test_controller_config_produces_mc6_device(self, rig_dir):
+        from rig.engine.devices import MC6Device
+
+        config = load_rig(str(rig_dir))
+        assert isinstance(config.devices["mc6"], MC6Device)
+
+    def test_chase_bliss_config_produces_cba_device(self, rig_dir, tmp_path):
+        from rig.engine.devices import ChaseBlissDevice
+
+        _write(
+            rig_dir,
+            "pedals/mood.yaml",
+            "id: mood\nmanufacturer: Chase Bliss\nmodel: Mood\ntype: digital\nconfig:\n  type: chase_bliss\n  midi_channel: 4\n  controls: []\n",
+        )
+        config = load_rig(str(rig_dir))
+        assert isinstance(config.devices["mood"], ChaseBlissDevice)
+
+    def test_unknown_config_type_raises_validation_error(self, rig_dir):
+        from rig.config.errors import ValidationError
+
+        _write(
+            rig_dir,
+            "pedals/mystery.yaml",
+            "id: mystery\nmanufacturer: X\nmodel: Y\ntype: digital\nconfig:\n  type: unknown_plugin\n  midi_channel: 1\n",
+        )
+        with pytest.raises(ValidationError, match="Unknown device config type"):
+            load_rig(str(rig_dir))
+
+    def test_all_devices_have_apply_method(self, rig_dir):
+        config = load_rig(str(rig_dir))
+        for device_id, device in config.devices.items():
+            assert callable(getattr(device, "apply", None)), (
+                f"device {device_id!r} missing apply() method"
+            )
