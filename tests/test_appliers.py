@@ -179,3 +179,62 @@ class TestChaseBlissApplierSetup:
         result = self.applier.apply_setup(actions, ctx)
 
         assert result is None
+
+    def test_detect_cba_setup_fresh_device_produces_all_phases(self):
+        from rig.engine.plan.compute import detect_cba_setup
+        from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, DeviceType
+        from rig.models.preset import DigitalPreset
+        from rig.models.rig import Rig
+        from rig.models.scene import Scene
+        from rig.models.signal_chain import SignalChainPosition
+
+        bro = Device(
+            id="cba-mood",
+            manufacturer="CBA",
+            model="Mood MKII",
+            type=DeviceType.DIGITAL,
+            config=ChaseBlissConfig(midi_channel=3),
+            presets=[
+                DigitalPreset(id="shimmer", pedal="cba-mood", name="Shimmer", preset_number=2),
+                DigitalPreset(id="drone", pedal="cba-mood", name="Drone", preset_number=3),
+            ],
+        )
+        ctrl = Device(
+            id="mc6",
+            manufacturer="Morningstar",
+            model="MC6",
+            type=DeviceType.CONTROLLER,
+            config=ControllerConfig(
+                midi_channel=1,
+                scenes={"scene-a": Scene(name="scene-a", presets={"cba-mood": "shimmer"})},
+            ),
+        )
+        rig = Rig(
+            name="test",
+            signal_chain=[SignalChainPosition(device_ref="cba-mood", position=1)],
+            devices={"cba-mood": bro, "mc6": ctrl},
+        )
+        state = RigState()  # empty state — channel_established=False for all devices
+
+        actions = detect_cba_setup(rig, state)
+        types = [a.type for a in actions]
+
+        assert "establish_channel" in types
+        assert "build_preset" in types
+        assert "register_scenes" in types
+        # establish_channel comes first
+        assert types.index("establish_channel") < types.index("build_preset")
+        assert types.index("build_preset") < types.index("register_scenes")
+
+    def test_apply_setup_does_not_enqueue_actions_dynamically_on_confirm(self):
+        ctx = _make_ctx(
+            connected={"cba-mood"},
+            confirmation_io=InMemoryPromptAdapter(side_effect=["confirm", "confirm"]),
+        )
+        actions = [self._ec_action(device="cba-mood", midi_channel=3)]
+
+        results = self.applier.apply_setup(actions, ctx)
+
+        assert results is not None
+        assert len(results) == 1  # only the passed-in action; no dynamic additions
+        assert results[0].status == "confirmed"

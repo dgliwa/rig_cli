@@ -10,7 +10,7 @@ from rig.engine.appliers.base import (
     mark_preset_saved,
     update_device_state,
 )
-from rig.engine.plan import CbaSetupAction, detect_cba_setup
+from rig.engine.plan import CbaSetupAction
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -30,14 +30,6 @@ class ChaseBlissApplier:
         pending = list(actions)
         seen: set[tuple] = set()
 
-        def _enqueue_new_actions() -> None:
-            if ctx.rig is None:
-                return
-            for a in detect_cba_setup(ctx.rig, ctx.state):
-                key = (a.device, a.type, a.preset_id)
-                if key not in seen:
-                    pending.append(a)
-
         while pending:
             action = pending.pop(0)
             action_key = (action.device, action.type, action.preset_id)
@@ -48,19 +40,14 @@ class ChaseBlissApplier:
             if action.type == "establish_channel":
                 result = self._establish_channel(action, ctx)
                 if result is None:
-                    # quit
                     return None
                 results.append(result)
-                if result.status == "confirmed":
-                    _enqueue_new_actions()
 
             elif action.type == "build_preset":
                 result = self._build_preset(action, ctx)
                 if result is None:
                     return None
                 results.append(result)
-                if result.status == "confirmed":
-                    _enqueue_new_actions()
 
             elif action.type == "register_scenes":
                 result = self._register_scenes(action, ctx)

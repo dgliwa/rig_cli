@@ -44,12 +44,8 @@ def detect_cba_setup(rig: Rig, state: RigState) -> list[CbaSetupAction]:
                     type="establish_channel",
                 )
             )
-            # Channel not established → skip rest until it is
-            continue
-
         # Phase 2: Preset building
         presets_saved = ds.presets_saved
-        has_unsaved = False
         for preset in [p for p in pedal.presets if isinstance(p, DigitalPreset)]:
             if not presets_saved.get(preset.id):
                 actions.append(
@@ -63,10 +59,9 @@ def detect_cba_setup(rig: Rig, state: RigState) -> list[CbaSetupAction]:
                         cc_params=pedal.config.get_cc_params(preset.parameters),
                     )
                 )
-                has_unsaved = True
 
         # Phase 3: Scene registration (only if channel + presets done, but not yet registered)
-        if not ds.registration_done and not has_unsaved:
+        if not ds.registration_done:
             scene_refs = [sn for sn, s in rig.scenes.items() if pedal_id in s.presets]
             if scene_refs:
                 actions.append(
