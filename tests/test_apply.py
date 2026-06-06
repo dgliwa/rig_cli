@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from rig.engine.apply import apply_plan
+import pytest
+
+from rig.engine.apply import ApplyResult, apply_plan
 from rig.engine.devices import ChaseBlissDevice, MidiDevice
 from rig.engine.plan import compute_plan
 from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, DeviceType, MidiConfig
@@ -615,3 +619,39 @@ class TestDevicePluginRouting:
                 assert not overlap, (
                     f"apply.py imports {overlap} — should route through device.apply()"
                 )
+
+
+class TestApplyPlanFallback:
+    def test_raises_when_no_plan_and_no_rig(self):
+        state_adapter = InMemoryStateAdapter()
+        midi_io = InMemoryMidiConnectionIO()
+        with pytest.raises(ValueError):
+            apply_plan(state_writer=state_adapter, midi_connection_io=midi_io)
+
+    def test_fallback_computes_plan_from_rig(self):
+        from tests.test_plan import _make_rig
+
+        rig = _make_rig()
+        state_adapter = InMemoryStateAdapter()
+        midi_io = InMemoryMidiConnectionIO()
+        result = apply_plan(
+            state_writer=state_adapter,
+            midi_connection_io=midi_io,
+            rig=rig,
+            dry_run=True,
+        )
+        assert isinstance(result, ApplyResult)
+
+    def test_explicit_plan_bypasses_compute(self):
+        from rig.engine.plan import Plan
+
+        clean_plan = Plan(status="clean")
+        state_adapter = InMemoryStateAdapter()
+        midi_io = InMemoryMidiConnectionIO()
+        result = apply_plan(
+            clean_plan,
+            state_writer=state_adapter,
+            midi_connection_io=midi_io,
+            dry_run=True,
+        )
+        assert result.status == "no_changes"

@@ -49,7 +49,8 @@ def _update_device_state(state: RigState, device: str, **fields) -> None:
 
 # TODO: i think this is too big a function
 def apply_plan(
-    plan: Plan,
+    plan: Plan | None = None,
+    *,
     state_writer: StateWriter,
     midi_connection_io: MidiConnectionIO,
     confirmation_io: ConfirmationIO | None = None,
@@ -59,6 +60,12 @@ def apply_plan(
     scene: str | None = None,
     midi: MidiManager | None = None,
 ) -> ApplyResult:
+    if plan is None:
+        if rig is None:
+            raise ValueError("apply_plan requires either a pre-computed plan or a rig instance")
+        from rig.engine.plan import compute_plan
+
+        plan = compute_plan(rig, root_path=config_path)
     if plan.status == "clean":
         logger.info("No changes needed — state matches config")
         console.print("[green]✓[/green] No changes needed. State matches config.")
