@@ -78,29 +78,9 @@ class Rig(BaseModel):
 
     def apply_order(self) -> list[Device]:
         """Return devices in apply order: signal-chain devices by position, off-chain devices, then controller last."""
-        if not self.devices:
-            return []
+        from rig.models.graph import DeviceGraph
 
-        ctrl = self._controller_device
-        chain_positions: dict[str, int] = {sc.device_ref: sc.position for sc in self.signal_chain}
-
-        in_chain: list[Device] = []
-        off_chain: list[Device] = []
-
-        for device in self.devices.values():
-            if ctrl is not None and device.id == ctrl.id:
-                continue
-            if device.id in chain_positions:
-                in_chain.append(device)
-            else:
-                off_chain.append(device)
-
-        in_chain.sort(key=lambda d: chain_positions[d.id])
-
-        result = in_chain + off_chain
-        if ctrl is not None:
-            result.append(ctrl)
-        return result
+        return DeviceGraph(self).apply_order()
 
 
 # Backward-compat alias
