@@ -86,4 +86,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-04 — Phase 1 complete (CBA tech-debt cleanup)*
+*Last updated: 2026-06-06 — Phase 4 complete (plugin-migration: all appliers migrated to Device Protocol; engine routes through registry)*
