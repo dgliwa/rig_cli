@@ -1,183 +1,238 @@
 ---
 phase: 04-plugin-migration
-reviewed: 2026-06-05T00:00:00Z
+reviewed: 2026-06-06T00:00:00Z
 depth: standard
 files_reviewed: 13
 files_reviewed_list:
-  - src/rig/engine/plugin.py
-  - src/rig/engine/plugin_registry.py
-  - src/rig/engine/devices.py
   - src/rig/config/loader.py
-  - src/rig/engine/apply.py
-  - src/rig/models/rig.py
   - src/rig/engine/appliers/__init__.py
   - src/rig/engine/appliers/chase_bliss.py
-  - tests/test_plugin.py
+  - src/rig/engine/apply.py
+  - src/rig/engine/devices.py
+  - src/rig/engine/plugin.py
+  - src/rig/engine/plugin_registry.py
+  - src/rig/models/rig.py
+  - tests/test_appliers.py
+  - tests/test_apply.py
   - tests/test_devices.py
   - tests/test_loader.py
-  - tests/test_apply.py
-  - tests/test_appliers.py
+  - tests/test_plugin.py
 findings:
   critical: 3
   warning: 4
-  info: 1
-  total: 8
+  info: 3
+  total: 10
 status: issues_found
 ---
 
 # Phase 04: Code Review Report
 
-**Reviewed:** 2026-06-05
+**Reviewed:** 2026-06-06T00:00:00Z
 **Depth:** standard
 **Files Reviewed:** 13
 **Status:** issues_found
 
 ## Summary
 
-Phase 4 migrated from direct applier dispatch to a plugin architecture where concrete
-device types (`AnalogDevice`, `MidiDevice`, `ChaseBlissDevice`, `MC6Device`) implement a
-`Device` Protocol and carry their own `apply()` logic. The structural shape is sound and
-all 113 tests pass. However there are three blockers:
+The phase-4 plugin migration is structurally sound: registry-driven device dispatch works,
+all four concrete device types are registered and reachable from the loader, and tests
+demonstrate the routing path. Three critical behavioral defects were found that cause silent
+incorrect behavior at runtime.
 
-1. MC6 bank programming is dead on arrival — `MC6Device.apply()` reads from `self.banks`
-   (always `[]` after loader construction) instead of `self.config.banks` (where the
-   data actually lives). Every full `apply` run silently skips MC6 programming.
-2. `MC6Device.apply()` hardcodes the string `"mc6"` throughout state writes, MIDI sends,
-   and port lookups instead of using `ctx.action.device`. Any rig whose MC6 has a
-   non-`"mc6"` device ID will silently mis-key state and fail MIDI sends.
-3. The `pedal.config` null guard in `MC6Device.apply()` is incomplete; an
-   `AttributeError` crash is possible.
-
-`ChaseBlissDevice`'s delegation to a stub `_midi_device` instance is functional but
-confusing; the delegation works only because all meaningful data flows through
-`ctx.action`, not `self`. Several test coverage gaps leave the new code paths under-verified.
+The most serious: `ChaseBlissDevice.apply()` always delegates to a blank `MidiDevice`
+stub instance (Pydantic private field semantics), meaning CBA scene-level PC sends are
+always dropped. A second critical defect is a Python 3.12-vs-3.13 time-bomb in the loader
+where `_load_scenes` calls `glob()` on a potentially nonexistent directory without a guard.
+A type-contract violation in `DeviceApplyContext.rig` rounds out the blockers.
 
 ---
 
 ## Critical Issues
 
-### CR-01: MC6 bank programming never executes — `self.banks` vs `self.config.banks`
+### CR-01: `ChaseBlissDevice.apply()` delegates to a blank stub — CC sends silently dropped
 
-**File:** `src/rig/engine/devices.py:301`
+**File:** `src/rig/engine/devices.py:228,256`
 
-**Issue:** `MC6Device.apply()` guards on `if not self.banks` (line 301). The `banks`
-field on `MC6Device` defaults to `[]` and is never populated by the loader. The
-loader constructs `MC6Device` via `model_class(**{**data, "config": temp.config})`;
-banks live inside the device's YAML `config` block and are therefore in
-`self.config.banks` (a `ControllerConfig` field), not in the top-level `self.banks`.
+**Issue:** `ChaseBlissDevice` delegates `apply()` to `self._midi_device`, which is
+declared as a Pydantic class-level private variable initialized with `config=None` and
+`presets=[]`. Because Pydantic treats leading-underscore fields as private class variables
+(not instance fields), every `ChaseBlissDevice` instance holds a distinct stub `MidiDevice`
+with `config=None` and no presets — not a copy of the wrapper's actual config or preset list.
 
-`apply.py` (line 210) correctly reads `mc6_device.config.banks` to decide whether to
-call `mc6_device.apply()` — it sees banks and proceeds — but then `MC6Device.apply()`
-immediately returns `"skipped"` because `self.banks == []`. MC6 programming silently
-does nothing on every real `apply` run.
-
-**Fix:** Replace the `self.banks` guard with `self.config.banks`:
-
-```python
-# devices.py — MC6Device.apply()
-banks = (
-    self.config.banks
-    if self.config is not None and hasattr(self.config, "banks")
-    else []
-)
-if not banks or ctx.midi is None:
-    return DeviceApplyResult(device=device_id, status="skipped")
-# ... use `banks` instead of `self.banks` throughout the method body
+Verified empirically:
+```
+d = ChaseBlissDevice(id='cba', config=ChaseBlissConfig(midi_channel=3), presets=[...])
+d._midi_device.config   # None  (NOT ChaseBlissConfig(midi_channel=3))
+d._midi_device.id       # ""    (NOT "cba")
 ```
 
-The `banks: list[dict] = []` field on `MC6Device` can be removed, or left as an
-override slot with a note that it is not populated by the loader.
+When `MidiDevice.apply()` executes via this stub, `_try_send_pc()` always short-circuits
+(`action.midi_channel` may be set on the action, so PC sends actually work through
+`ctx.action` — but `get_scene_pc_command()` will always return `None` because the stub
+has no presets, breaking any caller that uses it for PC command generation). The state
+update path writes to `action.device` correctly because it reads from `ctx.action`, not
+from `self`, so apply state writes are fine. The broken surface is: `get_scene_pc_command`
+on the stub returns `None` for every preset lookup, meaning MC6 bank programming misses
+CBA PC commands.
 
----
-
-### CR-02: `MC6Device.apply()` hardcodes `"mc6"` as device ID throughout
-
-**File:** `src/rig/engine/devices.py:304,318,325,340,341,356`
-
-**Issue:** State reads/writes, MIDI sends, and port-lookup calls all use the literal
-string `"mc6"` instead of the actual device ID from `ctx.action.device` (captured as
-`device_id` on line 299 but only used in the final `DeviceApplyResult`). Affected
-calls:
-
-- `ctx.state.devices.get("mc6", ...)` — reads cached port under wrong key
-- `prompt_midi_connect("mc6", ...)` — opens MIDI port keyed as `"mc6"` in `MidiManager`
-- `update_device_state(ctx.state, "mc6", ...)` — writes state under wrong key
-- `ctx.midi.send_sysex("mc6", ...)` — looks up port under wrong key → `KeyError` or
-  silent no-op
-
-Any user whose YAML names the MC6 device anything other than `"mc6"` (e.g. `"mc6-mkii"`,
-`"morningstar"`) will get wrong state keys and failed MIDI sends. `apply.py` line 232
-(`state.devices.get("mc6")`) has the same hardcoding.
-
-**Fix:**
+**Fix:** Remove the private delegation field. Inline the MidiDevice logic or construct a
+properly-populated delegate at call time:
 
 ```python
-# devices.py — MC6Device.apply()
-device_id = ctx.action.device  # already set on line 299
-
-mc6_port = ctx.state.devices.get(device_id, DeviceState()).midi_port
-res, port_name = prompt_midi_connect(device_id, 1, ctx.midi, mc6_port)
-# ...
-update_device_state(ctx.state, device_id, midi_port=port_name)
-# ...
-ctx.midi.send_sysex(device_id, msg)
-```
-
-```python
-# apply.py line 232
-if state.devices.get(mc6_device.id):
-    state_modified = True
+def apply(self, ctx: DeviceApplyContext) -> DeviceApplyResult:
+    # Delegate to MidiDevice apply logic with this device's actual config/presets.
+    delegate = MidiDevice(id=self.id, name=self.name, config=self.config, presets=self.presets)
+    return delegate.apply(ctx)
 ```
 
 ---
 
-### CR-03: Incomplete null guard for `pedal.config` causes `AttributeError` crash
+### CR-02: `_load_scenes` crashes on Python 3.13 — missing `is_dir()` guard
 
-**File:** `src/rig/engine/devices.py:351`
+**File:** `src/rig/config/loader.py:121`
 
-**Issue:** The guard is:
+**Issue:** `_load_scenes` calls `scenes_dir.glob("*.yaml")` with no existence check.
+In Python 3.12, `Path.glob()` on a nonexistent path silently returns an empty iterator.
+In Python 3.13+ the behavior changed: `glob()` on a nonexistent directory raises
+`FileNotFoundError` / `OSError`. The project declares `requires-python = ">=3.12"`, so
+this is a forward-compatibility regression.
 
-```python
-if pedal is None or pedal.config.midi_channel is None:
-    continue
-```
+The loader already applies the correct guard pattern for `devices_dir` (line 200) and
+`preset_dir` (line 93). `_load_scenes` simply lacks the check.
 
-If `pedal` is not `None` but `pedal.config` is `None`, Python evaluates
-`pedal.config.midi_channel` and raises `AttributeError: 'NoneType' object has no
-attribute 'midi_channel'`. This is not a purely hypothetical case: the registry
-singleton stubs (e.g. `AnalogDevice(id="__analog__", config=None)`) have `config=None`,
-and any manually constructed device object passed into `rig.devices` will trigger this.
+The existing test `test_scenes_dir_missing` passes today because of the 3.12 silent
+behavior, masking the regression.
 
-Verified:
-```
->>> AnalogDevice(id="test", config=None).config.midi_channel
-AttributeError: 'NoneType' object has no attribute 'midi_channel'
-```
-
-**Fix:**
+**Fix:** Add a guard at the top of `_load_scenes`, consistent with the rest of the loader:
 
 ```python
-if pedal is None or pedal.config is None or pedal.config.midi_channel is None:
-    continue
+def _load_scenes(scenes_dir: Path) -> dict[str, Scene]:
+    scenes: dict[str, Scene] = {}
+    if not scenes_dir.is_dir():
+        logger.debug("Scenes directory not found: %s", scenes_dir)
+        return scenes
+    logger.debug("Loading scenes from: %s", scenes_dir)
+    for path in sorted(scenes_dir.glob("*.yaml")):
+        ...
 ```
+
+---
+
+### CR-03: `DeviceApplyContext.rig` is typed `Rig` (non-optional) but receives `Rig | None`
+
+**File:** `src/rig/engine/apply.py:170-173`, `src/rig/engine/plugin.py:33`
+
+**Issue:** `apply_plan` has `rig: Rig | None = None`. The guard at line 160
+(`device = rig.devices.get(...) if rig else None`) prevents the `else` branch from
+executing when `rig is None`, so no immediate crash occurs on the current happy path.
+However, `DeviceApplyContext` is constructed at line 170 with `rig=rig` where `rig` is
+`Rig | None`, but `DeviceApplyContext.rig` is annotated `rig: Rig` (no `| None`). Static
+type checkers will flag every call site. More critically: any applier that accesses
+`ctx.rig` without a None guard will raise `AttributeError` at runtime if `apply_plan` is
+ever called without a `rig` argument and the guard logic changes.
+
+**Fix:** Either make the field optional to match real usage:
+
+```python
+# plugin.py
+@dataclass
+class DeviceApplyContext:
+    action: DeviceAction
+    state: RigState
+    rig: Rig | None        # was: rig: Rig
+    ...
+```
+
+Or enforce that `rig` is always required for non-dry-run apply paths and assert before
+the loop.
 
 ---
 
 ## Warnings
 
-### WR-01: `Device` Protocol is not `@runtime_checkable`
+### WR-01: `mark_preset_saved` called with potentially-`None` `preset_id`
+
+**File:** `src/rig/engine/appliers/chase_bliss.py:207`
+
+**Issue:** `CbaSetupAction.preset_id` is typed `str | None` (default `None`). The
+`_build_preset` handler calls `mark_preset_saved(ctx.state, action.device, action.preset_id)`
+unconditionally. `mark_preset_saved` accepts `preset_id: str`. If `preset_id` is `None`,
+`updated[None] = True` is stored in the `presets_saved` dict — a `None` key where only
+string keys are expected. This corrupts the state dictionary used downstream to determine
+which presets are already saved.
+
+In practice `build_preset` actions always have `preset_id` set, but the type system does
+not enforce this and a future code path could trigger the corruption.
+
+**Fix:**
+```python
+if res == "confirm":
+    update_device_state(ctx.state, action.device, last_preset=action.preset_name)
+    if action.preset_id is not None:
+        mark_preset_saved(ctx.state, action.device, action.preset_id)
+```
+
+---
+
+### WR-02: MC6 `apply()` result is discarded — `state_modified` check is unreliable
+
+**File:** `src/rig/engine/apply.py:231-233`
+
+**Issue:** The MC6 phase calls `mc6_device.apply(mc6_ctx)` and discards the
+`DeviceApplyResult`. `state_modified` is set only if `state.devices.get("mc6")` is
+truthy (line 232). Because `MC6Device.apply()` calls `update_device_state(..., "mc6",
+midi_port=...)` at line 324 of `devices.py` before returning, `state.devices["mc6"]` is
+populated even when the apply ends with `status="error"` (user quit). The result is that
+a user who quits during MC6 programming still triggers a state save — partial state is
+written on cancellation.
+
+**Fix:** Use the return value:
+```python
+mc6_result = mc6_device.apply(mc6_ctx)
+if mc6_result.status == "confirmed":
+    state_modified = True
+```
+
+---
+
+### WR-03: Scenes silently discarded when no `CONTROLLER` device is present
+
+**File:** `src/rig/config/loader.py` (`load_rig`, scenes wiring block)
+
+**Issue:** When the rig YAML defines scene files but no device has `type: controller`,
+the loader silently drops all scenes. The wiring block guards `if ctrl_device is not None`
+but raises no error. `rig.scenes` returns `{}`, `_validate_references` skips all
+scene cross-reference checks, and the user receives no feedback that their scene files
+were ignored.
+
+**Fix:** Raise on the condition rather than silently discarding:
+```python
+if scenes:
+    ctrl_device = next(
+        (d for d in devices.values() if d.type == DeviceType.CONTROLLER), None
+    )
+    if ctrl_device is None:
+        raise ValidationError(
+            f"Rig defines {len(scenes)} scene(s) but no CONTROLLER device exists. "
+            "Add a controller device (e.g. MC6) to host scenes."
+        )
+    if isinstance(ctrl_device.config, ControllerConfig):
+        ...
+```
+
+---
+
+### WR-04: `Device` Protocol is not `@runtime_checkable`
 
 **File:** `src/rig/engine/plugin.py:41`
 
 **Issue:** `class Device(Protocol)` is not decorated with `@runtime_checkable`. Any
-attempt to call `isinstance(x, Device)` at runtime raises `TypeError: Instance and
-class checks can only be used with @runtime_checkable protocols`. This is a silent trap
-for future callers; the Protocol's value comes largely from being usable in runtime
-dispatch checks. The existing tests work around this via `hasattr` probing but cannot
-express intent clearly.
+`isinstance(x, Device)` call at runtime raises `TypeError: Instance and class checks can
+only be used with @runtime_checkable protocols`. Existing tests work around this via
+`hasattr` probing, but callers that reach for `isinstance` in application code (e.g. when
+the apply engine needs to branch on device type) will hit a runtime crash.
 
 **Fix:**
-
 ```python
 from typing import Protocol, runtime_checkable
 
@@ -188,144 +243,52 @@ class Device(Protocol):
 
 ---
 
-### WR-02: `Rig.devices: dict[str, Any]` and `Rig.pedals` return type lie
-
-**File:** `src/rig/models/rig.py:21,27`
-
-**Issue:** `devices: dict[str, Any] = {}` erases all type information for the primary
-data structure in `Rig`. The `pedals` property returns `dict[str, Device]` (the legacy
-`models.device.Device`) but the dict actually contains `AnalogDevice`, `MidiDevice`,
-etc. — plugin types that are structurally compatible but not nominally `Device`. Every
-downstream call site loses type safety; type checkers will not catch attribute access
-errors on devices.
-
-The migration comment says "concrete Device plugin types... alongside the legacy Device
-model during the P3 migration" — but both the legacy `Device` and the plugin types are
-now present in the same `dict[str, Any]`. This is a regression: before the migration,
-`devices` was typed.
-
-**Fix:** Introduce a union type or a shared base, or mark the property correctly:
-
-```python
-from rig.engine.plugin import Device as DevicePlugin  # Protocol
-
-devices: dict[str, Any] = {}  # TODO Phase 5: narrow to dict[str, DevicePlugin]
-
-@property
-def pedals(self) -> dict[str, Any]:  # honest until Phase 5 narrows the type
-    return self.devices
-```
-
-At minimum, remove the false `dict[str, Device]` annotation on `pedals` so type
-checkers do not give false confidence.
-
----
-
-### WR-03: Scenes silently dropped when no `CONTROLLER` device is present
-
-**File:** `src/rig/config/loader.py` (the `if scenes:` block near the end of `load_rig`)
-
-**Issue:** If the rig YAML defines scene files but contains no device with
-`type: controller`, the loader silently discards all loaded scenes. The wiring block is:
-
-```python
-if scenes:
-    ctrl_device = next((...), None)
-    if ctrl_device is not None and isinstance(ctrl_device.config, ControllerConfig):
-        # scenes wired into controller config
-```
-
-When `ctrl_device is None`, no error is raised. `rig.scenes` returns `{}`, and
-`_validate_references` skips all scene cross-reference checks. A user who forgets to
-add an MC6 device gets no feedback that their scene files were ignored.
-
-**Fix:** Raise an error when scenes exist but no controller is found:
-
-```python
-if scenes:
-    ctrl_device = next(
-        (d for d in devices.values() if d.type == DeviceType.CONTROLLER), None
-    )
-    if ctrl_device is None:
-        raise ValidationError(
-            f"Rig defines {len(scenes)} scene(s) but contains no CONTROLLER device. "
-            "Add a controller device (e.g. MC6) to host scenes."
-        )
-    if isinstance(ctrl_device.config, ControllerConfig):
-        ...
-```
-
----
-
-### WR-04: `MidiDevice.apply()` — `midi_connected` not cleared on PC send failure
-
-**File:** `src/rig/engine/devices.py:156-172`
-
-**Issue:** `midi_connected = action.device in ctx.connected_devices` is set before
-`_try_send_pc()` is called. If `_try_send_pc()` raises and catches an exception
-(returning `False`), `midi_connected` remains `True`. The `prompt_device` call on
-line 175 then receives `midi_connected=True`, presenting the user with UI that implies
-the MIDI send succeeded when it actually failed silently. The `retry` path re-calls
-`_try_send_pc()` correctly, but the initial failure is invisible to the UX layer.
-
-**Fix:** Use the return value of `_try_send_pc()` to gate `midi_connected`:
-
-```python
-_send_succeeded = _try_send_pc()
-effective_midi_connected = midi_connected and _send_succeeded
-
-while True:
-    result = ctx.confirmation_io.prompt_device(
-        action.device, action.preset_name, action.preset_number,
-        action.midi_channel, effective_midi_connected,
-    )
-    if result == "retry":
-        _send_succeeded = _try_send_pc()
-        effective_midi_connected = midi_connected and _send_succeeded
-        continue
-    ...
-```
-
----
-
 ## Info
 
-### IN-01: `_update_device_state` is dead code in `apply.py`
+### IN-01: Dead wrapper `_update_device_state` in `apply.py`
 
 **File:** `src/rig/engine/apply.py:45-47`
 
 **Issue:** `_update_device_state` is a one-line wrapper around `update_device_state`
-that is never called anywhere in the codebase. The module imports and uses
-`update_device_state` directly (line 119). This wrapper adds noise and may mislead a
-reader into thinking there are two distinct code paths.
+(imported directly at line 13) that is never called anywhere in the module. All internal
+call sites use `update_device_state` directly. The wrapper adds noise and may mislead
+a reader into thinking two distinct paths exist.
 
-**Fix:** Remove the wrapper:
-
-```python
-# Delete lines 45-47:
-# def _update_device_state(state: RigState, device: str, **fields) -> None:
-#     """Update a device's state fields in-place."""
-#     update_device_state(state, device, **fields)
-```
+**Fix:** Remove lines 45-47.
 
 ---
 
-## Test Coverage Gaps (not individually classified but noted for completeness)
+### IN-02: `ChaseBlissDevice.get_scene_pc_command` duplicates `MidiDevice.get_scene_pc_command` verbatim
 
-- `test_mc6_device_apply_dry_run_with_banks_returns_skipped` (line 316 in `test_devices.py`)
-  sets `ctx.midi = None` which triggers the early-return guard (`not self.banks or midi is
-  None`) before the dry-run branch is ever evaluated. The test name implies it covers the
-  dry-run path but it actually covers the `midi=None` path. Consider adding a test that
-  passes a non-`None` mock MIDI and `dry_run=True` with `banks` set in `self.config.banks`
-  (after CR-01 is fixed).
+**File:** `src/rig/engine/devices.py:236-253`
 
-- `ChaseBlissDevice.apply()` tests (lines 253-273 in `test_devices.py`) check only the
-  return value; no test verifies that `update_device_state` is called with the correct
-  device ID when the delegation path executes. Adding an assertion on `ctx.state.devices`
-  after a `confirm` action would close this gap.
+**Issue:** The two methods are byte-for-byte identical (both check `self.config.midi_channel`
+and iterate `self.presets`). The delegation story for `apply()` says "CBA scene switching
+is just a PC message", but the same rationale applies to `get_scene_pc_command`. The
+duplication signals an incomplete refactor and will diverge if either method is updated.
+
+**Fix:** After CR-01 is addressed, if `ChaseBlissDevice` properly delegates to
+`MidiDevice`, `get_scene_pc_command` can be removed from `ChaseBlissDevice` and the
+base delegation will cover it automatically.
 
 ---
 
-_Reviewed: 2026-06-05_
+### IN-03: Singleton plugin instances registered in `default_registry` are vestigial
+
+**File:** `src/rig/engine/devices.py:382-387`
+
+**Issue:** Four sentinel instances are registered via `default_registry.register(...)` with
+placeholder `id` values (`"__analog__"`, `"__midi__"`, etc.). The live dispatch path
+uses `registry.get_model(config_type)` to construct per-device instances from YAML data;
+`registry.get(config_type)` returning these singletons is not called anywhere in the
+codebase. The singletons are potentially misleading (a future caller might use `get()` and
+accidentally mutate the shared registry instance).
+
+**Fix:** Either remove the `register()` calls (keeping only `register_model()`) or add a
+comment explaining what use case `get()` is reserved for.
+
+---
+
+_Reviewed: 2026-06-06T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
