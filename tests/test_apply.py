@@ -512,3 +512,108 @@ class TestCbaApply:
         assert "cancelled" in captured.out.lower()
         # No device state written because quit before any confirmation
         assert state_adapter.state.devices == {}
+
+
+class TestDevicePluginRouting:
+    """Verify apply.py routes through device.apply(ctx) not get_scene_applier."""
+
+    def _make_concrete_config(self) -> Rig:
+        """Build a Rig using concrete device plugin types (as produced by loader)."""
+        from rig.engine.devices import ChaseBlissDevice, MidiDevice
+
+        hx = MidiDevice(
+            id="hx-stomp",
+            config=MidiConfig(midi_channel=1),
+            type=DeviceType.MODELER,
+            presets=[
+                HXStompPreset(
+                    id="clean-edge",
+                    name="Clean Edge",
+                    preset_number=12,
+                    hlx_file="hlx/clean-edge.hlx",
+                )
+            ],
+        )
+        bro = ChaseBlissDevice(
+            id="brothers",
+            config=ChaseBlissConfig(midi_channel=3),
+            type=DeviceType.DIGITAL,
+            presets=[
+                DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)
+            ],
+        )
+        ctrl = Device(
+            id="mc6",
+            manufacturer="Morningstar",
+            model="MC6",
+            type=DeviceType.CONTROLLER,
+            config=ControllerConfig(
+                midi_channel=1,
+                scenes={
+                    "test-scene": Scene(
+                        name="test-scene",
+                        presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
+                    )
+                },
+            ),
+        )
+        return Rig(
+            name="test",
+            signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+            devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
+        )
+
+    def test_device_apply_called_for_scene_action(self, tmp_path):
+        """apply_plan routes through device.apply() for scene actions."""
+        from unittest.mock import patch
+
+        from rig.engine.devices import MidiDevice
+
+        rig = self._make_concrete_config()
+        plan = compute_plan(rig)
+        state_adapter = InMemoryStateAdapter()
+        midi_io = InMemoryMidiConnectionIO()
+        prompt_io = InMemoryPromptAdapter(default="confirm")
+
+        called_with_device_ctx = []
+
+        original_apply = MidiDevice.apply
+
+        def patched_apply(self, ctx):
+            called_with_device_ctx.append(ctx)
+            return original_apply(self, ctx)
+
+        with patch.object(MidiDevice, "apply", patched_apply):
+            apply_plan(
+                plan,
+                state_writer=state_adapter,
+                midi_connection_io=midi_io,
+                confirmation_io=prompt_io,
+                rig=rig,
+                config_path=str(tmp_path),
+                dry_run=False,
+            )
+
+        # MidiDevice.apply() should have been called for hx-stomp
+        assert len(called_with_device_ctx) > 0, "device.apply() was never called"
+        # Each call receives a DeviceApplyContext
+        from rig.engine.plugin import DeviceApplyContext
+
+        for ctx in called_with_device_ctx:
+            assert isinstance(ctx, DeviceApplyContext)
+
+    def test_no_get_scene_applier_import_in_apply(self):
+        """apply.py must not import get_scene_applier — routing is through device.apply()."""
+        import ast
+        import pathlib
+
+        src = pathlib.Path(__file__).parent.parent / "src" / "rig" / "engine" / "apply.py"
+        tree = ast.parse(src.read_text())
+        forbidden = {"get_scene_applier", "get_mc6_applier"}
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.ImportFrom, ast.Import)):
+                names = {alias.name for alias in getattr(node, "names", [])}
+                overlap = names & forbidden
+                assert not overlap, (
+                    f"apply.py imports {overlap} — should route through device.apply()"
+                )
