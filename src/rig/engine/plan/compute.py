@@ -5,7 +5,8 @@ from typing import Literal
 
 from rig.engine.plan.models import CbaSetupAction, DeviceAction, Plan, ScenePlan
 from rig.engine.state import DeviceState, RigState, read_state
-from rig.models.preset import DigitalPreset, HXStompPreset
+from rig.models.graph import DeviceGraph
+from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 
 logger = logging.getLogger(__name__)
@@ -80,6 +81,31 @@ def detect_cba_setup(rig: Rig, state: RigState) -> list[CbaSetupAction]:
     return actions
 
 
+def _detect_missing_refs(rig: Rig) -> list[str]:
+    issues: list[str] = []
+    for scene_name, scene in rig.scenes.items():
+        for device_id, preset_id in scene.presets.items():
+            if device_id not in rig.devices:
+                issues.append(f"scene '{scene_name}' → device '{device_id}' not found")
+            elif not any(p.id == preset_id for p in rig.devices[device_id].presets):
+                issues.append(
+                    f"scene '{scene_name}' → device '{device_id}' preset '{preset_id}' not found"
+                )
+    return sorted(issues)
+
+
+def _detect_unused_presets(rig: Rig) -> list[str]:
+    referenced: set[str] = {pid for scene in rig.scenes.values() for pid in scene.presets.values()}
+    issues: list[str] = []
+    for device in rig.devices.values():
+        for preset in device.presets:
+            if isinstance(preset, AnalogPreset):
+                continue
+            if preset.id not in referenced:
+                issues.append(f"{device.id}: '{preset.id}' unused")
+    return sorted(issues)
+
+
 # TODO: issue #13
 def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
     logger.debug("Computing plan for %d scenes", len(rig.scenes))
@@ -90,6 +116,15 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
 
     scenes_plan: dict[str, ScenePlan] = {}
     any_changes = False
+
+    graph = DeviceGraph(rig)
+    ordered_devices = [d.id for d in graph.apply_order()]
+
+    def _action_sort_key(action: DeviceAction) -> int:
+        try:
+            return ordered_devices.index(action.device)
+        except ValueError:
+            return len(ordered_devices)
 
     for scene_name, scene in rig.scenes.items():
         logger.debug("Planning scene '%s' with %d pedal(s)", scene_name, len(scene.presets))
@@ -116,6 +151,8 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
                         device_type="analog",
                         status="analog",
                         preset_name=preset_id,
+                        before=actual_preset,
+                        after=preset_id,
                     )
                 )
                 if actual_preset != preset_id:
@@ -151,8 +188,12 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
                     preset_name=preset_id,
                     preset_number=preset_number,
                     midi_channel=pedal.config.midi_channel,
+                    before=actual_preset,
+                    after=preset_id,
                 )
             )
+
+        device_actions.sort(key=_action_sort_key)
 
         scene_status: Literal["new", "changed", "unchanged"] = (
             "new"
@@ -171,10 +212,11 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
             device_actions=device_actions,
         )
 
-    # TODO: This shouldn't be here
+    missing_refs = _detect_missing_refs(rig)
+    unused_presets = _detect_unused_presets(rig)
+
     cba_setup = detect_cba_setup(rig, actual)
     if cba_setup:
-        # TODO: let's revisit this - we should detect changes here
         any_changes = True
         logger.debug("CBA setup actions: %d", len(cba_setup))
 
@@ -189,4 +231,6 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
         status=plan_status,
         scenes=scenes_plan,
         cba_setup=cba_setup,
+        missing_refs=missing_refs,
+        unused_presets=unused_presets,
     )

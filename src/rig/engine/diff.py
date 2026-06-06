@@ -32,7 +32,6 @@ def compute_diff(config: Rig, root_path: str | None = None) -> dict[str, Any]:
                 k: {"_status": "added", "new": v} for k, v in scene.presets.items()
             }
         else:
-            scene_diffs["_status"] = "changed"
             scene_diffs["presets"] = {}
             for pedal_id, preset_id in scene.presets.items():
                 actual_preset = actual_devices.get(pedal_id, DeviceState()).last_preset
@@ -42,6 +41,7 @@ def compute_diff(config: Rig, root_path: str | None = None) -> dict[str, Any]:
                         "old": actual_preset,
                         "new": preset_id,
                     }
+            scene_diffs["_status"] = "unchanged" if not scene_diffs["presets"] else "changed"
 
         if scene_diffs.get("presets") or scene_diffs.get("_status") == "new":
             changes["scenes"][scene_name] = scene_diffs
