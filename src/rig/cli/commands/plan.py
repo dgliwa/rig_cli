@@ -21,6 +21,12 @@ from rig.log_setup import setup_logging
 
 logger = logging.getLogger(__name__)
 
+_SHOW_UNCHANGED_OPTION = typer.Option(
+    False,
+    "--show-unchanged",
+    help="Include unchanged scenes in output",
+)
+
 
 @app.command()
 def plan(
@@ -28,6 +34,7 @@ def plan(
     scene: str | None = _SCENE_OPTION,
     output_format: str = _FORMAT_OPTION,
     verbose: int = _VERBOSE_OPTION,
+    show_unchanged: bool = _SHOW_UNCHANGED_OPTION,
 ):
     """Preview changes needed to reach desired state."""
     setup_logging(verbose)
@@ -38,13 +45,49 @@ def plan(
         console.print(f"[red]✗[/red] {e}")
         raise typer.Exit(1)
 
-    result = compute_plan(rig, root_path=Path(config).resolve() if config else None)
+    config_path = Path(config).resolve()
+    state_path = config_path / ".rig" / "state.json"
+    cold_start = not state_path.exists()
+
+    try:
+        result = compute_plan(rig, root_path=str(config_path))
+    except ConfigError as e:
+        console.print(f"[red]✗[/red] {e}")
+        raise typer.Exit(1)
 
     if output_format == "json":
         _emit_json(result.model_dump_json(indent=2))
         return
 
-    scene_names = [scene] if scene else result.scenes.keys()
+    if cold_start:
+        console.print(
+            "[yellow]⚠ Cold start — no state file found. Treating all scenes as new.[/yellow]"
+        )
+
+    # --- Setup Actions section (before scenes) ---
+    if result.cba_setup:
+        console.print("\n[bold]Setup Actions:[/bold]")
+        for action in result.cba_setup:
+            if action.type == "establish_channel":
+                console.print(
+                    f"  [cyan]~[/cyan] {action.device}: establish MIDI channel {action.midi_channel}"
+                )
+            elif action.type == "build_preset":
+                console.print(
+                    f"  [cyan]~[/cyan] {action.device}: build preset #{action.preset_number} '{action.preset_name}'"
+                )
+            elif action.type == "register_scenes":
+                console.print(f"  [cyan]~[/cyan] {action.device}: register presets to scenes")
+
+    # --- Scenes section ---
+    scene_names = [scene] if scene else list(result.scenes.keys())
+
+    if scene_names:
+        console.print("\n[bold]Scenes:[/bold]")
+
+    configure_count = 0
+    manual_count = 0
+    already_set_count = 0
 
     for name in scene_names:
         sp = result.scenes.get(name)
@@ -52,44 +95,60 @@ def plan(
             console.print(f"[yellow]Scene '{name}' not found[/yellow]")
             continue
 
-        status_icon = {"new": "[cyan]+   ", "changed": "[yellow]~   ", "unchanged": "[green]    "}[
-            sp.status
-        ]
-        console.print(f"\n{status_icon}[bold]{sp.scene_name}[/bold] ({sp.status})")
+        if sp.status == "unchanged" and not show_unchanged:
+            continue
+
+        if sp.status == "new":
+            status_icon = "[cyan]+[/cyan]"
+        elif sp.status == "changed":
+            status_icon = "[yellow]~[/yellow]"
+        else:
+            status_icon = "[green]✓[/green]"
+
+        console.print(f"\n  {status_icon} [bold]{sp.scene_name}[/bold] ({sp.status})")
 
         for action in sp.device_actions:
             if action.device_type == "analog":
+                manual_count += 1
                 console.print(
-                    f"  [yellow]⚠[/yellow] {action.device}: set to '{action.preset_name}' (manual)"
+                    f"    [yellow]⚠[/yellow] {action.device}: set to '{action.preset_name}' (manual)"
                 )
             elif action.status == "configure":
+                configure_count += 1
                 pc_info = f" PC#{action.preset_number}" if action.preset_number else ""
                 ch_info = f" (ch {action.midi_channel})" if action.midi_channel else ""
                 console.print(
-                    f"  [cyan]→[/cyan] {action.device}:{pc_info} '{action.preset_name}'{ch_info}"
+                    f"    [cyan]~[/cyan] {action.device}:{pc_info} '{action.preset_name}'{ch_info}"
                 )
             elif action.status == "verify":
+                already_set_count += 1
                 console.print(
-                    f"  [green]✓[/green] {action.device}: '{action.preset_name}' (already set)"
+                    f"    [green]✓[/green] {action.device}: '{action.preset_name}' (already set)"
                 )
-
-    if result.cba_setup:
-        console.print("\n[bold]CBA Setup Required:[/bold]")
-        for action in result.cba_setup:
-            if action.type == "establish_channel":
-                console.print(
-                    f"  [cyan]🔧[/cyan] {action.device}: establish MIDI channel {action.midi_channel}"
-                )
-            elif action.type == "build_preset":
-                console.print(
-                    f"  [cyan]🔧[/cyan] {action.device}: build preset #{action.preset_number} '{action.preset_name}'"
-                )
-            elif action.type == "register_scenes":
-                console.print(f"  [cyan]🔧[/cyan] {action.device}: register presets to scenes")
 
     if not scene_names:
         console.print("[yellow]No scenes found[/yellow]")
 
-    config_exists = config and Path(config).exists()
-    if config_exists:
-        console.print("\n[dim]State source: .rig/state.json[/dim]")
+    # --- Warnings section ---
+    if result.missing_refs:
+        console.print("\n[bold red]Warnings — Missing References:[/bold red]")
+        for ref in result.missing_refs:
+            console.print(f"  [red]✗[/red] {ref}")
+
+    if result.unused_presets:
+        console.print("\n[bold yellow]Warnings — Unused Presets:[/bold yellow]")
+        for preset in result.unused_presets:
+            console.print(f"  [yellow]⚠[/yellow] {preset}")
+
+    # --- Summary line ---
+    if result.status == "clean" and not result.missing_refs:
+        console.print(
+            f"\n[green]Plan: No changes — {already_set_count} already set, {manual_count} manual[/green]"
+        )
+    else:
+        console.print(
+            f"\n[yellow]Plan: {configure_count} to configure, {manual_count} manual, {already_set_count} already set[/yellow]"
+        )
+
+    if result.status == "changes_detected" or result.missing_refs:
+        raise typer.Exit(2)
