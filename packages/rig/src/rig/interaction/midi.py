@@ -6,7 +6,6 @@ from typing import Literal
 from rich.console import Console
 
 from rig.config.errors import ConfigError
-from rig.engine.plan import Plan
 from rig.midi.adapter import MidiManager
 
 logger = logging.getLogger(__name__)
@@ -110,20 +109,3 @@ def prompt_midi_connect(
             console.print(f"[red]✗[/red] Could not open '{ports[idx]}': {e}")
             console.print("Try a different port or check the connection.")
             continue
-
-
-def collect_midi_devices(plan: Plan) -> set[str]:
-    """Return the set of device IDs that need MIDI connections."""
-    devices: set[str] = set()
-    for sp in plan.scenes.values():
-        for action in sp.device_actions:
-            if (
-                action.device_type in ("digital", "modeler", "controller")
-                and action.status == "configure"
-            ):
-                if action.midi_channel is not None:
-                    devices.add(action.device)
-    for action in plan.cba_setup:
-        if action.type in ("establish_channel", "build_preset"):
-            devices.add(action.device)
-    return devices

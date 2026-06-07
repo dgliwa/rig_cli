@@ -30,7 +30,7 @@
     3. `PluginRegistry` loads from entry points (single path per D-03) ✓
     4. All 302 tests pass under new package structure ✓
 
-- [ ] **Phase 7: Plugin Package Wiring & Device-Level MIDI** — Ensure all 4 plugin packages register correctly via entry points; move MIDI connection management to device level for Chase Bliss and Morningstar
+- [x] **Phase 7: Plugin Package Wiring & Device-Level MIDI** — Ensure all 4 plugin packages register correctly via entry points; move MIDI connection management to device level for Chase Bliss and Morningstar (completed 2026-06-07)
   - Goal: Each device plugin is independently installable and manages its own MIDI lifecycle
   - Requirements: ANLG-01, CHASE-01, MC6-01, HX-01
   - Success criteria:
@@ -63,5 +63,5 @@
 | 4. Plugin Migration | v1.0 | 4/4 | Complete | 2026-06-06 |
 | 5. Dependency Graph & Plan Command | v1.0 | 6/6 | Complete | 2026-06-07 |
 | 6. Core Package & Entry Point Discovery | v1.1 | 2/2 | Complete | 2026-06-07 |
-| 7. Plugin Package Wiring & Device-Level MIDI | v1.1 | 3/0 | Planned | — |
+| 7. Plugin Package Wiring & Device-Level MIDI | v1.1 | 3/3 | Complete    | 2026-06-07 |
 | 8. Build, CI & Plugin Authoring Docs | v1.1 | 0/0 | Not started | — |
