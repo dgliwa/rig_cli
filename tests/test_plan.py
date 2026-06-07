@@ -528,3 +528,129 @@ class TestComputeDiff:
         changes = compute_diff(rig, root_path=str(tmp_path))
         assert "test-scene" in changes["scenes"]
         assert changes["scenes"]["test-scene"]["_status"] == "changed"
+
+
+def _make_ordered_rig() -> Rig:
+    """Rig with two signal-chain devices at known positions and an off-chain CBA device."""
+    hx = Device(
+        id="hx-stomp",
+        manufacturer="Line6",
+        model="HX Stomp",
+        type=DeviceType.MODELER,
+        config=MidiConfig(midi_channel=1),
+        presets=[
+            HXStompPreset(
+                id="clean-edge", name="Clean Edge", preset_number=12, hlx_file="hlx/clean-edge.hlx"
+            )
+        ],
+    )
+    tuner = Device(
+        id="polytune",
+        manufacturer="TC Electronic",
+        model="Polytune",
+        type=DeviceType.DIGITAL,
+        config=MidiConfig(midi_channel=2),
+        presets=[DigitalPreset(id="mute", pedal="polytune", name="Mute", preset_number=1)],
+    )
+    ctrl = Device(
+        id="mc6",
+        manufacturer="Morningstar",
+        model="MC6",
+        type=DeviceType.CONTROLLER,
+        config=ControllerConfig(
+            midi_channel=1,
+            scenes={
+                "test-scene": Scene(
+                    name="test-scene",
+                    presets={"polytune": "mute", "hx-stomp": "clean-edge"},
+                )
+            },
+        ),
+    )
+    return Rig(
+        name="test",
+        signal_chain=[
+            SignalChainPosition(device_ref="polytune", position=1),
+            SignalChainPosition(device_ref="hx-stomp", position=2),
+        ],
+        devices={"hx-stomp": hx, "polytune": tuner, "mc6": ctrl},
+    )
+
+
+class TestDeviceOrdering:
+    def test_device_actions_sorted_by_apply_order(self):
+        """D-07: device_actions within ScenePlan match DeviceGraph.apply_order() sequence."""
+        from rig.models.graph import DeviceGraph
+
+        rig = _make_ordered_rig()
+        graph = DeviceGraph(rig)
+        expected_order = [d.id for d in graph.apply_order()]
+
+        plan = compute_plan(rig)
+        scene_plan = plan.scenes["test-scene"]
+        actual_order = [a.device for a in scene_plan.device_actions]
+
+        # Filter expected_order to only devices that appear in device_actions
+        filtered_expected = [dev_id for dev_id in expected_order if dev_id in actual_order]
+        assert actual_order == filtered_expected, (
+            f"device_actions order {actual_order!r} does not match apply_order {filtered_expected!r}"
+        )
+
+    def test_signal_chain_device_comes_before_off_chain_device(self):
+        """D-07: devices in the signal chain appear before off-chain devices in device_actions."""
+        hx = Device(
+            id="hx-stomp",
+            manufacturer="Line6",
+            model="HX Stomp",
+            type=DeviceType.MODELER,
+            config=MidiConfig(midi_channel=1),
+            presets=[
+                HXStompPreset(
+                    id="clean-edge",
+                    name="Clean Edge",
+                    preset_number=12,
+                    hlx_file="hlx/clean-edge.hlx",
+                )
+            ],
+        )
+        bro = Device(
+            id="brothers",
+            manufacturer="CBA",
+            model="Brothers",
+            type=DeviceType.DIGITAL,
+            config=MidiConfig(midi_channel=3),
+            presets=[
+                DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)
+            ],
+        )
+        ctrl = Device(
+            id="mc6",
+            manufacturer="Morningstar",
+            model="MC6",
+            type=DeviceType.CONTROLLER,
+            config=ControllerConfig(
+                midi_channel=1,
+                scenes={
+                    "test-scene": Scene(
+                        name="test-scene",
+                        # brothers is off-chain; hx-stomp is in-chain at position 1
+                        presets={"brothers": "low-gain", "hx-stomp": "clean-edge"},
+                    )
+                },
+            ),
+        )
+        rig = Rig(
+            name="test",
+            signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+            devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
+        )
+        plan = compute_plan(rig)
+        actions = plan.scenes["test-scene"].device_actions
+        device_ids = [a.device for a in actions]
+
+        hx_idx = device_ids.index("hx-stomp")
+        bro_idx = device_ids.index("brothers")
+        assert hx_idx < bro_idx, (
+            f"Signal-chain device 'hx-stomp' (pos {hx_idx}) should precede "
+            f"off-chain 'brothers' (pos {bro_idx})"
+        )
