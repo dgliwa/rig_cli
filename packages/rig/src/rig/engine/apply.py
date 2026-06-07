@@ -13,9 +13,8 @@ from rig.engine.appliers.base import (
 )
 from rig.engine.plan import Plan
 from rig.engine.plugin import DeviceApplyContext, SetupContext
-from rig.engine.ports import ConfirmationIO, MidiConnectionIO, RichConfirmationIO, StateWriter
-from rig.engine.state import DeviceState, RigState
-from rig.interaction.midi import collect_midi_devices
+from rig.engine.ports import ConfirmationIO, RichConfirmationIO, StateWriter
+from rig.engine.state import RigState
 from rig.midi.adapter import MidiManager
 from rig.models.rig import Rig
 
@@ -49,7 +48,6 @@ def apply_plan(
     plan: Plan | None = None,
     *,
     state_writer: StateWriter,
-    midi_connection_io: MidiConnectionIO,
     confirmation_io: ConfirmationIO | None = None,
     rig: Rig | None = None,
     config_path: str | None = None,
@@ -86,10 +84,9 @@ def apply_plan(
     cba_results: list[DeviceApplyResult] = []
     scene_results: list[SceneApplyResult] = []
 
-    # --- Phase -2: Device setup (each device manages its own MIDI connection + one-time init) ---
-    # Devices that have been migrated to their own packages implement real setup() here.
-    # Devices still in core return no-op SetupResult(). Phase -1 below handles legacy MIDI
-    # connections for devices whose setup() is still a no-op.
+    # --- Phase: Device setup (each device manages its own MIDI connection + one-time init) ---
+    # Every device plugin that needs MIDI handles its own port connection in setup().
+    # Devices that don't need MIDI (analog) return a no-op SetupResult().
     if rig:
         setup_ctx = SetupContext(
             state=state,
@@ -97,7 +94,6 @@ def apply_plan(
             dry_run=dry_run,
             confirmation_io=confirmation_io or RichConfirmationIO(),
             midi=midi,
-            midi_connection_io=midi_connection_io,
             config_path=config_path,
         )
         for _device_id, device in rig.devices.items():
@@ -110,45 +106,6 @@ def apply_plan(
                     )
                 if result.state_modified:
                     state_modified = True
-
-    # TODO: We probably should identify the controller first
-    # For devices that can be configured via controller (CBA) that would be useful
-    # For devices that need direct connection (HX), we should maybe make that more obvious in the configuration or the "apply" implementation
-
-    # --- Phase -1: MIDI connection per unique device ---
-    midi_devices = collect_midi_devices(plan) if midi else set()
-
-    if midi_devices and not dry_run:
-        logger.info("MIDI connection phase: %d device(s)", len(midi_devices))
-        console.print("\n[bold]MIDI Connection Phase[/bold]")
-
-    for device_id in sorted(midi_devices):
-        if device_id in ctx.connected_devices:
-            continue
-        if midi.is_connected(device_id):
-            ctx.connected_devices.add(device_id)
-            continue
-
-        pedal = rig.pedals.get(device_id) if rig else None
-        ch = (pedal.config.midi_channel or 1) if pedal else 1
-        cached_port = state.devices.get(device_id, DeviceState()).midi_port
-
-        if dry_run:
-            console.print(
-                f"  [cyan]🔌[/cyan] {device_id}: connect MIDI (ch {ch})[dim] (dry-run)[/dim]"
-            )
-            ctx.connected_devices.add(device_id)
-            continue
-
-        res, port_name = midi_connection_io.prompt_connect(device_id, ch, midi, cached_port)
-        if res == "quit":
-            console.print("[red]Apply cancelled by user[/red]")
-            return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
-        if res == "confirm" and port_name:
-            update_device_state(state, device_id, midi_port=port_name)
-            state_modified = True
-            ctx.connected_devices.add(device_id)
-        # If skipped → device not in connected_devices, falls back to manual prompts
 
     # --- Phase 1: Scene apply ---
     scene_names = [scene] if scene else list(plan.scenes.keys())
