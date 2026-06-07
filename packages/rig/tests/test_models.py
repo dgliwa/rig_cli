@@ -1,7 +1,6 @@
 import pytest
 from pydantic import ValidationError
 
-from rig.models.controller import ControllerType
 from rig.models.device import (
     Control,
     ControllerConfig,
@@ -54,13 +53,6 @@ class TestControllerConfig:
         assert restored.type == DeviceType.CONTROLLER
         assert isinstance(restored.config, ControllerConfig)
 
-    def test_controller_py_backward_compat_exports(self):
-        from rig.models.controller import Controller, ControllerType, MC6Config
-
-        assert ControllerType.MC6 == "mc6"
-        assert MC6Config is not None
-        assert Controller is not None
-
 
 class TestPedalModels:
     def test_pedal_definition_round_trips(self):
@@ -80,9 +72,6 @@ class TestPedalModels:
         assert DeviceType.DIGITAL.value == "digital"
         assert DeviceType.ANALOG.value == "analog"
         assert DeviceType.MODELER.value == "modeler"
-
-    def test_controller_type_enum_values(self):
-        assert ControllerType.MC6.value == "mc6"
 
     def test_invalid_control_rejected(self):
         with pytest.raises(ValidationError):

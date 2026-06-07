@@ -1,4 +1,3 @@
-from rig.models.controller import Controller, ControllerType, MC6Config
 from rig.models.device import (
     ChaseBlissConfig,
     Control,
@@ -23,9 +22,6 @@ __all__ = [
     "Device",
     "DeviceConfig",
     "DeviceType",
-    "Controller",
-    "ControllerType",
-    "MC6Config",
     "Rig",
     "Preset",
     "Control",
