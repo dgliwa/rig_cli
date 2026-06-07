@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = ["rig"]
 
 [project.entry-points."rig.devices"]
-manual = "rig.engine.devices:AnalogDevice"
+manual = "rig_analog.device:AnalogDevice"
 
 [tool.uv.sources]
 rig = { workspace = true }

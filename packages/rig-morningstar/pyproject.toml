@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = ["rig"]
 
 [project.entry-points."rig.devices"]
-controller = "rig.engine.devices:MC6Device"
+controller = "rig_morningstar.device:MC6Device"
 
 [tool.uv.sources]
 rig = { workspace = true }
