@@ -116,4 +116,4 @@ Phases execute in numeric order: 1 → 2 → 3
 | 2. Engine I/O Decoupling | 2/2 | Complete    | 2026-06-05 |
 | 3. Core Domain Refactor | 4/4 | Complete    | 2026-06-05 |
 | 4. Plugin Migration | 4/4 | Complete    | 2026-06-06 |
-| 5. Dependency Graph & Plan Command | 6/6 | Complete   | 2026-06-06 |
+| 5. Dependency Graph & Plan Command | 6/6 | Complete    | 2026-06-07 |
