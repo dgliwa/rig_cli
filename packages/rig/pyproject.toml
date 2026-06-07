@@ -24,5 +24,7 @@ Source = "https://github.com/dgliwa/rig_cli"
 [project.scripts]
 rig = "rig.cli:app"
 
+[project.entry-points."rig.devices"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/rig"]
