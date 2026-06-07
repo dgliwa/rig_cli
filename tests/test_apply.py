@@ -125,6 +125,7 @@ class TestApplyPlan:
         state = state_adapter.state
         assert "hx-stomp" in state.devices
         assert state.devices["hx-stomp"].last_preset == "clean-edge"
+        assert "test-scene" in state.scenes
 
     def test_apply_skip_does_not_write_device_state(self, tmp_path):
         config = _make_config()
@@ -143,6 +144,7 @@ class TestApplyPlan:
         # All actions skipped: no device state written
         state = state_adapter.state
         assert state.devices == {}
+        assert state.scenes == {}
 
     def test_apply_quit_stops_early(self, tmp_path, capsys):
         config = _make_config()
