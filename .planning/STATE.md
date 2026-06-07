@@ -82,9 +82,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-07T19:27:19.996Z
-Stopped at: context exhaustion at 75% (2026-06-07)
-Resume file: .planning/phases/05-dependency-graph-plan-command/05-CONTEXT.md
+Last session: 2026-06-07T20:18:02.621Z
+Stopped at: Phase 6 context gathered
+Resume file: .planning/phases/06-core-package-entry-point-discovery/06-CONTEXT.md
 
 ## Operator Next Steps
 
