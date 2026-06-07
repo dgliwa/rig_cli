@@ -1,12 +1,3 @@
-# Requirements Archive: v1.1 Package Extraction & Plugin Isolation
-
-**Archived:** 2026-06-07
-**Status:** SHIPPED
-
-For current requirements, see `.planning/REQUIREMENTS.md`.
-
----
-
 # Requirements: rig-cli
 
 **Defined:** 2026-06-07
@@ -71,7 +62,6 @@ None currently.
 | DOCS-01 | Phase 8 | Pending |
 
 **Coverage:**
-
 - v1.1 requirements: 12 total
 - Mapped to phases: 12
 - Unmapped: 0 ✓

@@ -1,22 +1,5 @@
 # Milestones
 
-## v1.1 Package Extraction & Plugin Isolation (Shipped: 2026-06-07)
-
-**Phases completed:** 2 phases, 5 plans
-
-**Key accomplishments:**
-
-1. `rig` discovers devices at runtime via `importlib.metadata.entry_points('rig.devices')` — zero hard imports of any plugin package
-2. All 4 plugin packages (`rig-analog`, `rig-chasebliss`, `rig-morningstar`, `rig-hx`) register independently via entry points and are independently installable
-3. MIDI connection management moved from engine to device level — each device plugin handles its own MIDI lifecycle in `setup()`
-4. `rig.engine.devices.py` deleted — all device classes live in their respective plugin packages
-5. HXStompDevice and full ChaseBlissDevice created with per-device MIDI setup, replacing old core device classes
-6. Engine MIDI connection loop (Phase -1) removed — `apply_plan()` no longer orchestrates MIDI ports
-
-**Deferred:** CI pipelines, PyPI publishing, plugin authoring guide
-
----
-
 ## v1.0 I/O Decoupling & Plugin Architecture (Shipped: 2026-06-07)
 
 **Phases completed:** 5 phases, 17 plans, 11 tasks
