@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Package Extraction & Plugin Isolation
-status: planning
-last_updated: "2026-06-07T20:11:49.826Z"
-last_activity: 2026-06-07
+status: discussing
+last_updated: "2026-06-07T20:18:02.621Z"
+last_activity: 2026-06-07 — v1.1 roadmap created
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,13 +20,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-04)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** Phase 05 — dependency-graph-plan-command
+**Current focus:** Phase 06 — core-package-entry-point-discovery
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
+Phase: Phase 6 — Core Package & Entry Point Discovery
+Plan: Not started
+Status: Gathering context
 Last activity: 2026-06-07 — Milestone v1.1 started
 
 ## Performance Metrics
@@ -88,4 +88,6 @@ Resume file: .planning/phases/05-dependency-graph-plan-command/05-CONTEXT.md
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Discuss phase 6 with /gsd-discuss-phase 6
+- Plan phase 6 with /gsd-plan-phase 6
+- Execute phase 6 with /gsd-execute-phase 6
