@@ -86,4 +86,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-06 — Phase 4 complete (plugin-migration: all appliers migrated to Device Protocol; engine routes through registry)*
+*Last updated: 2026-06-07 — Phase 5 complete (dependency-graph-plan-command: DeviceGraph topology ordering, compute_plan with before/after diff, rig plan CLI, apply_plan optional plan param, CBA single-apply convergence)*
