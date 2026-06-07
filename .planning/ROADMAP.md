@@ -41,15 +41,18 @@
     5. Engine no longer manages MIDI connections for plugin devices — devices handle their own
   - **Context:** WIP has `packages/rig-*/pyproject.toml` with entry point stubs — needs proper MIDI lifecycle in ChaseBlissDevice and MC6Device
 
-- [ ] **Phase 8: Build, CI & Plugin Authoring Docs** — Independent versioning, editable installs, CI pipeline per package, plugin authoring documentation
-  - Goal: Each package independently releasable; clear docs for adding new device plugins
-  - Requirements: BUILD-01, BUILD-02, BUILD-03, DOCS-01
+- [ ] **Phase 8: Core Cleanup — Dead Code & Plugin Isolation** — Remove duplicate/dead code from core, move plugin-specific interaction code to respective packages, refactor Controller model as Protocol
+  - Goal: Core has zero hard dependencies on plugin-specific code; no dead code in `packages/rig`
+  - Requirements: CLEANUP-01, CLEANUP-02, CLEANUP-03, CLEANUP-04
   - Success criteria:
-    1. `pip install -e packages/rig-*` works for each package
-    2. CI builds and lint-tests each package independently
-    3. CI publishes each package to PyPI on tag
-    4. Plugin authoring guide exists at `docs/plugin-authoring.md`
-    5. A new "hello world" device plugin can be written following the guide in < 10 minutes
+    1. `rig/midi/mc6.py` deleted — tests use `rig_morningstar.sysex`
+    2. `rig/generators/mc6_presets.py` deleted — tests use `rig_morningstar.generator`
+    3. `rig/catalog/chase_bliss.py` deleted — use `rig_chasebliss.catalog`
+    4. `rig/engine/appliers/chase_bliss.py` deleted — test uses `rig_chasebliss.applier`
+    5. `rig/interaction/cba.py` moved to `rig-chasebliss` — plugin owns CBA prompts
+    6. `rig/interaction/analog.py` moved to `rig-analog` — plugin owns analog prompts
+    7. `rig/models/controller.py` refactored — `Controller` is a Protocol, MC6Config moved to `rig-morningstar`
+    8. All 300+ tests pass with zero hard plugin deps from core
 
 </details>
 
@@ -64,4 +67,4 @@
 | 5. Dependency Graph & Plan Command | v1.0 | 6/6 | Complete | 2026-06-07 |
 | 6. Core Package & Entry Point Discovery | v1.1 | 2/2 | Complete | 2026-06-07 |
 | 7. Plugin Package Wiring & Device-Level MIDI | v1.1 | 3/3 | Complete    | 2026-06-07 |
-| 8. Build, CI & Plugin Authoring Docs | v1.1 | 0/0 | Not started | — |
+| 8. Core Cleanup — Dead Code & Plugin Isolation | v1.1 | 0/0 | Not started | — |

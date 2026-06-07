@@ -25,9 +25,14 @@
 - [ ] **BUILD-02**: Editable installs work for local dev (`pip install -e packages/rig-*`)
 - [ ] **BUILD-03**: CI publishes each package independently
 
-### Docs
+### Core Cleanup
 
-- [ ] **DOCS-01**: Plugin authoring guide — entry point contract, expected interface, example
+- [ ] **CLEANUP-01**: Remove dead/duplicate MC6 code (`rig/midi/mc6.py`, `rig/generators/mc6_presets.py`) — tests use plugin packages
+- [ ] **CLEANUP-02**: Remove dead/duplicate CBA code (`rig/catalog/chase_bliss.py`, `rig/engine/appliers/chase_bliss.py`) — tests use plugin packages
+- [ ] **CLEANUP-03**: Move CBA interaction prompts from `rig/interaction/cba.py` to `rig-chasebliss` — plugin imports its own prompts
+- [ ] **CLEANUP-04**: Move analog interaction prompt from `rig/interaction/analog.py` to `rig-analog` — plugin imports its own prompts
+- [ ] **CLEANUP-05**: Refactor/remove `rig/models/controller.py` — unused Controller model and MC6Config deleted
+- [ ] **CLEANUP-06**: Remove plugin-specific prompt methods from `ConfirmationIO` Protocol — core has no plugin-specific I/O methods
 
 ## v2 Requirements
 
@@ -56,14 +61,16 @@ None currently.
 | CHASE-01 | Phase 7 | Pending |
 | MC6-01 | Phase 7 | Pending |
 | HX-01 | Phase 7 | Pending |
-| BUILD-01 | Phase 8 | Pending |
-| BUILD-02 | Phase 8 | Pending |
-| BUILD-03 | Phase 8 | Pending |
-| DOCS-01 | Phase 8 | Pending |
+| CLEANUP-01 | Phase 8 | Pending |
+| CLEANUP-02 | Phase 8 | Pending |
+| CLEANUP-03 | Phase 8 | Pending |
+| CLEANUP-04 | Phase 8 | Pending |
+| CLEANUP-05 | Phase 8 | Pending |
+| CLEANUP-06 | Phase 8 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 12 total
-- Mapped to phases: 12
+- v1.1 requirements: 14 total
+- Mapped to phases: 14
 - Unmapped: 0 ✓
 
 ---
