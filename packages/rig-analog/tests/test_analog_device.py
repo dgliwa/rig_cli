@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from rig_analog.device import AnalogDevice
 from rig.engine.plugin import SetupContext, SetupResult
 from rig.engine.state import RigState
+from rig_analog.device import AnalogDevice
 
 
 def _make_setup_ctx() -> SetupContext:

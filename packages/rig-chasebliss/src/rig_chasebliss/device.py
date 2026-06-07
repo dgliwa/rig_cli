@@ -1,10 +1,11 @@
 """Chase Bliss Audio device implementation and setup helper."""
+
 from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING, Any
 
-from rig.engine.appliers.base import ApplyContext, DeviceApplyResult, update_device_state
+from rig.engine.appliers.base import ApplyContext, update_device_state
 from rig.engine.plugin import SetupContext, SetupResult
 from rig.engine.state import DeviceState
 from rig.models.device import ChaseBlissConfig

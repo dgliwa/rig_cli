@@ -63,6 +63,6 @@
 | 3. Core Domain Refactor | v1.0 | 4/4 | Complete | 2026-06-05 |
 | 4. Plugin Migration | v1.0 | 4/4 | Complete | 2026-06-06 |
 | 5. Dependency Graph & Plan Command | v1.0 | 6/6 | Complete | 2026-06-07 |
-| 6. Core Package & Entry Point Discovery | v1.1 | 0/0 | Not started | — |
+| 6. Core Package & Entry Point Discovery | v1.1 | 2/0 | Planned (2 plans ready) | — |
 | 7. Plugin Package Wiring & Device-Level MIDI | v1.1 | 0/0 | Not started | — |
 | 8. Build, CI & Plugin Authoring Docs | v1.1 | 0/0 | Not started | — |

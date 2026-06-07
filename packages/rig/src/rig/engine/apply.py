@@ -105,7 +105,9 @@ def apply_plan(
                 result = device.setup(setup_ctx)
                 if result.cancelled:
                     console.print("[red]Apply cancelled by user[/red]")
-                    return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
+                    return ApplyResult(
+                        status="cancelled", cba_setup=cba_results, scenes=scene_results
+                    )
                 if result.state_modified:
                     state_modified = True
 

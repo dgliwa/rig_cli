@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Package Extraction & Plugin Isolation
-status: discussing
+status: planned
 last_updated: "2026-06-07T20:18:02.621Z"
 last_activity: 2026-06-07 — v1.1 roadmap created
 progress:
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 ## Current Position
 
 Phase: Phase 6 — Core Package & Entry Point Discovery
-Plan: Not started
-Status: Gathering context
-Last activity: 2026-06-07 — Milestone v1.1 started
+Plan: 2 plans (P1: Entry Point Schema & PluginRegistry Refactor, P2: Backward Compat Tests & Verification)
+Status: Planned — ready for execution
+Last activity: 2026-06-07 — Phase 6 planned with 2 plans
 
 ## Performance Metrics
 
