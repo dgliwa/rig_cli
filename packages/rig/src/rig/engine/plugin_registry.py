@@ -1,15 +1,19 @@
-"""PluginRegistry — maps device config type strings to Device implementations and model classes.
+"""PluginRegistry — maps device config type strings to Device implementations.
 
-Phase 3: Registry scaffold created.
-Phase 4: register_model/get_model added for loader-driven dispatch; Device instances registered in P2.
+Discovery via importlib.metadata.entry_points(group='rig.devices') at startup.
+Legacy register()/get()/register_model()/get_model() interface preserved for
+test compatibility. Entry point is the single production registration path.
 """
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from rig.engine.plugin import Device
+
+logger = logging.getLogger(__name__)
 
 
 class PluginRegistry:
@@ -30,8 +34,71 @@ class PluginRegistry:
         return self._model_classes.get(config_type)
 
 
-def get_registry() -> PluginRegistry:
-    """Return the default PluginRegistry instance with all four device types registered."""
-    from rig.engine.devices import default_registry  # lazy to avoid circular import
+_registry: PluginRegistry | None = None
 
-    return default_registry
+
+def _discover() -> PluginRegistry:
+    """Discover device plugins via entry points and return a populated PluginRegistry.
+
+    Each entry point in the ``rig.devices`` group must point to a Device Pydantic
+    model class. The class is loaded and registered under the entry point's name as
+    both the plugin instance (lazy-instantiated with placeholder args) and the model
+    class for loader dispatch.
+
+    Failures to load a plugin produce a log warning but do not crash.
+    If no entry points are found (zero plugins installed), the registry is empty.
+    """
+    import importlib.metadata as m
+
+    registry = PluginRegistry()
+
+    eps = m.entry_points(group="rig.devices")
+    for ep in eps:
+        try:
+            model_class = ep.load()
+            if not isinstance(model_class, type):
+                logger.warning(
+                    "Entry point '%s' does not resolve to a class (got %s)",
+                    ep.name,
+                    type(model_class).__name__,
+                )
+                continue
+            # Register the model class for loader dispatch
+            registry.register_model(ep.name, model_class)
+            # Create a lazy placeholder instance for plugin dispatch.
+            # The instance will be replaced when the loader parses actual device YAML.
+            try:
+                placeholder = model_class(id=f"__{ep.name}__", name=str(ep.name), config=None)
+            except Exception:
+                # Some model classes may require non-None config; try minimal constructor
+                try:
+                    placeholder = model_class(
+                        id=f"__{ep.name}__", name=str(ep.name), config=object()
+                    )
+                except Exception as exc:
+                    logger.warning("Could not instantiate placeholder for '%s': %s", ep.name, exc)
+                    continue
+            registry.register(ep.name, placeholder)
+            logger.debug("Registered device plugin '%s' → %s", ep.name, model_class.__name__)
+        except Exception as exc:
+            logger.warning("Failed to load device plugin '%s': %s", ep.name, exc)
+
+    return registry
+
+
+def get_registry() -> PluginRegistry:
+    """Return the shared PluginRegistry singleton.
+
+    Lazily discovered from entry points on first call.
+    """
+    global _registry
+    if _registry is None:
+        _registry = _discover()
+    return _registry
+
+
+def reload_registry() -> PluginRegistry:
+    """Force re-discovery and return a fresh registry. Used in tests."""
+    global _registry
+    _registry = _discover()
+    return _registry
