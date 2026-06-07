@@ -28,10 +28,10 @@ class TestAnalogDevice:
         assert device.get_scene_pc_command("clean") is None
 
     def test_register_populates_registry(self):
-        from rig.engine.plugin_registry import get_registry
-        from rig_analog import register
+        """AnalogDevice is discoverable via entry points (not register() callback)."""
+        from rig.engine.devices import AnalogDevice as CoreAnalogDevice
+        from rig.engine.plugin_registry import reload_registry
 
-        register()
-        registry = get_registry()
+        registry = reload_registry()
         assert registry.get("manual") is not None
-        assert registry.get_model("manual") is AnalogDevice
+        assert registry.get_model("manual") is CoreAnalogDevice

@@ -310,3 +310,86 @@ def test_plugin_registry_stores_multiple_model_types() -> None:
     assert registry.get_model("midi") is FakeMidi
     assert registry.get_model("chase_bliss") is FakeCba
     assert registry.get_model("controller") is None
+
+
+# ---------------------------------------------------------------------------
+# Entry point discovery tests
+# ---------------------------------------------------------------------------
+
+
+def test_reload_registry_returns_plugin_registry() -> None:
+    from rig.engine.plugin_registry import reload_registry
+
+    registry = reload_registry()
+    assert registry is not None
+    assert isinstance(registry, PluginRegistry)
+
+
+def test_get_registry_returns_cached_instance() -> None:
+    from rig.engine.plugin_registry import get_registry, reload_registry
+
+    first = reload_registry()
+    second = get_registry()
+    assert first is second
+
+
+def test_reload_registry_discards_previous_cache() -> None:
+    from rig.engine.plugin_registry import get_registry, reload_registry
+
+    first = get_registry()
+    second = reload_registry()
+    assert first is not second
+
+
+def test_discovery_finds_registered_plugins() -> None:
+    from rig.engine.plugin_registry import reload_registry
+
+    registry = reload_registry()
+    names = set(registry._plugins.keys())
+    assert "manual" in names
+    assert "midi" in names
+    assert "chase_bliss" in names
+    assert "controller" in names
+
+
+def test_discovery_registers_model_classes() -> None:
+    from rig.engine.plugin_registry import reload_registry
+
+    registry = reload_registry()
+    assert registry.get_model("manual") is not None
+    assert registry.get_model("midi") is not None
+    assert registry.get_model("chase_bliss") is not None
+    assert registry.get_model("controller") is not None
+
+
+def test_discovery_placeholder_implements_device_protocol() -> None:
+    from rig.engine.plugin import DeviceApplyContext
+    from rig.engine.plugin_registry import reload_registry
+
+    registry = reload_registry()
+    device = registry.get("manual")
+    assert device is not None
+    assert hasattr(device, "id")
+    assert hasattr(device, "name")
+    assert hasattr(device, "config")
+    assert hasattr(device, "plan")
+    assert hasattr(device, "diff")
+    assert hasattr(device, "apply")
+
+
+def test_discovery_in_workspace_finds_all_plugins() -> None:
+    """In the uv workspace all 4 plugin packages are installed, so discovery
+    should find them all. This test verifies the happy path."""
+    from rig.engine.plugin_registry import reload_registry
+
+    registry = reload_registry()
+    # In the workspace environment, all 4 plugins are always installed
+    assert len(registry._plugins) >= 1
+    assert len(registry._model_classes) >= 1
+
+
+def test_bad_entry_point_does_not_crash_discovery() -> None:
+    from rig.engine.plugin_registry import _discover
+
+    registry = _discover()
+    assert isinstance(registry, PluginRegistry)

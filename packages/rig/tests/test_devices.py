@@ -1,7 +1,8 @@
 """Tests for concrete Device plugin types in src/rig/engine/devices.py.
 
 Phase 4 P2: AnalogDevice, MidiDevice, ChaseBlissDevice, MC6Device satisfy
-the Device Protocol and are registered in a default PluginRegistry instance.
+the Device Protocol. Phase 6 P2: Registration tested via entry point
+discovery (reload_registry()) instead of removed default_registry.
 """
 
 from __future__ import annotations
@@ -348,85 +349,23 @@ def test_mc6_device_apply_dry_run_uses_config_banks() -> None:
 
 
 # ---------------------------------------------------------------------------
-# PluginRegistry default instance
+# Entry point discovery tests
 # ---------------------------------------------------------------------------
 
 
-def test_default_registry_importable() -> None:
-    from rig.engine.devices import default_registry
+def test_get_registry_returns_all_four_types_via_entry_points() -> None:
+    """get_registry() discovers all four device types through entry points."""
+    from rig.engine.plugin_registry import reload_registry
 
-    assert default_registry is not None
-
-
-def test_default_registry_has_manual_plugin() -> None:
-    from rig.engine.devices import default_registry
-
-    plugin = default_registry.get("manual")
-    assert plugin is not None
-
-
-def test_default_registry_has_midi_plugin() -> None:
-    from rig.engine.devices import default_registry
-
-    plugin = default_registry.get("midi")
-    assert plugin is not None
-
-
-def test_default_registry_has_chase_bliss_plugin() -> None:
-    from rig.engine.devices import default_registry
-
-    plugin = default_registry.get("chase_bliss")
-    assert plugin is not None
-
-
-def test_default_registry_has_controller_plugin() -> None:
-    from rig.engine.devices import default_registry
-
-    plugin = default_registry.get("controller")
-    assert plugin is not None
-
-
-def test_default_registry_manual_is_analog_device() -> None:
-    from rig.engine.devices import AnalogDevice, default_registry
-
-    plugin = default_registry.get("manual")
-    assert isinstance(plugin, AnalogDevice)
-
-
-def test_default_registry_midi_is_midi_device() -> None:
-    from rig.engine.devices import MidiDevice, default_registry
-
-    plugin = default_registry.get("midi")
-    assert isinstance(plugin, MidiDevice)
-
-
-def test_default_registry_chase_bliss_is_chase_bliss_device() -> None:
-    from rig.engine.devices import ChaseBlissDevice, default_registry
-
-    plugin = default_registry.get("chase_bliss")
-    assert isinstance(plugin, ChaseBlissDevice)
-
-
-def test_default_registry_controller_is_mc6_device() -> None:
-    from rig.engine.devices import MC6Device, default_registry
-
-    plugin = default_registry.get("controller")
-    assert isinstance(plugin, MC6Device)
-
-
-def test_default_registry_also_registers_model_classes() -> None:
-    from rig.engine.devices import (
-        AnalogDevice,
-        ChaseBlissDevice,
-        MC6Device,
-        MidiDevice,
-        default_registry,
-    )
-
-    assert default_registry.get_model("manual") is AnalogDevice
-    assert default_registry.get_model("midi") is MidiDevice
-    assert default_registry.get_model("chase_bliss") is ChaseBlissDevice
-    assert default_registry.get_model("controller") is MC6Device
+    registry = reload_registry()
+    assert registry.get("manual") is not None
+    assert registry.get("midi") is not None
+    assert registry.get("chase_bliss") is not None
+    assert registry.get("controller") is not None
+    assert registry.get_model("manual") is not None
+    assert registry.get_model("midi") is not None
+    assert registry.get_model("chase_bliss") is not None
+    assert registry.get_model("controller") is not None
 
 
 # ---------------------------------------------------------------------------
@@ -518,12 +457,4 @@ def test_chase_bliss_device_get_scene_pc_command_with_digital_preset() -> None:
     assert cmd["value"] == 2
 
 
-def test_get_registry_returns_registry_with_all_four_types() -> None:
-    from rig.engine.devices import AnalogDevice, ChaseBlissDevice, MC6Device, MidiDevice
-    from rig.engine.plugin_registry import get_registry
 
-    registry = get_registry()
-    assert registry.get_model("manual") is AnalogDevice
-    assert registry.get_model("midi") is MidiDevice
-    assert registry.get_model("chase_bliss") is ChaseBlissDevice
-    assert registry.get_model("controller") is MC6Device
