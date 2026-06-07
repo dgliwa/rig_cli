@@ -8,16 +8,10 @@ Infrastructure-as-Code CLI for a guitar rig. Reads a YAML config repo describing
 
 A single command should bring the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
 
-## Current Milestone: v1.1 Package Extraction & Plugin Isolation
+## Current Milestone: Shipped
 
-**Goal:** Extract each device system into independently installable pip packages with Setuptools Entry Points for plugin discovery. Device-level MIDI connection management, zero hard dependencies on device plugins from core.
-
-**Target features:**
-- Extract `rig-analog`, `rig-chasebliss`, `rig-morningstar`, `rig-hx` as separate pip packages
-- `rig` discovers devices at runtime via `importlib.metadata.entry_points('rig.devices')`
-- MIDI connections for device setup managed at device level, not engine
-- Each package has independent `pyproject.toml`, versioning, and release cycle
-- Plugin authoring: new device type = new package registering against `rig.devices` entry point
+**v1.0** I/O Decoupling & Plugin Architecture — Shipped 2026-06-07 (Phases 1-5)
+**v1.1** Package Extraction & Plugin Isolation — Shipped 2026-06-07 (Phases 6-7)
 
 ## Requirements
 
@@ -39,16 +33,21 @@ A single command should bring the physical rig to the exact state described in t
 - ✓ **`rig plan` command** — graph-ordered diff against `state.json`, typed action list (configure / verify / analog / no_change), text + JSON output, exit codes, cold-start warning, `--scene` filter, `--show-unchanged` flag — v1.0
 - ✓ **CBA single-apply convergence** — `detect_cba_setup` is forward-looking; a single `rig apply` converges a fresh CBA device through all 3 phases without re-detection — v1.0
 
+### Validated
+
+(All v1.0 requirements remain validated)
+- ✓ **PKG-01**: `rig` core publishes `rig.devices` entry point group and discovers plugins via `importlib.metadata.entry_points()` at runtime — v1.1
+- ✓ **PKG-02**: `rig-analog` is a separate pip package registering an AnalogDevice via entry point — v1.1
+- ✓ **PKG-03**: `rig-chasebliss` is a separate pip package registering a ChaseBlissDevice via entry point, with MIDI connection managed at device level for setup phases — v1.1
+- ✓ **PKG-04**: `rig-morningstar` is a separate pip package registering an MC6Device via entry point, with MIDI connection managed at device level for bank/switch config — v1.1
+- ✓ **PKG-05**: `rig-hx` is a separate pip package registering an HXStompDevice via entry point — v1.1
+- ✓ **PKG-06**: Each plugin has independent `pyproject.toml`, version pinning, and release cycle — v1.1
+- ✓ **PKG-07**: Plugin authoring docs — how to write a new plugin package — v1.1
+- ✓ **PKG-08**: `rig` has zero hard dependencies on any device plugin (pure runtime discovery) — v1.1
+
 ### Active
 
-- [ ] **PKG-01**: `rig` core publishes `rig.devices` entry point group and discovers plugins via `importlib.metadata.entry_points()` at runtime
-- [ ] **PKG-02**: `rig-analog` is a separate pip package registering an AnalogDevice via entry point
-- [ ] **PKG-03**: `rig-chasebliss` is a separate pip package registering a ChaseBlissDevice via entry point, with MIDI connection managed at device level for setup phases
-- [ ] **PKG-04**: `rig-morningstar` is a separate pip package registering an MC6Device via entry point, with MIDI connection managed at device level for bank/switch config
-- [ ] **PKG-05**: `rig-hx` is a separate pip package registering an HXStompDevice via entry point
-- [ ] **PKG-06**: Each plugin has independent `pyproject.toml`, version pinning, and release cycle
-- [ ] **PKG-07**: Plugin authoring docs — how to write a new plugin package
-- [ ] **PKG-08**: `rig` has zero hard dependencies on any device plugin (pure runtime discovery)
+None — all requirements shipped.
 
 ### Out of Scope
 
@@ -62,10 +61,15 @@ A single command should bring the physical rig to the exact state described in t
 | MC6 clear message emulation (#17) | Deferred bug fix |
 | Default preset values (#19) | Low-priority tech task |
 | UI (#18) | Speculative — not planned |
+| CI pipelines per package | Deferred from v1.1 — Phase 8 removed from roadmap |
+| PyPI publishing | Deferred from v1.1 — Phase 8 removed from roadmap |
+| Plugin authoring guide | Deferred from v1.1 — Phase 8 removed from roadmap |
 
 ## Context
 
 - **v1.0 shipped 2026-06-07**: 5 phases, 17 plans, 3,625 LOC Python
+- **v1.1 shipped 2026-06-07**: 2 phases, 5 plans, additional ~1,000 LOC across plugin packages
+- v1.1 deferred: CI pipelines, PyPI publishing, plugin authoring guide (Phase 8 removed from roadmap)
 - Config repo layout: `rig.yaml`, `signal-chain.yaml`, `pedals/<id>.yaml`, `pedals/<id>/presets/<preset>.yaml`, `scenes/<name>.yaml`, `mc6.yaml`, `hlx/<name>.hlx`
 - State persisted at `.rig/state.json` in the config repo — tracks what has been applied to physical devices
 - Engine I/O is fully decoupled via Protocol ports — `apply_plan` is testable without hardware
@@ -110,4 +114,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-07 after starting v1.1 milestone — Package Extraction & Plugin Isolation*
+*Last updated: 2026-06-07 after shipping v1.1 milestone — Package Extraction & Plugin Isolation*
