@@ -40,9 +40,6 @@ class InMemoryPromptAdapter:
     def _next(self) -> str:
         return self._queue.popleft() if self._queue else self.default
 
-    def prompt_analog(self, device: str, preset_name: str) -> str:
-        return self._next()
-
     def prompt_device(
         self,
         device: str,
@@ -51,21 +48,6 @@ class InMemoryPromptAdapter:
         midi_channel: int | None,
         midi_connected: bool,
     ) -> str:
-        return self._next()
-
-    def prompt_cba_channel(self, device: str, midi_channel: int, midi_sent: bool) -> str:
-        return self._next()
-
-    def prompt_cba_preset(
-        self,
-        device: str,
-        preset_name: str,
-        preset_number: int | None,
-        midi_channel: int,
-    ) -> str:
-        return self._next()
-
-    def prompt_cba_register(self, device: str, scene_refs: list[str]) -> str:
         return self._next()
 
     def prompt_mc6_navigate(self, bank_num: int) -> str:

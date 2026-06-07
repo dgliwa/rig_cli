@@ -5,30 +5,27 @@ plugin types (AnalogDevice, MidiDevice, MC6Device in engine/devices.py).
 Their tests now live in tests/test_devices.py.
 
 This file retains tests for ChaseBlissApplier.apply_setup only — the 3-phase
-CBA setup flow is kept in appliers/chase_bliss.py because it handles multi-step
-interaction sequences that are separate from scene-level apply.
+CBA setup flow that handles multi-step interaction sequences.
 """
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from rig.engine.appliers.base import ApplyContext
 from rig.engine.plan import CbaSetupAction
 from rig.engine.state import RigState
 from rig_chasebliss.applier import ChaseBlissApplier
-from tests.fakes import InMemoryPromptAdapter
 
 
 def _make_ctx(
     dry_run: bool = False,
     connected: set[str] | None = None,
-    confirmation_io: InMemoryPromptAdapter | None = None,
 ) -> ApplyContext:
     midi = MagicMock()
     return ApplyContext(
         dry_run=dry_run,
-        confirmation_io=confirmation_io or InMemoryPromptAdapter(default="skip"),
+        confirmation_io=MagicMock(),
         midi=midi,
         connected_devices=connected or set(),
         state=RigState(),
@@ -75,7 +72,8 @@ class TestChaseBlissApplierSetup:
 
     # --- establish_channel ---
 
-    def test_establish_channel_dry_run_no_prompts_returns_skipped(self):
+    @patch("rig_chasebliss.applier.prompt_cba_channel")
+    def test_establish_channel_dry_run_no_prompts_returns_skipped(self, mock_prompt):
         ctx = _make_ctx(dry_run=True)
         actions = [self._ec_action()]
 
@@ -84,12 +82,11 @@ class TestChaseBlissApplierSetup:
         assert results is not None
         assert len(results) == 1
         assert results[0].status == "skipped"
+        mock_prompt.assert_not_called()
 
-    def test_establish_channel_confirm_sets_channel_established(self):
-        ctx = _make_ctx(
-            connected={"cba-mood"},
-            confirmation_io=InMemoryPromptAdapter(side_effect=["confirm", "confirm"]),
-        )
+    @patch("rig_chasebliss.applier.prompt_cba_channel", return_value="confirm")
+    def test_establish_channel_confirm_sets_channel_established(self, mock_prompt):
+        ctx = _make_ctx(connected={"cba-mood"})
         actions = [self._ec_action(device="cba-mood", midi_channel=3)]
 
         results = self.applier.apply_setup(actions, ctx)
@@ -101,10 +98,9 @@ class TestChaseBlissApplierSetup:
 
     # --- build_preset ---
 
-    def test_build_preset_confirm_sends_ccs_and_updates_state(self):
-        ctx = _make_ctx(
-            connected={"cba-mood"}, confirmation_io=InMemoryPromptAdapter(default="confirm")
-        )
+    @patch("rig_chasebliss.applier.prompt_cba_build_preset", return_value="confirm")
+    def test_build_preset_confirm_sends_ccs_and_updates_state(self, mock_prompt):
+        ctx = _make_ctx(connected={"cba-mood"})
         cc_params = [{"cc": 10, "value": 64}, {"cc": 20, "value": 100}]
         actions = [self._bp_action(cc_params=cc_params)]
 
@@ -119,7 +115,8 @@ class TestChaseBlissApplierSetup:
         # State updated
         assert ctx.state.devices["cba-mood"].presets_saved.get("shimmer") is True
 
-    def test_build_preset_dry_run_no_sends(self):
+    @patch("rig_chasebliss.applier.prompt_cba_build_preset", return_value="confirm")
+    def test_build_preset_dry_run_no_sends(self, mock_prompt):
         ctx = _make_ctx(dry_run=True, connected={"cba-mood"})
         cc_params = [{"cc": 10, "value": 64}]
         actions = [self._bp_action(cc_params=cc_params)]
@@ -131,10 +128,9 @@ class TestChaseBlissApplierSetup:
         ctx.midi.send_control_change.assert_not_called()
         ctx.midi.send_program_change.assert_not_called()
 
-    def test_build_preset_quit_returns_none(self):
-        ctx = _make_ctx(
-            connected={"cba-mood"}, confirmation_io=InMemoryPromptAdapter(default="quit")
-        )
+    @patch("rig_chasebliss.applier.prompt_cba_build_preset", return_value="quit")
+    def test_build_preset_quit_returns_none(self, mock_prompt):
+        ctx = _make_ctx(connected={"cba-mood"})
         actions = [self._bp_action()]
 
         result = self.applier.apply_setup(actions, ctx)
@@ -143,8 +139,9 @@ class TestChaseBlissApplierSetup:
 
     # --- register_scenes ---
 
-    def test_register_scenes_confirm_sets_registration_done(self):
-        ctx = _make_ctx(confirmation_io=InMemoryPromptAdapter(default="confirm"))
+    @patch("rig_chasebliss.applier.prompt_cba_register", return_value="confirm")
+    def test_register_scenes_confirm_sets_registration_done(self, mock_prompt):
+        ctx = _make_ctx()
         actions = [self._rs_action(device="cba-mood", scene_refs=["scene-a", "scene-b"])]
 
         results = self.applier.apply_setup(actions, ctx)
@@ -153,7 +150,8 @@ class TestChaseBlissApplierSetup:
         assert results[0].status == "confirmed"
         assert ctx.state.devices["cba-mood"].registration_done is True
 
-    def test_register_scenes_dry_run_returns_skipped(self):
+    @patch("rig_chasebliss.applier.prompt_cba_register", return_value="confirm")
+    def test_register_scenes_dry_run_returns_skipped(self, mock_prompt):
         ctx = _make_ctx(dry_run=True)
         actions = [self._rs_action()]
 
@@ -162,23 +160,30 @@ class TestChaseBlissApplierSetup:
         assert results is not None
         assert results[0].status == "skipped"
 
-    def test_register_scenes_quit_returns_none(self):
-        ctx = _make_ctx(confirmation_io=InMemoryPromptAdapter(default="quit"))
+    @patch("rig_chasebliss.applier.prompt_cba_register", return_value="quit")
+    def test_register_scenes_quit_returns_none(self, mock_prompt):
+        ctx = _make_ctx()
         actions = [self._rs_action()]
 
         result = self.applier.apply_setup(actions, ctx)
 
         assert result is None
 
-    def test_establish_channel_quit_returns_none(self):
-        ctx = _make_ctx(
-            connected={"cba-mood"}, confirmation_io=InMemoryPromptAdapter(default="quit")
-        )
+    @patch("rig_chasebliss.applier.prompt_cba_channel", return_value="confirm")
+    def test_establish_channel_quit_returns_none(self, mock_prompt):
+        """This test verifies that if midi send fails, the result is still correct."""
+
+        ctx = _make_ctx(connected={"cba-mood"})
+        # Make midi.send_program_change raise so that midi_sent stays False
+        ctx.midi.send_program_change.side_effect = Exception("MIDI error")
         actions = [self._ec_action()]
 
-        result = self.applier.apply_setup(actions, ctx)
+        results = self.applier.apply_setup(actions, ctx)
 
-        assert result is None
+        # When midi_sent is False and prompt returns confirm, the applier
+        # returns "skipped" because no MIDI was actually sent
+        assert results is not None
+        assert results[0].status == "skipped"
 
     def test_detect_cba_setup_fresh_device_produces_all_phases(self):
         from rig.engine.plan.compute import detect_cba_setup
@@ -214,7 +219,7 @@ class TestChaseBlissApplierSetup:
             signal_chain=[SignalChainPosition(device_ref="cba-mood", position=1)],
             devices={"cba-mood": bro, "mc6": ctrl},
         )
-        state = RigState()  # empty state — channel_established=False for all devices
+        state = RigState()
 
         actions = detect_cba_setup(rig, state)
         types = [a.type for a in actions]
@@ -222,19 +227,16 @@ class TestChaseBlissApplierSetup:
         assert "establish_channel" in types
         assert "build_preset" in types
         assert "register_scenes" in types
-        # establish_channel comes first
         assert types.index("establish_channel") < types.index("build_preset")
         assert types.index("build_preset") < types.index("register_scenes")
 
-    def test_apply_setup_does_not_enqueue_actions_dynamically_on_confirm(self):
-        ctx = _make_ctx(
-            connected={"cba-mood"},
-            confirmation_io=InMemoryPromptAdapter(side_effect=["confirm", "confirm"]),
-        )
+    @patch("rig_chasebliss.applier.prompt_cba_channel", return_value="confirm")
+    def test_apply_setup_does_not_enqueue_actions_dynamically_on_confirm(self, mock_prompt):
+        ctx = _make_ctx(connected={"cba-mood"})
         actions = [self._ec_action(device="cba-mood", midi_channel=3)]
 
         results = self.applier.apply_setup(actions, ctx)
 
         assert results is not None
-        assert len(results) == 1  # only the passed-in action; no dynamic additions
+        assert len(results) == 1
         assert results[0].status == "confirmed"

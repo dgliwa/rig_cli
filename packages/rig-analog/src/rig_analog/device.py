@@ -9,6 +9,7 @@ from rich.console import Console
 from rig.engine.appliers.base import DeviceApplyResult, update_device_state
 from rig.engine.plugin import DeviceApplyContext, PluginContext, SetupContext, SetupResult
 from rig.models.device import DeviceType
+from rig_analog.interaction import prompt_analog
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -53,7 +54,7 @@ class AnalogDevice(BaseModel):
                 device=action.device, status="skipped", preset=action.preset_name
             )
 
-        res = ctx.confirmation_io.prompt_analog(action.device, action.preset_name)
+        res = prompt_analog(action.device, action.preset_name)
         if res == "quit":
             return DeviceApplyResult(
                 device=action.device, status="error", preset=action.preset_name, error="quit"

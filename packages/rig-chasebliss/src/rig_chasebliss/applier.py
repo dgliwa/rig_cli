@@ -11,6 +11,11 @@ from rig.engine.appliers.base import (
     update_device_state,
 )
 from rig.engine.plan import CbaSetupAction
+from rig_chasebliss.interaction import (
+    prompt_cba_build_preset,
+    prompt_cba_channel,
+    prompt_cba_register,
+)
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -75,7 +80,7 @@ class ChaseBlissApplier:
 
         # Step 1: guide user to power-cycle + enter learn mode
         while True:
-            res = ctx.confirmation_io.prompt_cba_channel(action.device, action.midi_channel, False)
+            res = prompt_cba_channel(action.device, action.midi_channel, False)
             if res != "retry":
                 break
         if res == "quit":
@@ -98,9 +103,7 @@ class ChaseBlissApplier:
         if midi_sent:
             # Step 3: prompt user to hold footswitches to save
             while True:
-                res = ctx.confirmation_io.prompt_cba_channel(
-                    action.device, action.midi_channel, True
-                )
+                res = prompt_cba_channel(action.device, action.midi_channel, True)
                 if res == "retry":
                     try:
                         ctx.midi.send_program_change(action.device, 0, action.midi_channel)
@@ -158,7 +161,7 @@ class ChaseBlissApplier:
             console.print(f"  [green]✓[/green] {cc_sent}/{len(action.cc_params)} CC params sent")
 
         while True:
-            res = ctx.confirmation_io.prompt_cba_preset(
+            res = prompt_cba_build_preset(
                 action.device, action.preset_name, action.preset_number, action.midi_channel
             )
             if res == "retry":
@@ -209,7 +212,7 @@ class ChaseBlissApplier:
             )
             return DeviceApplyResult(device=action.device, status="skipped", preset=None)
 
-        res = ctx.confirmation_io.prompt_cba_register(action.device, action.scene_refs)
+        res = prompt_cba_register(action.device, action.scene_refs)
         if res == "quit":
             console.print("[red]Apply cancelled by user[/red]")
             return None
