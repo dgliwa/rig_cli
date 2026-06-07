@@ -23,7 +23,6 @@ from rich.console import Console
 
 from rig.engine.appliers.base import DeviceApplyResult, update_device_state
 from rig.engine.plugin import DeviceApplyContext, PluginContext, SetupContext, SetupResult
-from rig.engine.plugin_registry import PluginRegistry
 from rig.models.device import DeviceType
 from rig.models.preset import DigitalPreset, HXStompPreset
 
@@ -390,24 +389,3 @@ class MC6Device(BaseModel):
                     console.print(f"  [red]✗[/red] Switch {switch_label}: {e}")
 
         return DeviceApplyResult(device=device_id, status="confirmed")
-
-
-# ---------------------------------------------------------------------------
-# Default PluginRegistry instance
-# ---------------------------------------------------------------------------
-
-default_registry = PluginRegistry()
-
-# Register plugin instances (for registry.get())
-default_registry.register("manual", AnalogDevice(id="__analog__", name="AnalogDevice", config=None))
-default_registry.register("midi", MidiDevice(id="__midi__", name="MidiDevice", config=None))
-default_registry.register(
-    "chase_bliss", ChaseBlissDevice(id="__cba__", name="ChaseBlissDevice", config=None)
-)
-default_registry.register("controller", MC6Device(id="__mc6__", name="MC6Device", config=None))
-
-# Register model classes (for registry.get_model() — used by loader in P3)
-default_registry.register_model("manual", AnalogDevice)
-default_registry.register_model("midi", MidiDevice)
-default_registry.register_model("chase_bliss", ChaseBlissDevice)
-default_registry.register_model("controller", MC6Device)
