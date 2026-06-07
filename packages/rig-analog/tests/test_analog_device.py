@@ -29,9 +29,8 @@ class TestAnalogDevice:
 
     def test_register_populates_registry(self):
         """AnalogDevice is discoverable via entry points (not register() callback)."""
-        from rig.engine.devices import AnalogDevice as CoreAnalogDevice
         from rig.engine.plugin_registry import reload_registry
 
         registry = reload_registry()
         assert registry.get("manual") is not None
-        assert registry.get_model("manual") is CoreAnalogDevice
+        assert registry.get_model("manual") is AnalogDevice

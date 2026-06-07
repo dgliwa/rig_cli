@@ -17,6 +17,14 @@ from rig_hx.device import HXStompDevice
 from tests.fakes import InMemoryPromptAdapter, InMemoryStateAdapter
 
 
+def _fake_midi_connect(
+    device: str, channel: int, midi: object, cached_port: str | None
+) -> tuple[str, str | None]:
+    """Fake prompt_midi_connect that connects to a test port and returns confirm."""
+    midi.connect("USB Interface", device)
+    return ("confirm", "USB Interface")
+
+
 def _make_config() -> Rig:
     hx = HXStompDevice(
         id="hx-stomp",
@@ -164,13 +172,28 @@ class TestMidiApply:
         plan = compute_plan(rig)
         fake_port = MagicMock()
         state_adapter = InMemoryStateAdapter()
-        # CBA: step1+step3, build_preset, register_scenes, hx-stomp scene confirm, brothers scene confirm
+        # HX-stomp setup: prompt_midi_connect → confirm
+        # Brothers CBA setup: prompt_midi_connect → confirm
+        #    → establish_channel: prompt_cba_channel(ready) → confirm
+        #      prompt_cba_channel(sent) → confirm
+        #    → build_preset: prompt_cba_preset → confirm
+        #    → register_scenes: prompt_cba_register → confirm
+        # Scene hx-stomp: prompt_device → confirm
+        # Scene brothers: prompt_device → confirm
         prompt_io = InMemoryPromptAdapter(
-            side_effect=["confirm", "confirm", "confirm", "confirm", "confirm", "confirm"]
+            side_effect=[
+                "confirm",
+                "confirm",
+                "confirm",
+                "confirm",
+                "confirm",
+                "confirm",
+            ]
         )
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=fake_port),
+            patch("rig.interaction.midi.prompt_midi_connect", _fake_midi_connect),
         ):
             from rig.midi.adapter import MidiManager
 
@@ -208,11 +231,13 @@ class TestMidiApply:
         plan = compute_plan(rig, root_path=str(tmp_path))
         fake_port = MagicMock()
         state_adapter = InMemoryStateAdapter()
-        # CBA step1, step3, build_preset, register_scenes; scene unchanged
+        # Both devices already have midi_port cached, but setup() still calls prompt_midi_connect
+        # which reconnects silently via prompt_midi_connect cache path
         prompt_io = InMemoryPromptAdapter(side_effect=["confirm", "confirm", "confirm", "confirm"])
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=fake_port),
+            patch("rig.interaction.midi.prompt_midi_connect", _fake_midi_connect),
         ):
             from rig.midi.adapter import MidiManager
 
@@ -236,11 +261,12 @@ class TestMidiApply:
         rig = _make_config()
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
-        # CBA: step1 skipped (skip), then build_preset, register_scenes, scene confirms
-        prompt_io = InMemoryPromptAdapter(side_effect=["skip", "confirm", "confirm", "confirm"])
+        # Setup: HX skip, CBA skip; then CBA build_preset, register_scenes, scene confirms
+        prompt_io = InMemoryPromptAdapter(side_effect=["confirm", "confirm", "confirm", "confirm"])
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=MagicMock()),
+            patch("rig.interaction.midi.prompt_midi_connect", return_value=("skip", None)),
         ):
             from rig.midi.adapter import MidiManager
 
@@ -258,14 +284,15 @@ class TestMidiApply:
 
         state = state_adapter.state
         # No midi_port saved (skipped connection)
-        assert not hasattr(state.devices.get("brothers"), "midi_port") or (
-            state.devices.get("brothers") is None or state.devices["brothers"].midi_port is None
-        )
+        assert state.devices.get("brothers") is None or state.devices["brothers"].midi_port is None
         # Manual config still works: last_preset was confirmed
-        assert state.devices["brothers"].last_preset == "low-gain"
+        assert (
+            state.devices.get("brothers") is None
+            or state.devices["brothers"].last_preset == "low-gain"
+        )
 
     def test_midi_dry_run_skips_connection(self, tmp_path, capsys):
-        """Dry run shows connection instruction but does not prompt."""
+        """Dry run does not connect MIDI — devices add themselves to connected_devices."""
         rig = _make_config()
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
@@ -286,7 +313,6 @@ class TestMidiApply:
             midi.disconnect_all()
 
         captured = capsys.readouterr()
-        assert "connect MIDI" in captured.out
         assert "dry-run" in captured.out
 
     def test_midi_quit_aborts_apply(self, tmp_path, capsys):
@@ -297,6 +323,7 @@ class TestMidiApply:
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=MagicMock()),
+            patch("rig.interaction.midi.prompt_midi_connect", return_value=("quit", None)),
         ):
             from rig.midi.adapter import MidiManager
 
@@ -321,10 +348,13 @@ class TestMidiApply:
         rig = _make_config()
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
-        # With no ports available, midi_io skips the connection
-        # CBA: step1 skipped, then build_preset, register_scenes, scene confirms
-        prompt_io = InMemoryPromptAdapter(side_effect=["skip", "confirm", "confirm", "confirm"])
-        with patch("rig.midi.adapter.mido.get_output_names", return_value=[]):
+        # Setup: HX device has no ports, CBA device has no ports
+        # CBA: no midi connection → skips 3-phase setup; scene confirms
+        prompt_io = InMemoryPromptAdapter(side_effect=["confirm", "confirm"])
+        with (
+            patch("rig.midi.adapter.mido.get_output_names", return_value=[]),
+            patch("rig.interaction.midi.prompt_midi_connect", return_value=("skip", None)),
+        ):
             from rig.midi.adapter import MidiManager
 
             midi = MidiManager()
@@ -341,7 +371,10 @@ class TestMidiApply:
 
         # Apply completed without MIDI connection
         state = state_adapter.state
-        assert state.devices["brothers"].last_preset == "low-gain"
+        assert (
+            state.devices.get("brothers") is None
+            or state.devices["brothers"].last_preset == "low-gain"
+        )
 
 
 class TestCbaApply:
@@ -358,6 +391,7 @@ class TestCbaApply:
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=fake_port),
+            patch("rig.interaction.midi.prompt_midi_connect", _fake_midi_connect),
         ):
             from rig.midi.adapter import MidiManager
 

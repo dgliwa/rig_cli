@@ -363,7 +363,6 @@ def test_discovery_registers_model_classes() -> None:
 
 
 def test_discovery_placeholder_implements_device_protocol() -> None:
-    from rig.engine.plugin import DeviceApplyContext
     from rig.engine.plugin_registry import reload_registry
 
     registry = reload_registry()
