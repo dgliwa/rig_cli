@@ -1,10 +1,8 @@
 import pytest
 
-from rig.catalog.chase_bliss import MOOD_MKII_CONTROLS
 from rig.config.errors import ValidationError
 from rig.config.loader import load_rig
 from rig.engine.plan import compute_plan
-from rig.generators.mc6_presets import generate_mc6
 from rig.models.device import (
     ChaseBlissConfig,
     Control,
@@ -20,6 +18,8 @@ from rig.models.device import (
 )
 from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import RigConfig
+from rig_chasebliss.catalog import MOOD_MKII_CONTROLS
+from rig_morningstar.generator import generate_mc6
 
 FIXTURE_PATH = "tests/fixtures/sample_rig"
 

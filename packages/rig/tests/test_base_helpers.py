@@ -43,9 +43,13 @@ def test_mark_preset_saved_does_not_mutate_other_device_state_fields():
 
 
 def test_mark_preset_saved_is_the_only_caller_of_update_device_state_for_presets_saved():
-    """mark_preset_saved must be the single mutation path — no direct presets_saved writes in chase_bliss.py."""
+    """mark_preset_saved must be the single mutation path — no direct presets_saved writes in chase_bliss applier."""
     chase_bliss_src = (
-        Path(__file__).parent.parent / "src" / "rig" / "engine" / "appliers" / "chase_bliss.py"
+        Path(__file__).parent.parent.parent
+        / "rig-chasebliss"
+        / "src"
+        / "rig_chasebliss"
+        / "applier.py"
     ).read_text()
     tree = ast.parse(chase_bliss_src)
 
@@ -55,7 +59,7 @@ def test_mark_preset_saved_is_the_only_caller_of_update_device_state_for_presets
             for target in node.targets:
                 if isinstance(target, ast.Attribute) and target.attr == "presets_saved":
                     raise AssertionError(
-                        "chase_bliss.py directly assigns .presets_saved — "
+                        "chase_bliss/applier.py directly assigns .presets_saved — "
                         "all mutations must go through mark_preset_saved()"
                     )
         # Also look for keyword args in update_device_state(presets_saved=...) calls
@@ -68,7 +72,7 @@ def test_mark_preset_saved_is_the_only_caller_of_update_device_state_for_presets
                         # This is only acceptable inside mark_preset_saved itself,
                         # which lives in base.py — any occurrence here is a violation.
                         raise AssertionError(
-                            "chase_bliss.py calls update_device_state(presets_saved=...) directly — "
+                            "chase_bliss/applier.py calls update_device_state(presets_saved=...) directly — "
                             "all presets_saved mutations must go through mark_preset_saved()"
                         )
 

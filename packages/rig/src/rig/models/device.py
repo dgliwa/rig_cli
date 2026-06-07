@@ -103,7 +103,7 @@ class Device(BaseModel):
     @model_validator(mode="after")
     def _populate_cba_controls(self) -> Device:
         if isinstance(self.config, ChaseBlissConfig) and not self.config.controls:
-            from rig.catalog.chase_bliss import get_controls
+            from rig_chasebliss.catalog import get_controls
 
             controls = get_controls(self.manufacturer, self.model)
             if controls:

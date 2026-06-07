@@ -14,9 +14,9 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 from rig.engine.appliers.base import ApplyContext
-from rig.engine.appliers.chase_bliss import ChaseBlissApplier
 from rig.engine.plan import CbaSetupAction
 from rig.engine.state import RigState
+from rig_chasebliss.applier import ChaseBlissApplier
 from tests.fakes import InMemoryPromptAdapter
 
 

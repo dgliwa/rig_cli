@@ -1,11 +1,11 @@
 import json
 
-from rig.generators.mc6_presets import generate_mc6, write_mc6_config
 from rig.models.device import ControllerConfig, Device, DeviceType, MidiConfig
 from rig.models.preset import HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
+from rig_morningstar.generator import generate_mc6, write_mc6_config
 
 
 def _make_rig() -> Rig:

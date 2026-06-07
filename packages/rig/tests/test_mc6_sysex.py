@@ -1,6 +1,6 @@
 """Tests for MC6 SysEx message builders."""
 
-from rig.midi.mc6 import (
+from rig_morningstar.sysex import (
     DEVICE_ID,
     _build,
     _checksum,

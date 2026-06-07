@@ -61,7 +61,6 @@ def _get_module_loggers() -> list[str]:
         "rig.engine.plan",
         "rig.engine.diff",
         "rig.engine.state",
-        "rig.generators.mc6_presets",
         "rig.ingest.hx_stomp",
         "rig.ingest.mc6_config",
     ]
