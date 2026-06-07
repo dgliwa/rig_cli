@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = ["rig"]
 
 [project.entry-points."rig.devices"]
-chase_bliss = "rig_chasebliss:register"
+chase_bliss = "rig.engine.devices:ChaseBlissDevice"
 
 [tool.uv.sources]
 rig = { workspace = true }

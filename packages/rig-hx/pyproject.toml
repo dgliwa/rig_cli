@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = ["rig"]
 
 [project.entry-points."rig.devices"]
-hx_stomp = "rig_hx:register"
+midi = "rig.engine.devices:MidiDevice"
 
 [tool.uv.sources]
 rig = { workspace = true }
