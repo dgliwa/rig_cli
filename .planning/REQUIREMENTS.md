@@ -23,16 +23,16 @@
 
 ### Plan Command (#13)
 
-- [ ] **PLAN-01**: `compute_diff` correctly marks a scene as `unchanged` when no preset assignments have drifted — fixes the always-`changed` bug in `diff.py:35`
-- [ ] **PLAN-02**: `DeviceAction` gains `before` and `after` fields (`{preset: str}`) representing the state transition; `compute_plan` populates them from actual vs. desired state
-- [ ] **PLAN-03**: `rig plan` produces human-readable text output with visual action markers (`~` configure, `✓` verify, `⚠` analog/manual, `·` no change)
-- [ ] **PLAN-04**: `rig plan --format json` emits stable JSON matching `Plan.model_dump_json()` schema with `summary`, `scenes`, and `cba_setup` keys
-- [ ] **PLAN-05**: `rig plan` prints a summary line: `Plan: N to configure, M manual, K already set` (or `No changes. Rig is up to date.` when nothing to do)
-- [ ] **PLAN-06**: `rig plan` exits non-zero when changes are detected, exits `0` when rig is up to date — enables CI/CD scripting
-- [ ] **PLAN-07**: `rig plan` prints a cold-start warning when no `.rig/state.json` exists — treats all scenes as new without silently assuming fresh install
-- [ ] **PLAN-08**: `rig plan` hides `no_change` scenes by default; `--show-unchanged` flag reveals them
-- [ ] **PLAN-09**: `rig plan --scene <name>` filters output to a single scene
-- [ ] **PLAN-10**: `ChaseBlissApplier` does not re-call `detect_cba_setup` during apply — the plan output is the canonical action list; apply executes it without regeneration
+- [x] **PLAN-01**: `compute_diff` correctly marks a scene as `unchanged` when no preset assignments have drifted — fixes the always-`changed` bug in `diff.py:35`
+- [x] **PLAN-02**: `DeviceAction` gains `before` and `after` fields (`{preset: str}`) representing the state transition; `compute_plan` populates them from actual vs. desired state
+- [x] **PLAN-03**: `rig plan` produces human-readable text output with visual action markers (`~` configure, `✓` verify, `⚠` analog/manual, `·` no change)
+- [x] **PLAN-04**: `rig plan --format json` emits stable JSON matching `Plan.model_dump_json()` schema with `summary`, `scenes`, and `cba_setup` keys
+- [x] **PLAN-05**: `rig plan` prints a summary line: `Plan: N to configure, M manual, K already set` (or `No changes. Rig is up to date.` when nothing to do)
+- [x] **PLAN-06**: `rig plan` exits non-zero when changes are detected, exits `0` when rig is up to date — enables CI/CD scripting
+- [x] **PLAN-07**: `rig plan` prints a cold-start warning when no `.rig/state.json` exists — treats all scenes as new without silently assuming fresh install
+- [x] **PLAN-08**: `rig plan` hides `no_change` scenes by default; `--show-unchanged` flag reveals them
+- [x] **PLAN-09**: `rig plan --scene <name>` filters output to a single scene
+- [x] **PLAN-10**: `ChaseBlissApplier` does not re-call `detect_cba_setup` during apply — the plan output is the canonical action list; apply executes it without regeneration
 
 ## v2 Requirements
 
@@ -79,13 +79,13 @@
 | DEC-05 | Phase 2 | Complete |
 | DEC-06 | Phase 2 | Complete |
 | DEC-07 | Phase 2 | Complete |
-| PLAN-01 | Phase 3 | Pending |
-| PLAN-02 | Phase 3 | Pending |
-| PLAN-03 | Phase 3 | Pending |
-| PLAN-04 | Phase 3 | Pending |
-| PLAN-05 | Phase 3 | Pending |
-| PLAN-06 | Phase 3 | Pending |
-| PLAN-07 | Phase 3 | Pending |
-| PLAN-08 | Phase 3 | Pending |
-| PLAN-09 | Phase 3 | Pending |
-| PLAN-10 | Phase 3 | Pending |
+| PLAN-01 | Phase 5 | Complete |
+| PLAN-02 | Phase 5 | Complete |
+| PLAN-03 | Phase 5 | Complete |
+| PLAN-04 | Phase 5 | Complete |
+| PLAN-05 | Phase 5 | Complete |
+| PLAN-06 | Phase 5 | Complete |
+| PLAN-07 | Phase 5 | Complete |
+| PLAN-08 | Phase 5 | Complete |
+| PLAN-09 | Phase 5 | Complete |
+| PLAN-10 | Phase 5 | Complete |
