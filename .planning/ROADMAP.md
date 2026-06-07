@@ -21,15 +21,14 @@
 <details open>
 <summary>🔄 v1.1 Package Extraction & Plugin Isolation (Phases 6-8) — IN PROGRESS</summary>
 
-- [ ] **Phase 6: Core Package & Entry Point Discovery** — Wire up `rig` core package with entry point group, runtime discovery, PluginRegistry migration, zero hard deps on plugins
+- [x] **Phase 6: Core Package & Entry Point Discovery** (2/2 plans) — completed 2026-06-07
   - Goal: `rig` discovers devices via `importlib.metadata.entry_points('rig.devices')` with zero hard imports
   - Requirements: CORE-01, CORE-02, CORE-03, CORE-04
-  - Success criteria:
-    1. `rig` CLI works without any device plugins installed
-    2. Installing `rig-analog` makes analog devices available to `rig`
-    3. `PluginRegistry` loads from entry points, falling back to internal registry for backward compat
-    4. All existing tests pass under new package structure
-  - **Context:** WIP already has `packages/rig/pyproject.toml` with plugin stubs — needs entry point group declaration and runtime discovery wiring
+  - Success criteria achieved:
+    1. `rig` CLI works without any device plugins installed ✓
+    2. Installing `rig-analog` makes analog devices available to `rig` ✓
+    3. `PluginRegistry` loads from entry points (single path per D-03) ✓
+    4. All 302 tests pass under new package structure ✓
 
 - [ ] **Phase 7: Plugin Package Wiring & Device-Level MIDI** — Ensure all 4 plugin packages register correctly via entry points; move MIDI connection management to device level for Chase Bliss and Morningstar
   - Goal: Each device plugin is independently installable and manages its own MIDI lifecycle
@@ -63,6 +62,6 @@
 | 3. Core Domain Refactor | v1.0 | 4/4 | Complete | 2026-06-05 |
 | 4. Plugin Migration | v1.0 | 4/4 | Complete | 2026-06-06 |
 | 5. Dependency Graph & Plan Command | v1.0 | 6/6 | Complete | 2026-06-07 |
-| 6. Core Package & Entry Point Discovery | v1.1 | 2/0 | Planned (2 plans ready) | — |
-| 7. Plugin Package Wiring & Device-Level MIDI | v1.1 | 0/0 | Not started | — |
+| 6. Core Package & Entry Point Discovery | v1.1 | 2/2 | Complete | 2026-06-07 |
+| 7. Plugin Package Wiring & Device-Level MIDI | v1.1 | 3/0 | Planned | — |
 | 8. Build, CI & Plugin Authoring Docs | v1.1 | 0/0 | Not started | — |
