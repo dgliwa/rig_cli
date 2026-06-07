@@ -1,14 +1,16 @@
 """Concrete Device plugin types for the rig plugin architecture.
 
-Phase 4 P2: AnalogDevice, MidiDevice, ChaseBlissDevice, and MC6Device implement
-the Device Protocol as Pydantic BaseModel subclasses.  Each type carries its own
-id/name/config and delegates apply() to the logic previously in the applier classes.
+AnalogDevice, MidiDevice, ChaseBlissDevice, and MC6Device implement the Device
+Protocol as Pydantic BaseModel subclasses. Each type carries its own id/name/config
+and delegates apply() to the logic previously in the applier classes.
 
-plan() and diff() raise NotImplementedError — Phase 5 fills these in.
+plan() and diff() are Protocol stubs (raise NotImplementedError) — the rig plan
+command routes through the standalone compute_plan() function in engine/plan/compute.py
+and does not call device.plan() or device.diff() directly.
 
-Phase 4 P3: Extra fields allowed (extra="allow") so instances accept the full
-device YAML structure (manufacturer, model, type, presets, etc.) without breaking
-existing call sites that read those attributes.
+extra="allow" so instances accept the full device YAML structure (manufacturer,
+model, type, presets, etc.) without breaking existing call sites that read those
+attributes.
 """
 
 from __future__ import annotations

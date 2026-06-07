@@ -443,3 +443,87 @@ def test_all_device_types_satisfy_device_protocol_structurally() -> None:
             assert hasattr(cls(id="x", name="X", config=object()), attr), (
                 f"{cls.__name__} missing '{attr}'"
             )
+
+
+# ---------------------------------------------------------------------------
+# Nyquist gap fills — Phase 4 validation
+# ---------------------------------------------------------------------------
+
+
+def test_analog_device_apply_skip_returns_skipped() -> None:
+    from rig.engine.devices import AnalogDevice
+
+    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=object())
+    ctx = _make_apply_ctx(
+        device_id="fuzz",
+        preset_name="Noon",
+        confirmation_io=InMemoryPromptAdapter(default="skip"),
+    )
+    result = dev.apply(ctx)
+    assert result.status == "skipped"
+    assert result.device == "fuzz"
+
+
+def test_midi_device_apply_skip_returns_skipped() -> None:
+    from rig.engine.devices import MidiDevice
+
+    dev = MidiDevice(id="hx-stomp", name="HX Stomp", config=object())
+    ctx = _make_apply_ctx(
+        device_id="hx-stomp",
+        preset_name="Clean",
+        confirmation_io=InMemoryPromptAdapter(default="skip"),
+    )
+    result = dev.apply(ctx)
+    assert result.status == "skipped"
+    assert result.device == "hx-stomp"
+
+
+def test_midi_device_get_scene_pc_command_with_digital_preset() -> None:
+    from rig.engine.devices import MidiDevice
+    from rig.models.device import MidiConfig
+    from rig.models.preset import DigitalPreset
+
+    preset = DigitalPreset(id="clean", name="Clean", preset_number=5)
+    cfg = MidiConfig(midi_channel=3)
+    dev = MidiDevice(id="hx", name="HX Stomp", config=cfg, presets=[preset])
+    cmd = dev.get_scene_pc_command("clean")
+    assert cmd is not None
+    assert cmd["type"] == "pc"
+    assert cmd["channel"] == 3
+    assert cmd["value"] == 5
+
+
+def test_midi_device_get_scene_pc_command_no_matching_preset_returns_none() -> None:
+    from rig.engine.devices import MidiDevice
+    from rig.models.device import MidiConfig
+    from rig.models.preset import DigitalPreset
+
+    preset = DigitalPreset(id="clean", name="Clean", preset_number=5)
+    cfg = MidiConfig(midi_channel=3)
+    dev = MidiDevice(id="hx", name="HX Stomp", config=cfg, presets=[preset])
+    assert dev.get_scene_pc_command("nonexistent") is None
+
+
+def test_chase_bliss_device_get_scene_pc_command_with_digital_preset() -> None:
+    from rig.engine.devices import ChaseBlissDevice
+    from rig.models.device import ChaseBlissConfig
+    from rig.models.preset import DigitalPreset
+
+    preset = DigitalPreset(id="bloom", name="Bloom", preset_number=2)
+    cfg = ChaseBlissConfig(midi_channel=7, controls=[])
+    dev = ChaseBlissDevice(id="mood", name="Mood Mk II", config=cfg, presets=[preset])
+    cmd = dev.get_scene_pc_command("bloom")
+    assert cmd is not None
+    assert cmd["channel"] == 7
+    assert cmd["value"] == 2
+
+
+def test_get_registry_returns_registry_with_all_four_types() -> None:
+    from rig.engine.devices import AnalogDevice, ChaseBlissDevice, MC6Device, MidiDevice
+    from rig.engine.plugin_registry import get_registry
+
+    registry = get_registry()
+    assert registry.get_model("manual") is AnalogDevice
+    assert registry.get_model("midi") is MidiDevice
+    assert registry.get_model("chase_bliss") is ChaseBlissDevice
+    assert registry.get_model("controller") is MC6Device

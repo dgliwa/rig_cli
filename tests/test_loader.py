@@ -237,3 +237,17 @@ class TestRegistryDispatch:
             assert callable(getattr(device, "apply", None)), (
                 f"device {device_id!r} missing apply() method"
             )
+
+
+# ---------------------------------------------------------------------------
+# Nyquist gap fill — _load_scenes direct unit test (Phase 4 validation)
+# ---------------------------------------------------------------------------
+
+
+def test_load_scenes_nonexistent_dir_returns_empty(tmp_path) -> None:
+    """_load_scenes with a missing path must return {} without raising."""
+    from rig.config.loader import _load_scenes
+
+    missing = tmp_path / "no_such_scenes"
+    result = _load_scenes(missing)
+    assert result == {}

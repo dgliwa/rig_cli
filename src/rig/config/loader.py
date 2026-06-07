@@ -117,6 +117,9 @@ def _merge_presets(devices_dir: Path, devices: dict[str, Any]) -> dict[str, Any]
 
 def _load_scenes(scenes_dir: Path) -> dict[str, Scene]:
     scenes: dict[str, Scene] = {}
+    if not scenes_dir.is_dir():
+        logger.debug("Scenes directory not found: %s", scenes_dir)
+        return scenes
     logger.debug("Loading scenes from: %s", scenes_dir)
     for path in sorted(scenes_dir.glob("*.yaml")):
         data = _read_yaml(path)
