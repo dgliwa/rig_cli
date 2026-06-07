@@ -192,25 +192,25 @@ class TestRegistryDispatch:
     """Loader produces concrete plugin device types via registry-driven dispatch."""
 
     def test_manual_config_produces_analog_device(self, rig_dir):
-        from rig.engine.devices import AnalogDevice
+        from rig_analog.device import AnalogDevice
 
         config = load_rig(str(rig_dir))
         assert isinstance(config.devices["tumnus"], AnalogDevice)
 
-    def test_midi_config_produces_midi_device(self, rig_dir):
-        from rig.engine.devices import MidiDevice
+    def test_midi_config_produces_hx_stomp_device(self, rig_dir):
+        from rig_hx.device import HXStompDevice
 
         config = load_rig(str(rig_dir))
-        assert isinstance(config.devices["brothers"], MidiDevice)
+        assert isinstance(config.devices["brothers"], HXStompDevice)
 
     def test_controller_config_produces_mc6_device(self, rig_dir):
-        from rig.engine.devices import MC6Device
+        from rig_morningstar.device import MC6Device
 
         config = load_rig(str(rig_dir))
         assert isinstance(config.devices["mc6"], MC6Device)
 
     def test_chase_bliss_config_produces_cba_device(self, rig_dir, tmp_path):
-        from rig.engine.devices import ChaseBlissDevice
+        from rig_chasebliss.device import ChaseBlissDevice
 
         _write(
             rig_dir,

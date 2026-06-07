@@ -43,7 +43,7 @@ class HXStompDevice(BaseModel):
 
     def setup(self, ctx: SetupContext) -> SetupResult:
         """Connect MIDI to the HX Stomp before apply uses it."""
-        if ctx.dry_run:
+        if ctx.dry_run or ctx.midi is None:
             ctx.connected_devices.add(self.id)
             return SetupResult()
 

@@ -1,19 +1,15 @@
 """In-memory test doubles for I/O Protocols defined in rig.engine.ports.
 
-These fakes implement the ConfirmationIO, StateWriter, and MidiConnectionIO
+These fakes implement the ConfirmationIO and StateWriter
 Protocols with deterministic, in-memory behavior — no MIDI hardware and no
-patching of builtins.input required.
+patching builtins.input required.
 """
 
 from __future__ import annotations
 
 from collections import deque
-from typing import TYPE_CHECKING
 
 from rig.engine.state import RigState
-
-if TYPE_CHECKING:
-    from rig.midi.adapter import MidiManager
 
 _VALID = frozenset({"confirm", "retry", "skip", "quit"})
 
@@ -92,27 +88,3 @@ class InMemoryStateAdapter:
 
     def write(self, root: str, state: RigState) -> None:
         self._state = state
-
-
-class InMemoryMidiConnectionIO:
-    """Fake MidiConnectionIO that returns a configured (result, port_name) pair.
-
-    When ``result`` is ``"confirm"`` and ``port_name`` is not None, also calls
-    ``midi.connect(port_name, device)`` so that subsequent MIDI sends work on the
-    mock MIDI port — mirroring what the production ``prompt_midi_connect`` does.
-    """
-
-    def __init__(self, result: str = "confirm", port_name: str | None = "FakePort") -> None:
-        self.result = result
-        self.port_name = port_name
-
-    def prompt_connect(
-        self,
-        device: str,
-        midi_channel: int,
-        midi: MidiManager,
-        device_port: str | None,
-    ) -> tuple[str, str | None]:
-        if self.result == "confirm" and self.port_name is not None:
-            midi.connect(self.port_name, device)
-        return (self.result, self.port_name)

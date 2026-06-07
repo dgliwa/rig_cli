@@ -1,6 +1,6 @@
 """I/O port Protocols and production adapters for the apply engine.
 
-Defines the structural contracts (ConfirmationIO, StateWriter, MidiConnectionIO)
+Defines the structural contracts (ConfirmationIO, StateWriter)
 that allow the engine and appliers to be tested without MIDI hardware or
 patching builtins.input.
 """
@@ -8,15 +8,11 @@ patching builtins.input.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Literal, Protocol
+from typing import Literal, Protocol
 
 from rig.engine.state import RigState, read_state, write_state
 from rig.interaction.analog import prompt_analog
 from rig.interaction.cba import prompt_cba_build_preset, prompt_cba_channel, prompt_cba_register
-from rig.interaction.midi import prompt_midi_connect
-
-if TYPE_CHECKING:
-    from rig.midi.adapter import MidiManager
 
 logger = logging.getLogger(__name__)
 
@@ -60,18 +56,6 @@ class StateWriter(Protocol):
     def read(self, root: str) -> RigState: ...
 
     def write(self, root: str, state: RigState) -> None: ...
-
-
-class MidiConnectionIO(Protocol):
-    """Protocol for prompting the user to connect a MIDI device."""
-
-    def prompt_connect(
-        self,
-        device: str,
-        midi_channel: int,
-        midi: MidiManager,
-        device_port: str | None,
-    ) -> tuple[_ConfirmResult, str | None]: ...
 
 
 class RichConfirmationIO:
@@ -120,16 +104,3 @@ class FileStateWriter:
 
     def write(self, root: str, state: RigState) -> None:
         write_state(root, state)
-
-
-class InteractiveMidiConnectionIO:
-    """Production adapter: delegates to interaction.midi.prompt_midi_connect."""
-
-    def prompt_connect(
-        self,
-        device: str,
-        midi_channel: int,
-        midi: MidiManager,
-        device_port: str | None,
-    ) -> tuple[_ConfirmResult, str | None]:
-        return prompt_midi_connect(device, midi_channel, midi, device_port)

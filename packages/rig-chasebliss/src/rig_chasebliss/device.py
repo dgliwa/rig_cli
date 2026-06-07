@@ -110,7 +110,9 @@ class ChaseBlissDevice(BaseModel):
         state_modified = False
 
         # Step 1: MIDI connection
-        if not ctx.dry_run and ctx.midi is not None:
+        if ctx.dry_run or ctx.midi is None:
+            ctx.connected_devices.add(self.id)
+        else:
             from rig.interaction.midi import prompt_midi_connect
 
             cached_port = ctx.state.devices.get(self.id, DeviceState()).midi_port
@@ -122,8 +124,6 @@ class ChaseBlissDevice(BaseModel):
                 update_device_state(ctx.state, self.id, midi_port=port_name)
                 ctx.connected_devices.add(self.id)
                 state_modified = True
-        else:
-            ctx.connected_devices.add(self.id)
 
         # Step 2: 3-phase CBA setup
         if ctx.rig is None:

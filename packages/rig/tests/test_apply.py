@@ -6,18 +6,19 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from rig.engine.apply import ApplyResult, apply_plan
-from rig.engine.devices import ChaseBlissDevice, MidiDevice
 from rig.engine.plan import compute_plan
 from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, DeviceType, MidiConfig
 from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
 from rig.models.signal_chain import SignalChainPosition
-from tests.fakes import InMemoryMidiConnectionIO, InMemoryPromptAdapter, InMemoryStateAdapter
+from rig_chasebliss.device import ChaseBlissDevice
+from rig_hx.device import HXStompDevice
+from tests.fakes import InMemoryPromptAdapter, InMemoryStateAdapter
 
 
 def _make_config() -> Rig:
-    hx = MidiDevice(
+    hx = HXStompDevice(
         id="hx-stomp",
         type=DeviceType.MODELER,
         config=MidiConfig(midi_channel=1),
@@ -87,8 +88,7 @@ class TestApplyPlan:
         plan = compute_plan(config, root_path=str(tmp_path))
         assert plan.status == "clean"
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
-        apply_plan(plan, state_writer=state_adapter, midi_connection_io=midi_io, dry_run=True)
+        apply_plan(plan, state_writer=state_adapter, dry_run=True)
         captured = capsys.readouterr()
         assert "No changes needed" in captured.out
 
@@ -96,11 +96,9 @@ class TestApplyPlan:
         config = _make_config()
         plan = compute_plan(config)
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         apply_plan(
             plan,
             state_writer=state_adapter,
-            midi_connection_io=midi_io,
             config_path=str(tmp_path),
             dry_run=True,
         )
@@ -111,12 +109,10 @@ class TestApplyPlan:
         config = _make_config()
         plan = compute_plan(config)
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         prompt_io = InMemoryPromptAdapter(default="confirm")
         apply_plan(
             plan,
             state_writer=state_adapter,
-            midi_connection_io=midi_io,
             confirmation_io=prompt_io,
             rig=config,
             config_path=str(tmp_path),
@@ -131,12 +127,10 @@ class TestApplyPlan:
         config = _make_config()
         plan = compute_plan(config)
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         prompt_io = InMemoryPromptAdapter(default="skip")
         apply_plan(
             plan,
             state_writer=state_adapter,
-            midi_connection_io=midi_io,
             confirmation_io=prompt_io,
             config_path=str(tmp_path),
             dry_run=False,
@@ -150,12 +144,10 @@ class TestApplyPlan:
         config = _make_config()
         plan = compute_plan(config)
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         prompt_io = InMemoryPromptAdapter(default="quit")
         apply_plan(
             plan,
             state_writer=state_adapter,
-            midi_connection_io=midi_io,
             confirmation_io=prompt_io,
             rig=config,
             config_path=str(tmp_path),
@@ -172,7 +164,6 @@ class TestMidiApply:
         plan = compute_plan(rig)
         fake_port = MagicMock()
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO(result="confirm", port_name="USB Interface")
         # CBA: step1+step3, build_preset, register_scenes, hx-stomp scene confirm, brothers scene confirm
         prompt_io = InMemoryPromptAdapter(
             side_effect=["confirm", "confirm", "confirm", "confirm", "confirm", "confirm"]
@@ -187,7 +178,6 @@ class TestMidiApply:
             apply_plan(
                 plan,
                 state_writer=state_adapter,
-                midi_connection_io=midi_io,
                 confirmation_io=prompt_io,
                 rig=rig,
                 config_path=str(tmp_path),
@@ -218,7 +208,6 @@ class TestMidiApply:
         plan = compute_plan(rig, root_path=str(tmp_path))
         fake_port = MagicMock()
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO(result="confirm", port_name="USB Interface")
         # CBA step1, step3, build_preset, register_scenes; scene unchanged
         prompt_io = InMemoryPromptAdapter(side_effect=["confirm", "confirm", "confirm", "confirm"])
         with (
@@ -231,7 +220,6 @@ class TestMidiApply:
             apply_plan(
                 plan,
                 state_writer=state_adapter,
-                midi_connection_io=midi_io,
                 confirmation_io=prompt_io,
                 rig=rig,
                 config_path=str(tmp_path),
@@ -248,7 +236,6 @@ class TestMidiApply:
         rig = _make_config()
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO(result="skip", port_name=None)
         # CBA: step1 skipped (skip), then build_preset, register_scenes, scene confirms
         prompt_io = InMemoryPromptAdapter(side_effect=["skip", "confirm", "confirm", "confirm"])
         with (
@@ -261,7 +248,6 @@ class TestMidiApply:
             apply_plan(
                 plan,
                 state_writer=state_adapter,
-                midi_connection_io=midi_io,
                 confirmation_io=prompt_io,
                 rig=rig,
                 config_path=str(tmp_path),
@@ -283,7 +269,6 @@ class TestMidiApply:
         rig = _make_config()
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=MagicMock()),
@@ -294,7 +279,6 @@ class TestMidiApply:
             apply_plan(
                 plan,
                 state_writer=state_adapter,
-                midi_connection_io=midi_io,
                 rig=rig,
                 dry_run=True,
                 midi=midi,
@@ -310,7 +294,6 @@ class TestMidiApply:
         rig = _make_config()
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO(result="quit", port_name=None)
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=MagicMock()),
@@ -321,7 +304,6 @@ class TestMidiApply:
             apply_plan(
                 plan,
                 state_writer=state_adapter,
-                midi_connection_io=midi_io,
                 rig=rig,
                 config_path=str(tmp_path),
                 dry_run=False,
@@ -340,7 +322,6 @@ class TestMidiApply:
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
         # With no ports available, midi_io skips the connection
-        midi_io = InMemoryMidiConnectionIO(result="skip", port_name=None)
         # CBA: step1 skipped, then build_preset, register_scenes, scene confirms
         prompt_io = InMemoryPromptAdapter(side_effect=["skip", "confirm", "confirm", "confirm"])
         with patch("rig.midi.adapter.mido.get_output_names", return_value=[]):
@@ -350,7 +331,6 @@ class TestMidiApply:
             apply_plan(
                 plan,
                 state_writer=state_adapter,
-                midi_connection_io=midi_io,
                 confirmation_io=prompt_io,
                 rig=rig,
                 config_path=str(tmp_path),
@@ -370,7 +350,6 @@ class TestCbaApply:
         plan = compute_plan(rig)
         fake_port = MagicMock()
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO(result="confirm", port_name="USB Interface")
         # CBA: step1 ready, step2 channel-saved, build_preset, register_scenes,
         # scene: hx-stomp confirm, brothers confirm
         prompt_io = InMemoryPromptAdapter(
@@ -386,7 +365,6 @@ class TestCbaApply:
             apply_plan(
                 plan,
                 state_writer=state_adapter,
-                midi_connection_io=midi_io,
                 confirmation_io=prompt_io,
                 rig=rig,
                 config_path=str(tmp_path),
@@ -404,12 +382,10 @@ class TestCbaApply:
         rig = _make_config()
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         prompt_io = InMemoryPromptAdapter(default="skip")
         apply_plan(
             plan,
             state_writer=state_adapter,
-            midi_connection_io=midi_io,
             confirmation_io=prompt_io,
             rig=rig,
             config_path=str(tmp_path),
@@ -437,12 +413,10 @@ class TestCbaApply:
         )
         plan = compute_plan(rig, root_path=str(tmp_path))
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         prompt_io = InMemoryPromptAdapter(default="confirm")
         apply_plan(
             plan,
             state_writer=state_adapter,
-            midi_connection_io=midi_io,
             confirmation_io=prompt_io,
             rig=rig,
             config_path=str(tmp_path),
@@ -455,11 +429,9 @@ class TestCbaApply:
         rig = _make_config()
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         apply_plan(
             plan,
             state_writer=state_adapter,
-            midi_connection_io=midi_io,
             rig=rig,
             dry_run=True,
         )
@@ -484,12 +456,10 @@ class TestCbaApply:
         )
         plan = compute_plan(rig, root_path=str(tmp_path))
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         prompt_io = InMemoryPromptAdapter(default="confirm")
         apply_plan(
             plan,
             state_writer=state_adapter,
-            midi_connection_io=midi_io,
             confirmation_io=prompt_io,
             rig=rig,
             config_path=str(tmp_path),
@@ -502,12 +472,10 @@ class TestCbaApply:
         rig = _make_config()
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         prompt_io = InMemoryPromptAdapter(default="quit")
         apply_plan(
             plan,
             state_writer=state_adapter,
-            midi_connection_io=midi_io,
             confirmation_io=prompt_io,
             rig=rig,
             config_path=str(tmp_path),
@@ -524,9 +492,10 @@ class TestDevicePluginRouting:
 
     def _make_concrete_config(self) -> Rig:
         """Build a Rig using concrete device plugin types (as produced by loader)."""
-        from rig.engine.devices import ChaseBlissDevice, MidiDevice
+        from rig_chasebliss.device import ChaseBlissDevice
+        from rig_hx.device import HXStompDevice
 
-        hx = MidiDevice(
+        hx = HXStompDevice(
             id="hx-stomp",
             config=MidiConfig(midi_channel=1),
             type=DeviceType.MODELER,
@@ -572,34 +541,32 @@ class TestDevicePluginRouting:
         """apply_plan routes through device.apply() for scene actions."""
         from unittest.mock import patch
 
-        from rig.engine.devices import MidiDevice
+        from rig_hx.device import HXStompDevice
 
         rig = self._make_concrete_config()
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         prompt_io = InMemoryPromptAdapter(default="confirm")
 
         called_with_device_ctx = []
 
-        original_apply = MidiDevice.apply
+        original_apply = HXStompDevice.apply
 
         def patched_apply(self, ctx):
             called_with_device_ctx.append(ctx)
             return original_apply(self, ctx)
 
-        with patch.object(MidiDevice, "apply", patched_apply):
+        with patch.object(HXStompDevice, "apply", patched_apply):
             apply_plan(
                 plan,
                 state_writer=state_adapter,
-                midi_connection_io=midi_io,
                 confirmation_io=prompt_io,
                 rig=rig,
                 config_path=str(tmp_path),
                 dry_run=False,
             )
 
-        # MidiDevice.apply() should have been called for hx-stomp
+        # HXStompDevice.apply() should have been called for hx-stomp
         assert len(called_with_device_ctx) > 0, "device.apply() was never called"
         # Each call receives a DeviceApplyContext
         from rig.engine.plugin import DeviceApplyContext
@@ -627,19 +594,18 @@ class TestDevicePluginRouting:
 class TestApplyPlanFallback:
     def test_raises_when_no_plan_and_no_rig(self):
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         with pytest.raises(ValueError):
-            apply_plan(state_writer=state_adapter, midi_connection_io=midi_io)
+            apply_plan(
+                state_writer=state_adapter,
+            )
 
     def test_fallback_computes_plan_from_rig(self):
         from tests.test_plan import _make_rig
 
         rig = _make_rig()
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         result = apply_plan(
             state_writer=state_adapter,
-            midi_connection_io=midi_io,
             rig=rig,
             dry_run=True,
         )
@@ -650,11 +616,9 @@ class TestApplyPlanFallback:
 
         clean_plan = Plan(status="clean")
         state_adapter = InMemoryStateAdapter()
-        midi_io = InMemoryMidiConnectionIO()
         result = apply_plan(
             clean_plan,
             state_writer=state_adapter,
-            midi_connection_io=midi_io,
             dry_run=True,
         )
         assert result.status == "no_changes"
