@@ -247,6 +247,10 @@ class TestRigConfig:
         assert rig.controller.id == "mc6"
         assert rig.controller.type == DeviceType.CONTROLLER
 
+    def test_rig_controller_and_scenes_are_not_pydantic_fields(self):
+        assert "controller" not in Rig.model_fields
+        assert "scenes" not in Rig.model_fields
+
 
 class TestApplyOrder:
     def test_apply_order_empty_devices_returns_empty(self):
