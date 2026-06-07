@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rig-morningstar"
+version = "0.1.0"
+description = "Morningstar MC6 controller plugin for rig-cli"
+requires-python = ">=3.12"
+dependencies = ["rig"]
+
+[project.entry-points."rig.devices"]
+controller = "rig_morningstar:register"
+
+[tool.uv.sources]
+rig = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rig_morningstar"]

@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from rich.console import Console
 
 from rig.engine.appliers.base import DeviceApplyResult, update_device_state
-from rig.engine.plugin import DeviceApplyContext, PluginContext
+from rig.engine.plugin import DeviceApplyContext, PluginContext, SetupContext, SetupResult
 from rig.engine.plugin_registry import PluginRegistry
 from rig.models.device import DeviceType
 from rig.models.preset import DigitalPreset, HXStompPreset
@@ -57,6 +57,9 @@ class AnalogDevice(BaseModel):
 
     def diff(self, ctx: PluginContext) -> object:
         raise NotImplementedError
+
+    def setup(self, ctx: SetupContext) -> SetupResult:
+        return SetupResult()
 
     def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
         """Analog devices have no MIDI — always returns None."""
@@ -116,6 +119,9 @@ class MidiDevice(BaseModel):
 
     def diff(self, ctx: PluginContext) -> object:
         raise NotImplementedError
+
+    def setup(self, ctx: SetupContext) -> SetupResult:
+        return SetupResult()
 
     def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
         """Return a PC command dict for the given preset_id, or None if not applicable."""
@@ -235,6 +241,15 @@ class ChaseBlissDevice(BaseModel):
     def diff(self, ctx: PluginContext) -> object:
         raise NotImplementedError
 
+    def setup(self, ctx: SetupContext) -> SetupResult:
+        """MIDI connect + 3-phase CBA setup. Delegates to rig-chasebliss if installed."""
+        try:
+            from rig_chasebliss.device import cba_setup  # noqa: PLC0415
+
+            return cba_setup(self, ctx)
+        except ImportError:
+            return SetupResult()
+
     def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
         """Return a PC command dict for the given preset_id (same as MidiDevice)."""
         ch = self.config.midi_channel if self.config is not None else None
@@ -283,6 +298,9 @@ class MC6Device(BaseModel):
 
     def diff(self, ctx: PluginContext) -> object:
         raise NotImplementedError
+
+    def setup(self, ctx: SetupContext) -> SetupResult:
+        return SetupResult()
 
     def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
         """MC6 is a controller — it programs other devices, not a target itself."""

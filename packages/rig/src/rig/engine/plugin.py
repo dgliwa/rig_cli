@@ -27,6 +27,26 @@ class PluginContext:
 
 
 @dataclass
+class SetupContext:
+    """Context passed to Device.setup() for one-time device initialization (MIDI connection, etc)."""
+
+    state: RigState
+    rig: Rig
+    dry_run: bool
+    confirmation_io: ConfirmationIO
+    midi: MidiManager | None = None
+    midi_connection_io: Any | None = None
+    connected_devices: set[str] = field(default_factory=set)
+    config_path: str | None = None
+
+
+@dataclass
+class SetupResult:
+    cancelled: bool = False
+    state_modified: bool = False
+
+
+@dataclass
 class DeviceApplyContext:
     action: DeviceAction
     state: RigState
@@ -51,5 +71,7 @@ class Device(Protocol):
     def plan(self, ctx: PluginContext) -> object: ...
 
     def diff(self, ctx: PluginContext) -> object: ...
+
+    def setup(self, ctx: SetupContext) -> SetupResult: ...
 
     def apply(self, ctx: DeviceApplyContext) -> object: ...

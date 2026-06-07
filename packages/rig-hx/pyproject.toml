@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rig-hx"
+version = "0.1.0"
+description = "Line 6 HX Stomp device plugin for rig-cli"
+requires-python = ">=3.12"
+dependencies = ["rig"]
+
+[project.entry-points."rig.devices"]
+hx_stomp = "rig_hx:register"
+
+[tool.uv.sources]
+rig = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rig_hx"]

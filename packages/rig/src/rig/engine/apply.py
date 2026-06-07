@@ -11,16 +11,13 @@ from rig.engine.appliers.base import (
     DeviceApplyResult,
     update_device_state,
 )
-from rig.engine.appliers.chase_bliss import ChaseBlissApplier
 from rig.engine.plan import Plan
-from rig.engine.plugin import DeviceApplyContext
+from rig.engine.plugin import DeviceApplyContext, SetupContext
 from rig.engine.ports import ConfirmationIO, MidiConnectionIO, RichConfirmationIO, StateWriter
 from rig.engine.state import DeviceState, RigState
 from rig.interaction.midi import collect_midi_devices
 from rig.midi.adapter import MidiManager
 from rig.models.rig import Rig
-
-_cba_applier = ChaseBlissApplier()
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -89,6 +86,29 @@ def apply_plan(
     cba_results: list[DeviceApplyResult] = []
     scene_results: list[SceneApplyResult] = []
 
+    # --- Phase -2: Device setup (each device manages its own MIDI connection + one-time init) ---
+    # Devices that have been migrated to their own packages implement real setup() here.
+    # Devices still in core return no-op SetupResult(). Phase -1 below handles legacy MIDI
+    # connections for devices whose setup() is still a no-op.
+    if rig:
+        setup_ctx = SetupContext(
+            state=state,
+            rig=rig,
+            dry_run=dry_run,
+            confirmation_io=confirmation_io or RichConfirmationIO(),
+            midi=midi,
+            midi_connection_io=midi_connection_io,
+            config_path=config_path,
+        )
+        for _device_id, device in rig.devices.items():
+            if hasattr(device, "setup"):
+                result = device.setup(setup_ctx)
+                if result.cancelled:
+                    console.print("[red]Apply cancelled by user[/red]")
+                    return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
+                if result.state_modified:
+                    state_modified = True
+
     # TODO: We probably should identify the controller first
     # For devices that can be configured via controller (CBA) that would be useful
     # For devices that need direct connection (HX), we should maybe make that more obvious in the configuration or the "apply" implementation
@@ -127,20 +147,6 @@ def apply_plan(
             state_modified = True
             ctx.connected_devices.add(device_id)
         # If skipped → device not in connected_devices, falls back to manual prompts
-
-    # --- Phase 0: CBA device setup ---
-    # TODO: again, don't like this being on the plan - should be specific on the device plan & apply?
-    if plan.cba_setup:
-        logger.info("CBA setup phase: %d action(s)", len(plan.cba_setup))
-        console.print("\n[bold]Chase Bliss Setup Phase[/bold]")
-
-    cba_setup_result = _cba_applier.apply_setup(plan.cba_setup, ctx)
-    if cba_setup_result is None:
-        # User cancelled during CBA setup
-        return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
-    cba_results = cba_setup_result
-    if any(r.status == "confirmed" for r in cba_results):
-        state_modified = True
 
     # --- Phase 1: Scene apply ---
     scene_names = [scene] if scene else list(plan.scenes.keys())

@@ -1,0 +1,16 @@
+id: preset-1
+pedal: mood
+name: Shimmer Delay
+preset_number: 1
+# Knob values use the CC range 0-127 (0 = fully CCW, 127 = fully CW).
+# Tune these to match what you've dialed in on the physical pedal.
+parameters:
+  time: 72          # CC 14 — medium-long delay/loop time
+  mix: 90           # CC 15 — wet-heavy blend
+  length: 64        # CC 16 — medium loop length
+  wet_modify: 48    # CC 17 — wet channel modifier (shimmer amount)
+  clock: 64         # CC 18 — free-running internal clock
+  micro_looper_modify: 32  # CC 19 — micro-looper texture
+  ramp_speed: 64    # CC 20 — medium ramp rate
+  wet_bypass: 127   # CC 103 — wet channel active
+  micro_bypass: 0   # CC 102 — micro-looper bypassed

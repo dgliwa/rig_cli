@@ -1,39 +1,22 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-
-[project]
-name = "rig-cli"
-version = "0.1.0"
-description = "Infrastructure-as-Code CLI for guitar rigs"
-readme = "README.md"
-requires-python = ">=3.12"
-dependencies = [
-    "typer>=0.12",
-    "rich>=13.0",
-    "pydantic>=2.0",
-    "pyyaml>=6.0",
-    "mido>=1.3",
-    "python-rtmidi>=1.5",
+[tool.uv.workspace]
+members = [
+    "packages/rig",
+    "packages/rig-analog",
+    "packages/rig-chasebliss",
+    "packages/rig-morningstar",
+    "packages/rig-hx",
 ]
-optional-dependencies = { dev = ["pytest", "pytest-cov", "ruff"] }
-
-[project.urls]
-Homepage = "https://github.com/dgliwa/rig_cli"
-Source = "https://github.com/dgliwa/rig_cli"
-
-[project.scripts]
-rig = "rig.cli:app"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/rig"]
-
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src"]
+src = [
+    "packages/rig/src",
+    "packages/rig-analog/src",
+    "packages/rig-chasebliss/src",
+    "packages/rig-morningstar/src",
+    "packages/rig-hx/src",
+]
 
 [tool.ruff.lint]
 select = [
@@ -48,9 +31,13 @@ ignore = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["packages"]
+addopts = "--import-mode=importlib"
 
 [dependency-groups]
 dev = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
     "pre-commit>=4.6.0",
 ]

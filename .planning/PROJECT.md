@@ -8,6 +8,17 @@ Infrastructure-as-Code CLI for a guitar rig. Reads a YAML config repo describing
 
 A single command should bring the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
 
+## Current Milestone: v1.1 Package Extraction & Plugin Isolation
+
+**Goal:** Extract each device system into independently installable pip packages with Setuptools Entry Points for plugin discovery. Device-level MIDI connection management, zero hard dependencies on device plugins from core.
+
+**Target features:**
+- Extract `rig-analog`, `rig-chasebliss`, `rig-morningstar`, `rig-hx` as separate pip packages
+- `rig` discovers devices at runtime via `importlib.metadata.entry_points('rig.devices')`
+- MIDI connections for device setup managed at device level, not engine
+- Each package has independent `pyproject.toml`, versioning, and release cycle
+- Plugin authoring: new device type = new package registering against `rig.devices` entry point
+
 ## Requirements
 
 ### Validated
@@ -30,20 +41,27 @@ A single command should bring the physical rig to the exact state described in t
 
 ### Active
 
-*(No active requirements — v1.1 requirements to be defined with `/gsd-new-milestone`)*
+- [ ] **PKG-01**: `rig` core publishes `rig.devices` entry point group and discovers plugins via `importlib.metadata.entry_points()` at runtime
+- [ ] **PKG-02**: `rig-analog` is a separate pip package registering an AnalogDevice via entry point
+- [ ] **PKG-03**: `rig-chasebliss` is a separate pip package registering a ChaseBlissDevice via entry point, with MIDI connection managed at device level for setup phases
+- [ ] **PKG-04**: `rig-morningstar` is a separate pip package registering an MC6Device via entry point, with MIDI connection managed at device level for bank/switch config
+- [ ] **PKG-05**: `rig-hx` is a separate pip package registering an HXStompDevice via entry point
+- [ ] **PKG-06**: Each plugin has independent `pyproject.toml`, version pinning, and release cycle
+- [ ] **PKG-07**: Plugin authoring docs — how to write a new plugin package
+- [ ] **PKG-08**: `rig` has zero hard dependencies on any device plugin (pure runtime discovery)
 
 ### Out of Scope
 
-- Full HX SysEx read/write via MIDI (#3) — future milestone; requires MIDI SysEx parsing complexity
-- HX MIDI channel configurability (#4) — deferred; current hardcoded channel works
-- Complex MC6 workflows (next page, MIDI clock, etc.) (#6) — future; low-priority
-- Module-level READMEs (#9) — nice to have; not blocking any feature
-- Sub-packages per device type (#10) — future refactor; not urgent
-- Isolated preset management mode (#14) — future feature
-- CBA Mood MkII / Wombtone / Brothers MIDI catalog (#16) — separate device-support work
-- MC6 clear message emulation (#17) — deferred bug fix
-- Default preset values (#19) — tech-task; low priority
-- UI (#18) — speculative; not planned
+| Feature | Reason |
+|---------|--------|
+| Full HX SysEx read/write via MIDI (#3) | Requires MIDI SysEx parsing complexity — future milestone |
+| HX MIDI channel configurability (#4) | Current hardcoded channel works — defer |
+| Complex MC6 workflows (next page, MIDI clock, etc.) (#6) | Low-priority — defer |
+| Module-level READMEs (#9) | Nice to have, not blocking |
+| CBA Mood MkII / Wombtone / Brothers MIDI catalog (#16) | Separate device-support work |
+| MC6 clear message emulation (#17) | Deferred bug fix |
+| Default preset values (#19) | Low-priority tech task |
+| UI (#18) | Speculative — not planned |
 
 ## Context
 
@@ -92,4 +110,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-07 after v1.0 milestone — I/O Decoupling & Plugin Architecture*
+*Last updated: 2026-06-07 after starting v1.1 milestone — Package Extraction & Plugin Isolation*

@@ -8,7 +8,6 @@ import typer
 from rig.cli._shared import _CONFIG_OPTION, _VERBOSE_OPTION, console, gen_app
 from rig.config.errors import ConfigError
 from rig.config.loader import load_rig
-from rig.generators.mc6_presets import generate_mc6, write_mc6_config
 from rig.log_setup import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -23,6 +22,12 @@ def mc6(config: str = _CONFIG_OPTION, verbose: int = _VERBOSE_OPTION):
         rig = load_rig(config)
     except ConfigError as e:
         console.print(f"[red]✗[/red] {e}")
+        raise typer.Exit(1)
+
+    try:
+        from rig_morningstar.generator import generate_mc6, write_mc6_config
+    except ImportError:
+        console.print("[red]✗[/red] rig-morningstar is not installed. Run: uv add rig-morningstar")
         raise typer.Exit(1)
 
     data = generate_mc6(rig)
