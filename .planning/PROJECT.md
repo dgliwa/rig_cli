@@ -40,6 +40,12 @@ A single command should bring the physical rig to the exact state described in t
 ### Active
 
 - [ ] **PKG-07**: Plugin authoring docs — how to write a new plugin package
+- [ ] **CBA-01**: MIDI CC catalog for Mood MkII (knob/switch → CC number map)
+- [ ] **CBA-02**: MIDI CC catalog for Wombtone MkII (knob/switch → CC number map)
+- [ ] **CBA-03**: MIDI CC catalog for Brothers (knob/switch → CC number map)
+- [ ] **CBA-04**: Preset validation against CC ranges for each new CBA pedal
+- [ ] **CBA-05**: Apply integration — wire new catalogs into rig-chasebliss apply flow
+- [ ] **CBA-06**: Reset-to-defaults operation in apply flow (send all controls to CC defaults before applying preset)
 
 ### Out of Scope
 
@@ -49,17 +55,24 @@ A single command should bring the physical rig to the exact state described in t
 | HX MIDI channel configurability (#4) | Current hardcoded channel works — defer |
 | Complex MC6 workflows (next page, MIDI clock, etc.) (#6) | Low-priority — defer |
 | Module-level READMEs (#9) | Nice to have, not blocking |
-| CBA Mood MkII / Wombtone / Brothers MIDI catalog (#16) | Separate device-support work |
 | MC6 clear message emulation (#17) | Deferred bug fix |
 | Default preset values (#19) | Low-priority tech task |
 | UI (#18) | Speculative — not planned |
 | CI independent package publishing | Low-priority infra — local `uv` workflow sufficient for now |
 
+## Current Milestone: v1.3 Chase Bliss Pedal Support
+
+**Goal:** Add full MIDI CC catalog, preset validation, and apply integration for Mood MkII, Wombtone MkII, and Brothers Chase Bliss pedals, including a reset-to-defaults step in the apply flow.
+
+**Target features:**
+- MIDI CC catalogs for Mood MkII, Wombtone MkII, and Brothers
+- Preset validation against CC ranges for each new pedal
+- Apply integration: wire new catalogs into rig-chasebliss apply flow
+- Reset-to-defaults operation in apply flow (send all controls to CC defaults before applying a preset)
+
 ## Current State
 
-All 13 phases shipped. v1.2 is the last completed milestone.
-
-**Next milestone:** Planning not started — run `/gsd-new-milestone` to define next cycle.
+Phases 1–13 shipped across v1.0–v1.2. v1.3 Chase Bliss Pedal Support milestone in progress.
 
 ## Context
 
@@ -114,4 +127,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-08 after v1.2 Cleaner Core milestone close*
+*Last updated: 2026-06-08 — v1.3 Chase Bliss Pedal Support milestone started*
