@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.1
-milestone_name: milestone
-status: executing
-stopped_at: Phase 7 context gathered
-last_updated: "2026-06-07T21:14:10.107Z"
+milestone_name: Package Extraction & Plugin Isolation
+status: complete
+stopped_at: milestone archived
+last_updated: "2026-06-07T21:30:00.000Z"
 last_activity: 2026-06-07
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 8
+  completed_plans: 8
   percent: 100
 ---
 
@@ -18,10 +18,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-04)
+See: .planning/PROJECT.md (updated 2026-06-07)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** Phase 7 — plugin-package-wiring
+**Current focus:** Planning next milestone (v1.2)
 
 ## Current Position
 
