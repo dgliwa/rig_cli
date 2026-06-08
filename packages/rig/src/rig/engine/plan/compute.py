@@ -94,6 +94,7 @@ def _detect_unused_presets(rig: Rig) -> list[str]:
     issues: list[str] = []
     for device in rig.devices.values():
         for preset in device.presets:
+            # TODO: 1.2?? i don't want to have this here.
             if isinstance(preset, AnalogPreset):
                 continue
             if preset.id not in referenced:
@@ -101,7 +102,7 @@ def _detect_unused_presets(rig: Rig) -> list[str]:
     return sorted(issues)
 
 
-# TODO: issue #13
+# TODO: 1.2 issue #13 - the device should be in charge of generating its device action
 def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
     logger.debug("Computing plan for %d scenes", len(rig.scenes))
     actual = RigState()
@@ -210,6 +211,7 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
     missing_refs = _detect_missing_refs(rig)
     unused_presets = _detect_unused_presets(rig)
 
+    # TODO: 1.2 this is an example of something that should be in the cb plugin
     cba_setup = detect_cba_setup(rig, actual)
     if cba_setup:
         any_changes = True

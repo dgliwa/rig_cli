@@ -45,16 +45,17 @@ def _make_rig() -> Rig:
                     },
                 },
             ],
-            scenes={
-                "billy-clean": Scene(name="billy-clean", presets={"hx-stomp": "clean-edge"}),
-                "lead": Scene(name="lead", presets={"hx-stomp": "lead"}),
-            },
         ),
     )
+    scenes = {
+        "billy-clean": Scene(name="billy-clean", presets={"hx-stomp": "clean-edge"}),
+        "lead": Scene(name="lead", presets={"hx-stomp": "lead"}),
+    }
     return Rig(
         name="test",
         signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
         devices={"hx-stomp": hx, "mc6": controller_device},
+        scenes=scenes,
     )
 
 

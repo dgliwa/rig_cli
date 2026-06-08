@@ -209,15 +209,14 @@ class TestChaseBlissApplierSetup:
             manufacturer="Morningstar",
             model="MC6",
             type=DeviceType.CONTROLLER,
-            config=ControllerConfig(
-                midi_channel=1,
-                scenes={"scene-a": Scene(name="scene-a", presets={"cba-mood": "shimmer"})},
-            ),
+            config=ControllerConfig(midi_channel=1),
         )
+        scene = Scene(name="scene-a", presets={"cba-mood": "shimmer"})
         rig = Rig(
             name="test",
             signal_chain=[SignalChainPosition(device_ref="cba-mood", position=1)],
             devices={"cba-mood": bro, "mc6": ctrl},
+            scenes={"scene-a": scene},
         )
         state = RigState()
 

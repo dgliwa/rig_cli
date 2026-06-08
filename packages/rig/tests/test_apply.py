@@ -70,19 +70,17 @@ def _make_config() -> Rig:
         manufacturer="Morningstar",
         model="MC6",
         type=DeviceType.CONTROLLER,
-        config=ControllerConfig(
-            midi_channel=1,
-            scenes={
-                "test-scene": Scene(
-                    name="test-scene", presets={"hx-stomp": "clean-edge", "brothers": "low-gain"}
-                )
-            },
-        ),
+        config=ControllerConfig(midi_channel=1),
+    )
+    scene = Scene(
+        name="test-scene",
+        presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
     )
     return Rig(
         name="test",
         signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
         devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
+        scenes={"test-scene": scene},
     )
 
 
@@ -581,20 +579,17 @@ class TestDevicePluginRouting:
             manufacturer="Morningstar",
             model="MC6",
             type=DeviceType.CONTROLLER,
-            config=ControllerConfig(
-                midi_channel=1,
-                scenes={
-                    "test-scene": Scene(
-                        name="test-scene",
-                        presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
-                    )
-                },
-            ),
+            config=ControllerConfig(midi_channel=1),
+        )
+        scene = Scene(
+            name="test-scene",
+            presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
         )
         return Rig(
             name="test",
             signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
             devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
+            scenes={"test-scene": scene},
         )
 
     def test_device_apply_called_for_scene_action(self, tmp_path):

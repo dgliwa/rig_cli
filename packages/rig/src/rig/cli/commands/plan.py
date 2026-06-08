@@ -65,6 +65,7 @@ def plan(
         )
 
     # --- Setup Actions section (before scenes) ---
+    # TODO: 1.2 this shouldn't be here. Should be a generic "device setup" that the plugins hook into
     if result.cba_setup:
         console.print("\n[bold]Setup Actions:[/bold]")
         for action in result.cba_setup:

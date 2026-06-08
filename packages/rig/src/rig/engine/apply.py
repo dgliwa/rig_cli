@@ -9,7 +9,6 @@ from rich.console import Console
 from rig.engine.appliers.base import (
     ApplyContext,
     DeviceApplyResult,
-    update_device_state,
 )
 from rig.engine.plan import Plan
 from rig.engine.plugin import DeviceApplyContext, SetupContext
@@ -36,11 +35,6 @@ class ApplyResult(BaseModel):
     status: Literal["completed", "cancelled", "no_changes"]
     cba_setup: list[DeviceApplyResult] = []
     scenes: list[SceneApplyResult] = []
-
-
-def _update_device_state(state: RigState, device: str, **fields) -> None:
-    """Update a device's state fields in-place."""
-    update_device_state(state, device, **fields)
 
 
 # TODO: i think this is too big a function
@@ -84,6 +78,7 @@ def apply_plan(
     )
 
     state_modified = False
+    # TODO: 1.2 again cba specific not what i want here
     cba_results: list[DeviceApplyResult] = []
     scene_results: list[SceneApplyResult] = []
 
@@ -182,9 +177,12 @@ def apply_plan(
 
     # --- Phase 2: MC6 programming ---
     if rig and rig.controller and not scene:
+        # TODO: 1.2 too specifically named
         mc6_device = rig.controller
         mc6_banks = mc6_device.config.banks if hasattr(mc6_device.config, "banks") else []
         if mc6_banks and midi and hasattr(mc6_device, "apply"):
+            # TODO: 1.2 too specifically named - again the mc6 device should be responsible for coming up with the action
+            # TODO: generally speaking, should probably add "action" or something to device protocol
             console.print("\n[bold]MC6 Programming Phase[/bold]")
             from rig.engine.plan.models import DeviceAction
 

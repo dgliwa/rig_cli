@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import AliasChoices, BaseModel, Field
 
 
+# TODO: 1.2 re-evaluate if this is what i want
 class SignalChainPosition(BaseModel):
     device_ref: str = Field(validation_alias=AliasChoices("device", "pedal", "pedal_ref"))
     position: int

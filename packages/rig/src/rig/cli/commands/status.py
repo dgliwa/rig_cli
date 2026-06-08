@@ -41,7 +41,7 @@ def status(
             "name": rig.name,
             "pedals": {
                 pid: {"type": p.type.value, "midi_channel": p.config.midi_channel}
-                for pid, p in rig.pedals.items()
+                for pid, p in rig.devices.items()
             },
             "scenes": list(rig.scenes.keys()),
         }
@@ -53,16 +53,12 @@ def status(
     table.add_column("Type", style="green")
     table.add_column("MIDI Ch")
     table.add_column("Presets")
-    for pid, pedal in rig.pedals.items():
-        preset_count = (
-            len(rig.digital_presets.get(pid, []))
-            + len(rig.analog_presets.get(pid, []))
-            + len(rig.hx_presets.get(pid, []))
-        )
+    for pid, device in rig.devices.items():
+        preset_count = len(device.presets)
         table.add_row(
             pid,
-            pedal.type.value,
-            str(pedal.config.midi_channel or "-"),
+            device.type.value,
+            str(device.config.midi_channel or "-"),
             str(preset_count),
         )
     console.print(table)

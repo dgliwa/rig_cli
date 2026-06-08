@@ -11,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 def generate_mc6(rig: Rig) -> dict[str, Any]:
-    """Generate MC6 bank definitions from rig config's mc6 mapping + scenes."""
-    mc6_config = rig.mc6
-    banks = mc6_config.get("banks", [])
+    """Generate MC6 bank definitions from rig config's controller + scenes."""
+    controller = rig.controller
+    banks = controller.config.banks if controller and hasattr(controller.config, "banks") else []
     logger.info("Generating MC6 config for %d banks", len(banks))
     output: dict[str, Any] = {}
 

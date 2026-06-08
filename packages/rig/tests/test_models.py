@@ -156,16 +156,9 @@ class TestSceneModel:
             description="Billy clean tone",
             tempo=118,
             presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
-            mc6_bank=1,
-            mc6_switch="A",
             tags=["bluegrass"],
         )
         assert scene.tempo == 118
-        assert scene.mc6_switch == "A"
-
-    def test_scene_rejects_invalid_switch(self):
-        with pytest.raises(ValidationError):
-            Scene(name="bad", presets={"hx-stomp": "x"}, mc6_switch="Z")
 
 
 class TestSignalChainModel:
@@ -221,8 +214,8 @@ class TestRigConfig:
 
     def test_rig_scenes_returns_controller_config_scenes(self):
         scene = Scene(name="test", presets={"hx-stomp": "x"})
-        ctrl = _make_controller_device(scenes={"test": scene})
-        rig = Rig(name="Test", signal_chain=[], devices={"mc6": ctrl})
+        ctrl = _make_controller_device()
+        rig = Rig(name="Test", signal_chain=[], devices={"mc6": ctrl}, scenes={"test": scene})
         assert rig.scenes["test"].name == "test"
 
     def test_rig_controller_returns_none_when_absent(self):
@@ -238,7 +231,7 @@ class TestRigConfig:
 
     def test_rig_controller_and_scenes_are_not_pydantic_fields(self):
         assert "controller" not in Rig.model_fields
-        assert "scenes" not in Rig.model_fields
+        assert "scenes" in Rig.model_fields
 
 
 class TestApplyOrder:

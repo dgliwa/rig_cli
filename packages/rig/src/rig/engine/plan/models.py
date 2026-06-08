@@ -23,6 +23,7 @@ class ScenePlan(BaseModel):
     device_actions: list[DeviceAction] = []
 
 
+# TODO: 1.2 needs to move to the cba plugin
 class CbaSetupAction(BaseModel):
     device: str
     midi_channel: int

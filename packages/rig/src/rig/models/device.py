@@ -9,6 +9,7 @@ from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.scene import Scene
 
 
+# TODO: 1.2 re-evaluate this one
 class DeviceType(StrEnum):
     DIGITAL = "digital"
     ANALOG = "analog"
@@ -16,6 +17,7 @@ class DeviceType(StrEnum):
     CONTROLLER = "controller"
 
 
+# TODO: 1.2 this is only used in CB, should it move?
 class ControlType(StrEnum):
     KNOB = "knob"
     SWITCH = "switch"
@@ -23,6 +25,7 @@ class ControlType(StrEnum):
     DIPSWITCH = "dipswitch"
 
 
+# TODO: 1.2 this is only used in CB, should it move?
 class Control(BaseModel):
     name: str = Field(..., min_length=1)
     type: ControlType
@@ -44,6 +47,7 @@ class DeviceConfig(BaseModel):
         return []
 
 
+# TODO: 1.2 this is only used in manual, should it move?
 class ManualConfig(DeviceConfig):
     """Device with no MIDI — knobs and switches set by hand."""
 
@@ -51,6 +55,7 @@ class ManualConfig(DeviceConfig):
     controls: list[Control] = []
 
 
+# TODO: 1.2 is this used?
 class MidiConfig(DeviceConfig):
     """Device controlled via MIDI."""
 
@@ -68,12 +73,14 @@ class MidiConfig(DeviceConfig):
         ]
 
 
+# TODO: 1.2 this should move
 class ChaseBlissConfig(MidiConfig):
     """Chase Bliss Audio pedal — MIDI with power-on channel learn."""
 
     type: Literal["chase_bliss"] = "chase_bliss"
 
 
+# TODO: 1.2 this should be specifically a morningstar controller config
 class ControllerConfig(DeviceConfig):
     """Configuration for a MIDI controller device (e.g. MC6)."""
 

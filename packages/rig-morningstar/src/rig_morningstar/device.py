@@ -103,7 +103,7 @@ class MC6Device(BaseModel):
                     if scene_obj:
                         msg_slot = 0
                         for pedal_id, preset_id in scene_obj.presets.items():
-                            pedal = rig.pedals.get(pedal_id)
+                            pedal = rig.devices.get(pedal_id)
                             if pedal is None or pedal.config.midi_channel is None:
                                 continue
                             pc = pedal.get_scene_pc_command(preset_id)

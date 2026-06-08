@@ -34,13 +34,13 @@ def validate(
         if output_format == "json":
             console.print(
                 json.dumps(
-                    {"status": "valid", "pedals": len(rig.pedals), "scenes": len(rig.scenes)},
+                    {"status": "valid", "pedals": len(rig.devices), "scenes": len(rig.scenes)},
                     indent=2,
                 )
             )
         else:
             console.print(
-                f"[green]✓[/green] {rig.name} — {len(rig.pedals)} pedals, {len(rig.scenes)} scenes"
+                f"[green]✓[/green] {rig.name} — {len(rig.devices)} pedals, {len(rig.scenes)} scenes"
             )
             console.print("[green]✓[/green] All cross-references valid")
     except ConfigError as e:

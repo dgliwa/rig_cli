@@ -6,7 +6,7 @@ import yaml
 
 from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
 from rig.engine.plugin_registry import get_registry
-from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, DeviceType
+from rig.models.device import ChaseBlissConfig, Device, DeviceType
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
@@ -72,7 +72,7 @@ def _load_devices_dir(devices_dir: Path) -> dict[str, Any]:
     return devices
 
 
-# TODO: if we require presets be inline this is not necessary?
+# TODO: 1.2 if we require presets be inline this is not necessary?
 def _merge_presets(devices_dir: Path, devices: dict[str, Any]) -> dict[str, Any]:
     """Merge filesystem presets onto device objects (inline presets take priority)."""
     updated: dict[str, Any] = {}
@@ -93,6 +93,7 @@ def _merge_presets(devices_dir: Path, devices: dict[str, Any]) -> dict[str, Any]
             updated[device_id] = device
             continue
 
+        # TODO: 1.2 this shouldn't be here
         presets: list[AnalogPreset | DigitalPreset | HXStompPreset] = []
         # TODO: There's _gotta_ be a better way to parse this than big sets of conditionals
         for path in sorted(preset_dir.glob("*.yaml")):
@@ -129,7 +130,7 @@ def _load_scenes(scenes_dir: Path) -> dict[str, Scene]:
     return scenes
 
 
-# TODO: This should in general leverage the abstractions to determine if the individual pieces are valid
+# TODO: 1.2 This should in general leverage the abstractions to determine if the individual pieces are valid
 def _validate_references(rig: Rig):
     device_ids = set(rig.devices.keys())
     controller_id = rig.controller.id if rig.controller else None
@@ -164,7 +165,7 @@ def _validate_references(rig: Rig):
                     f"Scene '{scene_name}': device '{device_id}' has no preset '{preset_id}'"
                 )
 
-    # TODO: for example, this instance based thing shouldn't happen - these should all conform to a protocol
+    # TODO: 1.2 for example, this instance based thing shouldn't happen - these should all conform to a protocol
     logger.debug("Validating CBA preset parameter names against device controls")
     for device_id, device in rig.devices.items():
         if not isinstance(device.config, ChaseBlissConfig):
@@ -197,8 +198,9 @@ def load_rig(root_path: str) -> Rig:
     signal_data = _read_yaml(_resolve(root, "signal-chain.yaml"))
 
     # Support both new (devices/) and legacy (pedals/) directory names
-    # TODO: Get rid of the pedal resolution
     devices_dir = _resolve(root, "devices")
+
+    # TODO: 1.2 Get rid of the pedal resolution no backwards compat
     if not devices_dir.is_dir():
         devices_dir = _resolve(root, "pedals")
     scenes_dir = _resolve(root, "scenes")
@@ -209,23 +211,13 @@ def load_rig(root_path: str) -> Rig:
     devices = _merge_presets(devices_dir, devices)
     scenes = _load_scenes(scenes_dir)
 
-    # TODO: I think an overarching theme here is I don't like the implied yaml structure that rig-cli enforces.
-    # I want it more terraform-like
-
-    # Wire scenes into the controller device's ControllerConfig so Rig.scenes resolves correctly.
-    # Scenes are "owned" by the controller in the new device-graph model.
-    if scenes:
-        ctrl_device = next((d for d in devices.values() if d.type == DeviceType.CONTROLLER), None)
-        if ctrl_device is not None and isinstance(ctrl_device.config, ControllerConfig):
-            updated_config = ctrl_device.config.model_copy(update={"scenes": scenes})
-            devices[ctrl_device.id] = ctrl_device.model_copy(update={"config": updated_config})
-
     rig = Rig(
         name=rig_data.get("name", ""),
         description=rig_data.get("description"),
         midi_channel=rig_data.get("midi_channel"),
         signal_chain=chain,
         devices=devices,
+        scenes=scenes,
     )
 
     _validate_references(rig)

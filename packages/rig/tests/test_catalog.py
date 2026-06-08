@@ -141,10 +141,14 @@ class TestLoaderValidation:
     def test_valid_fixture_loads(self):
         rig = load_rig(FIXTURE_PATH)
         assert rig.name == "sample-rig"
-        assert "mood" in rig.pedals
-        assert "hx-stomp" in rig.pedals
-        assert "mood" in rig.digital_presets
-        assert "hx-stomp" in rig.hx_presets
+        assert "mood" in rig.devices
+        assert "hx-stomp" in rig.devices
+        mood = rig.devices.get("mood")
+        assert mood is not None
+        assert any(isinstance(p, DigitalPreset) for p in mood.presets)
+        hx = rig.devices.get("hx-stomp")
+        assert hx is not None
+        assert any(isinstance(p, HXStompPreset) for p in hx.presets)
 
     def test_unknown_cba_param_raises(self, tmp_path):
         (tmp_path / "pedals" / "mood" / "presets").mkdir(parents=True)

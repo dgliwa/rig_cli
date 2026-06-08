@@ -13,6 +13,7 @@ from rig.log_setup import setup_logging
 logger = logging.getLogger(__name__)
 
 
+# TODO: 1.2 this shouldn't be here is it used?
 @gen_app.command()
 def mc6(config: str = _CONFIG_OPTION, verbose: int = _VERBOSE_OPTION):
     """Generate MC6 bank configs from scene definitions."""
