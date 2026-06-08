@@ -20,8 +20,6 @@ Preset = AnalogPreset | DigitalPreset | HXStompPreset
 
 class Device(BaseModel):
     id: str
-    manufacturer: str
-    model: str
     type: DeviceType
     config: Any = None
     presets: list[AnalogPreset | DigitalPreset | HXStompPreset] = Field(default_factory=list)

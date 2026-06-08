@@ -16,7 +16,7 @@ def _make_device(id: str, type: DeviceType, config=None) -> Device:
             config = {"type": "controller", "banks": []}
         else:
             config = {"type": "midi", "midi_channel": 1}
-    return Device(id=id, manufacturer="Acme", model="Pedal", type=type, config=config)
+    return Device(id=id, type=type, config=config)
 
 
 def _make_rig(devices: list[Device], signal_chain_ids: list[str], scenes=None) -> Rig:
