@@ -36,8 +36,8 @@ Collapse the multi-file config repo into a single flat `rig.yaml`, strip all plu
 
 ### DEFER — Deferred item cleanup
 
-- [ ] **DEFER-01**: Vestigial `rig generate mc6` CLI command and `rig_morningstar.generator` module removed
-- [ ] **DEFER-02**: Unused `composes` validation removed from loader
+- [x] **DEFER-01**: Vestigial `rig generate mc6` CLI command and `rig_morningstar.generator` module removed
+- [x] **DEFER-02**: Unused `composes` validation removed from loader
 
 ---
 
