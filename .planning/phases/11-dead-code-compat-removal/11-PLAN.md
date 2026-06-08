@@ -427,29 +427,50 @@ uv run pytest packages/ -q --tb=short
 
 ---
 
-# Full Verification
+# Execution Summary
 
-After all waves complete:
+## Result: ✅ EXECUTED (2026-06-08)
 
-```bash
-# CLEANUP-01: No TODO:1.2 markers
-grep -r "TODO.*1\.2" packages/rig/src/ 2>/dev/null || echo "PASS: No TODO:1.2 markers"
+All four waves executed and verified. Every success criterion met.
 
-# CLEANUP-02: No multi-file config paths
-grep -n "signal-chain.yaml\|mc6.yaml\|pedals/.*\.yaml\|scenes/.*\.yaml" packages/rig/src/ 2>/dev/null || echo "PASS: No multi-file config paths"
+### Wave 1 — Move Preset Models to Plugins ✅
+- Created 3 plugin preset modules: `rig_analog/preset.py`, `rig_chasebliss/preset.py`, `rig_hx/preset.py`
+- Core `Preset` is now barebones (id, name, notes, tags)
+- All `isinstance` checks replaced with `hasattr` duck-typing
+- All test imports updated
+- **4 TODO:1.2 markers resolved** (preset.py #1-4)
 
-# load_rig accepts only single rig.yaml path (confirmed by grep for _load_scenes/scenes_dir)
-grep -c "_load_scenes\|scenes_dir" packages/rig/src/rig/config/loader.py  # Expected: 0
+### Wave 2 — Move CbaSetupAction to CBA Plugin ✅
+- Created `rig_chasebliss/models.py` with `CbaSetupAction`
+- Removed from core `plan/models.py` and `plan/__init__.py`
+- Updated device.py, applier.py, test imports
+- **1 TODO:1.2 marker resolved** (plan/models.py #6)
 
-# All tests pass
-uv run pytest packages/ -q --tb=short
+### Wave 3 — Clean Up apply.py ✅
+- Removed unused `cba_results` variable and `ApplyResult.cba_setup` field
+- Generalised MC6 programming phase to generic controller programming
+- Removed 3 TODO markers and "too big a function" comment
+- **3 TODO:1.2 markers resolved** (apply.py #9-11)
 
-# Total test count: should remain at ~274 (no functional tests removed)
+### Wave 4 — Clean Up compute.py, _load_scenes, generate.py ✅
+- Removed deprecated `_load_scenes()` from loader.py
+- Removed `test_load_scenes_nonexistent_dir_returns_empty` test
+- Removed compute.py TODO markers
+- Removed generate.py TODO; updated error message from mc6.yaml reference
+- **3 TODO:1.2 markers resolved** (compute.py #7-8, generate.py #5)
+
+### Verification
+
+```
+$ grep -rn "TODO.*1\.2" packages/rig/src/  # PASS: zero results
+$ grep -rn "mc6\.yaml\|signal-chain\.yaml\|pedals/.*\.yaml\|scenes/.*\.yaml" packages/rig/src/  # PASS: zero results
+$ grep -rn "_load_scenes" packages/  # PASS: zero results
+$ uv run pytest packages/ -q --tb=short
+273 passed in 0.46s  # PASS: 1 test removed (dead code test)
 ```
 
 ## Rollback Strategy
 
-Each wave is self-contained and tested independently. If any wave fails:
-1. Run `git checkout -- packages/` to revert all changes
-2. Address the failure and re-apply
-3. Use the wave-level verification commands to validate before proceeding to next wave
+Each wave was self-contained and tested independently. If any future issue arises:
+1. Run `git log --oneline -4` to see wave commits
+2. Revert individual waves with `git revert <hash>` (no dependencies between waves)
