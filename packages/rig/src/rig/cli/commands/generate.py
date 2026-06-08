@@ -13,7 +13,6 @@ from rig.log_setup import setup_logging
 logger = logging.getLogger(__name__)
 
 
-# TODO: 1.2 this shouldn't be here is it used?
 @gen_app.command()
 def mc6(config: str = _CONFIG_OPTION, verbose: int = _VERBOSE_OPTION):
     """Generate MC6 bank configs from scene definitions."""
@@ -33,7 +32,9 @@ def mc6(config: str = _CONFIG_OPTION, verbose: int = _VERBOSE_OPTION):
 
     data = generate_mc6(rig)
     if not data:
-        console.print("[yellow]No MC6 configuration found (mc6.yaml missing or empty)[/yellow]")
+        console.print(
+            "[yellow]No MC6 configuration found — ensure a controller device with banks is defined in the rig config[/yellow]"
+        )
         return
 
     out_dir = write_mc6_config(data, output_path=str(Path(config).resolve() / "generated" / "mc6"))

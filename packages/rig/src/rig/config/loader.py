@@ -115,27 +115,6 @@ def _parse_device(data: dict) -> Any:
     return model_class(**device_data)
 
 
-def _load_scenes(scenes_dir: Path) -> dict[str, Scene]:
-    """Load scenes from a directory of YAML files.
-
-    Deprecated: scenes are now defined inside the controller device's config
-    in the single-file schema. This function is kept for backward compat with
-    existing tests and will be removed in Phase 11.
-    """
-    scenes: dict[str, Scene] = {}
-    if not scenes_dir.is_dir():
-        logger.debug("Scenes directory not found: %s", scenes_dir)
-        return scenes
-    logger.debug("Loading scenes from: %s", scenes_dir)
-    for path in sorted(scenes_dir.glob("*.yaml")):
-        data = _read_yaml(path)
-        scene = Scene(**data)
-        scenes[scene.name] = scene
-        logger.debug("Loaded scene '%s' with %d device(s)", scene.name, len(scene.presets))
-    logger.info("Loaded %d scenes", len(scenes))
-    return scenes
-
-
 def _extract_controller_scenes(device_raw: dict, device: Any) -> dict[str, Scene]:
     """Extract Scene objects from a controller device's config.
 

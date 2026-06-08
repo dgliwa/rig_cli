@@ -275,14 +275,3 @@ devices:
 
 
 # ---------------------------------------------------------------------------
-# _load_scenes backward-compat unit test (deprecated, Phase 11 removal)
-# ---------------------------------------------------------------------------
-
-
-def test_load_scenes_nonexistent_dir_returns_empty(tmp_path) -> None:
-    """_load_scenes with a missing path must return {} without raising."""
-    from rig.config.loader import _load_scenes
-
-    missing = tmp_path / "no_such_scenes"
-    result = _load_scenes(missing)
-    assert result == {}

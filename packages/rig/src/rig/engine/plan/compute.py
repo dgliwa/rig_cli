@@ -47,7 +47,6 @@ def _detect_unused_presets(rig: Rig) -> list[str]:
     return sorted(issues)
 
 
-# TODO: 1.2 issue #13 - the device should be in charge of generating its device action
 def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
     logger.debug("Computing plan for %d scenes", len(rig.scenes))
     actual = RigState()

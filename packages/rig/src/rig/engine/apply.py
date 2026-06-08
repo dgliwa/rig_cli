@@ -33,11 +33,9 @@ class ApplyResult(BaseModel):
     """Overall result of an apply run."""
 
     status: Literal["completed", "cancelled", "no_changes"]
-    cba_setup: list[DeviceApplyResult] = []
     scenes: list[SceneApplyResult] = []
 
 
-# TODO: i think this is too big a function
 def apply_plan(
     plan: Plan | None = None,
     *,
@@ -78,8 +76,6 @@ def apply_plan(
     )
 
     state_modified = False
-    # TODO: 1.2 again cba specific not what i want here
-    cba_results: list[DeviceApplyResult] = []
     scene_results: list[SceneApplyResult] = []
 
     # --- Phase: Device setup (each device manages its own MIDI connection + one-time init) ---
@@ -100,9 +96,7 @@ def apply_plan(
                 result = device.setup(setup_ctx)
                 if result.cancelled:
                     console.print("[red]Apply cancelled by user[/red]")
-                    return ApplyResult(
-                        status="cancelled", cba_setup=cba_results, scenes=scene_results
-                    )
+                    return ApplyResult(status="cancelled", scenes=scene_results)
                 if result.state_modified:
                     state_modified = True
 
@@ -161,7 +155,7 @@ def apply_plan(
             device_results.append(action_result)
 
         if cancelled:
-            return ApplyResult(status="cancelled", cba_setup=cba_results, scenes=scene_results)
+            return ApplyResult(status="cancelled", scenes=scene_results)
 
         if any(r.status == "confirmed" for r in device_results):
             state.scenes[sp.scene_name] = {}
@@ -175,25 +169,21 @@ def apply_plan(
             )
         )
 
-    # --- Phase 2: MC6 programming ---
+    # --- Phase 2: Controller programming ---
     if rig and rig.controller and not scene:
-        # TODO: 1.2 too specifically named
-        mc6_device = rig.controller
-        mc6_banks = mc6_device.config.banks if hasattr(mc6_device.config, "banks") else []
-        if mc6_banks and midi and hasattr(mc6_device, "apply"):
-            # TODO: 1.2 too specifically named - again the mc6 device should be responsible for coming up with the action
-            # TODO: generally speaking, should probably add "action" or something to device protocol
-            console.print("\n[bold]MC6 Programming Phase[/bold]")
+        controller = rig.controller
+        if hasattr(controller, "apply") and midi:
+            console.print("\n[bold]Controller Programming Phase[/bold]")
             from rig.engine.plan.models import DeviceAction
 
-            mc6_action = DeviceAction(
-                device=mc6_device.id,
+            controller_action = DeviceAction(
+                device=controller.id,
                 device_type="controller",
                 status="configure",
                 preset_name="",
             )
-            mc6_ctx = DeviceApplyContext(
-                action=mc6_action,
+            controller_ctx = DeviceApplyContext(
+                action=controller_action,
                 state=ctx.state,
                 rig=rig,
                 dry_run=ctx.dry_run,
@@ -202,8 +192,8 @@ def apply_plan(
                 connected_devices=ctx.connected_devices,
                 config_path=ctx.config_path,
             )
-            mc6_device.apply(mc6_ctx)
-            if state.devices.get("mc6"):
+            controller.apply(controller_ctx)
+            if controller.id in state.devices:
                 state_modified = True
 
     if config_path and not dry_run and state_modified:
@@ -211,4 +201,4 @@ def apply_plan(
         state_writer.write(config_path, state)
         console.print("[green]✓[/green] State saved to .rig/state.json")
 
-    return ApplyResult(status="completed", cba_setup=cba_results, scenes=scene_results)
+    return ApplyResult(status="completed", scenes=scene_results)
