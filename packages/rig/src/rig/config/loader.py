@@ -36,10 +36,8 @@ import yaml
 
 from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
 from rig.engine.plugin_registry import get_registry
-from rig.models.device import DeviceType
 from rig.models.preset import Preset
 from rig.models.rig import Rig
-from rig.models.scene import Scene
 
 logger = logging.getLogger(__name__)
 
@@ -115,32 +113,6 @@ def _parse_device(data: dict) -> Any:
     return model_class(**device_data)
 
 
-def _extract_controller_scenes(device_raw: dict, device: Any) -> dict[str, Scene]:
-    """Extract Scene objects from a controller device's config.
-
-    Scenes are defined under ``config.scenes`` in the raw YAML data. Each scene
-    has ``presets: {device_id: preset_id}`` and optional ``description``/``tags``.
-    Controller-specific fields like ``bank``/``switch`` stay in the device config
-    and are NOT put on the Scene model.
-    """
-    config_raw = device_raw.get("config", {})
-    controller_scenes = config_raw.get("scenes", {})
-    if not isinstance(controller_scenes, dict):
-        return {}
-
-    scenes: dict[str, Scene] = {}
-    for scene_name, scene_data in controller_scenes.items():
-        if not isinstance(scene_data, dict):
-            continue
-        scenes[scene_name] = Scene(
-            name=scene_name,
-            description=scene_data.get("description"),
-            presets=scene_data.get("presets", {}),
-            tags=scene_data.get("tags", []),
-        )
-    return scenes
-
-
 def _validate_references(rig: Rig):
     """Validate all cross-references in the rig configuration."""
     device_ids = set(rig.devices.keys())
@@ -205,26 +177,18 @@ def load_rig(root_path: str) -> Rig:
     device_list: list[dict] = data.get("devices", [])
     devices: dict[str, Any] = {}
     signal_chain: list[str] = []
-    scenes: dict[str, Scene] = {}
 
     for device_entry in device_list:
         device = _parse_device(device_entry)
         devices[device.id] = device
         signal_chain.append(device.id)
 
-        # Extract scenes from controller devices
-        if device.type == DeviceType.CONTROLLER:
-            device_scenes = _extract_controller_scenes(device_entry, device)
-            scenes.update(device_scenes)
-
-    # TODO: 1.2 scenes should only live at the controller level, not the rig level (since controllers CONTROL the scenes)
     rig = Rig(
         name=rig_name,
         description=rig_description,
         midi_channel=rig_midi_channel,
         signal_chain=signal_chain,
         devices=devices,
-        scenes=scenes,
     )
 
     _validate_references(rig)

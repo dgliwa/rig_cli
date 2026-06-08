@@ -18,7 +18,30 @@ class Rig(BaseModel):
     signal_chain: list[str] = []
     devices: dict[str, Any] = {}
     midi_channel: int | None = None
-    scenes: dict[str, Scene] = {}
+
+    @property
+    def scenes(self) -> dict[str, Scene]:
+        """Aggregate scenes from all controller devices.
+
+        Scenes live in each controller's config; this property provides
+        a unified view for consumers that iterate scenes.
+        """
+        aggregated: dict[str, Scene] = {}
+        for device in self.devices.values():
+            if device.type == DeviceType.CONTROLLER:
+                cfg = device.config
+                raw_scenes = (
+                    cfg.get("scenes", {}) if isinstance(cfg, dict) else getattr(cfg, "scenes", {})
+                )
+                for name, data in raw_scenes.items():
+                    if isinstance(data, dict):
+                        aggregated[name] = Scene(
+                            name=name,
+                            description=data.get("description"),
+                            presets=data.get("presets", {}),
+                            tags=data.get("tags", []),
+                        )
+        return aggregated
 
     @property
     def controller(self) -> Device | None:

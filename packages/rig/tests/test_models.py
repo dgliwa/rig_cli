@@ -79,10 +79,13 @@ class TestSceneModel:
 
 def _make_controller_device(scenes: dict | None = None) -> Device:
     """Helper: build a Device with DeviceType.CONTROLLER."""
+    config: dict = {"type": "controller", "midi_channel": 1, "banks": []}
+    if scenes:
+        config["scenes"] = scenes
     return Device(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config={"type": "controller", "midi_channel": 1, "banks": []},
+        config=config,
     )
 
 
@@ -105,10 +108,10 @@ class TestRigConfig:
         assert rig.scenes == {}
 
     def test_rig_scenes_returns_controller_config_scenes(self):
-        scene = Scene(name="test", presets={"hx-stomp": "x"})
-        ctrl = _make_controller_device()
-        rig = Rig(name="Test", signal_chain=[], devices={"mc6": ctrl}, scenes={"test": scene})
+        ctrl = _make_controller_device(scenes={"test": {"presets": {"hx-stomp": "x"}}})
+        rig = Rig(name="Test", signal_chain=[], devices={"mc6": ctrl})
         assert rig.scenes["test"].name == "test"
+        assert rig.scenes["test"].presets == {"hx-stomp": "x"}
 
     def test_rig_controller_returns_none_when_absent(self):
         rig = Rig(name="Test", signal_chain=[], devices={})
@@ -123,7 +126,7 @@ class TestRigConfig:
 
     def test_rig_controller_and_scenes_are_not_pydantic_fields(self):
         assert "controller" not in Rig.model_fields
-        assert "scenes" in Rig.model_fields
+        assert "scenes" not in Rig.model_fields
 
 
 class TestApplyOrder:

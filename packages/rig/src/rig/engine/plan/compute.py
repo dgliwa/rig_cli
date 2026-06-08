@@ -67,7 +67,6 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
         except ValueError:
             return len(ordered_devices)
 
-    # TODO: 1.2 scenes will go on the controller moving forward
     for scene_name, scene in rig.scenes.items():
         logger.debug("Planning scene '%s' with %d pedal(s)", scene_name, len(scene.presets))
         device_actions: list[DeviceAction] = []
@@ -102,19 +101,8 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
                     logger.debug("    → analog needs manual adjustment")
                 continue
 
-            is_hx = pedal.type.value == "modeler"
-            preset_number = None
-
-            # TODO: 1.2 why is this in here? this should be part of the hx preset definition?
-            if is_hx:
-                for hp in [p for p in pedal.presets if hasattr(p, "hlx_file")]:
-                    if hp.id == preset_id:
-                        preset_number = hp.preset_number
-                        break
-                logger.debug("    → HX preset #%s", preset_number)
-            else:
-                preset_number = _get_preset_number(rig, pedal_id, preset_id)
-                logger.debug("    → digital preset #%s", preset_number)
+            preset_number = _get_preset_number(rig, pedal_id, preset_id)
+            logger.debug("    → preset #%s", preset_number)
 
             needs_config = actual_preset != preset_id
             if needs_config:

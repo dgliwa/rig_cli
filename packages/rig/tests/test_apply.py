@@ -10,7 +10,6 @@ from rig.engine.apply import ApplyResult, apply_plan
 from rig.engine.plan import compute_plan
 from rig.models.device import Device, DeviceType
 from rig.models.rig import Rig
-from rig.models.scene import Scene
 from rig_chasebliss.device import ChaseBlissConfig, ChaseBlissDevice
 from rig_chasebliss.preset import DigitalPreset
 from rig_hx.device import HXStompDevice
@@ -68,17 +67,19 @@ def _make_config() -> Rig:
     ctrl = Device(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config={"type": "controller", "midi_channel": 1, "banks": []},
-    )
-    scene = Scene(
-        name="test-scene",
-        presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
+        config={
+            "type": "controller",
+            "midi_channel": 1,
+            "banks": [],
+            "scenes": {
+                "test-scene": {"presets": {"hx-stomp": "clean-edge", "brothers": "low-gain"}}
+            },
+        },
     )
     return Rig(
         name="test",
         signal_chain=["hx-stomp"],
         devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
-        scenes={"test-scene": scene},
     )
 
 
@@ -569,17 +570,19 @@ class TestDevicePluginRouting:
         ctrl = Device(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config={"type": "controller", "midi_channel": 1, "banks": []},
-        )
-        scene = Scene(
-            name="test-scene",
-            presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
+            config={
+                "type": "controller",
+                "midi_channel": 1,
+                "banks": [],
+                "scenes": {
+                    "test-scene": {"presets": {"hx-stomp": "clean-edge", "brothers": "low-gain"}}
+                },
+            },
         )
         return Rig(
             name="test",
             signal_chain=["hx-stomp"],
             devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
-            scenes={"test-scene": scene},
         )
 
     def test_device_apply_called_for_scene_action(self, tmp_path):

@@ -3,7 +3,6 @@ import json
 from rig.engine.diff import compute_diff, format_diff
 from rig.models.device import Device, DeviceType
 from rig.models.rig import Rig
-from rig.models.scene import Scene
 from rig_chasebliss.device import ChaseBlissConfig
 from rig_chasebliss.preset import DigitalPreset
 from rig_hx.preset import HXStompPreset
@@ -32,17 +31,19 @@ def _make_rig() -> Rig:
     ctrl = Device(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config={"type": "controller", "midi_channel": 1, "banks": []},
-    )
-    scene = Scene(
-        name="test-scene",
-        presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
+        config={
+            "type": "controller",
+            "midi_channel": 1,
+            "banks": [],
+            "scenes": {
+                "test-scene": {"presets": {"hx-stomp": "clean-edge", "brothers": "low-gain"}}
+            },
+        },
     )
     return Rig(
         name="test",
         signal_chain=["hx-stomp"],
         devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
-        scenes={"test-scene": scene},
     )
 
 

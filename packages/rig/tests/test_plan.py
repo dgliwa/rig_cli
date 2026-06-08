@@ -4,7 +4,6 @@ from rig.engine.diff import compute_diff
 from rig.engine.plan import compute_plan
 from rig.models.device import Device, DeviceType
 from rig.models.rig import Rig
-from rig.models.scene import Scene
 from rig_analog.preset import AnalogPreset
 from rig_chasebliss.device import ChaseBlissConfig
 from rig_chasebliss.preset import DigitalPreset
@@ -33,20 +32,21 @@ def _make_rig(scene_presets: dict | None = None) -> Rig:
         type=DeviceType.ANALOG,
         config={"type": "manual"},
     )
+    scene_presets = scene_presets or {"hx-stomp": "clean-edge", "brothers": "low-gain"}
     ctrl = Device(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config={"type": "controller", "midi_channel": 1, "banks": []},
-    )
-    scene = Scene(
-        name="test-scene",
-        presets=scene_presets or {"hx-stomp": "clean-edge", "brothers": "low-gain"},
+        config={
+            "type": "controller",
+            "midi_channel": 1,
+            "banks": [],
+            "scenes": {"test-scene": {"presets": scene_presets}},
+        },
     )
     return Rig(
         name="test",
         signal_chain=["hx-stomp"],
         devices={"hx-stomp": hx, "brothers": bro, "tumnus": tum, "mc6": ctrl},
-        scenes={"test-scene": scene},
     )
 
 
@@ -390,11 +390,12 @@ def _make_ordered_rig() -> Rig:
     ctrl = Device(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config={"type": "controller", "midi_channel": 1, "banks": []},
-    )
-    scene = Scene(
-        name="test-scene",
-        presets={"polytune": "mute", "hx-stomp": "clean-edge"},
+        config={
+            "type": "controller",
+            "midi_channel": 1,
+            "banks": [],
+            "scenes": {"test-scene": {"presets": {"polytune": "mute", "hx-stomp": "clean-edge"}}},
+        },
     )
     return Rig(
         name="test",
@@ -403,7 +404,6 @@ def _make_ordered_rig() -> Rig:
             "hx-stomp",
         ],
         devices={"hx-stomp": hx, "polytune": tuner, "mc6": ctrl},
-        scenes={"test-scene": scene},
     )
 
 
@@ -452,18 +452,19 @@ class TestDeviceOrdering:
         ctrl = Device(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config={"type": "controller", "midi_channel": 1, "banks": []},
-        )
-        scene = Scene(
-            name="test-scene",
-            # brothers is off-chain; hx-stomp is in-chain at position 1
-            presets={"brothers": "low-gain", "hx-stomp": "clean-edge"},
+            config={
+                "type": "controller",
+                "midi_channel": 1,
+                "banks": [],
+                "scenes": {
+                    "test-scene": {"presets": {"brothers": "low-gain", "hx-stomp": "clean-edge"}}
+                },
+            },
         )
         rig = Rig(
             name="test",
             signal_chain=["hx-stomp"],
             devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
-            scenes={"test-scene": scene},
         )
         plan = compute_plan(rig)
         actions = plan.scenes["test-scene"].device_actions

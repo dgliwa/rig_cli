@@ -188,7 +188,6 @@ class TestChaseBlissApplierSetup:
     def test_detect_cba_setup_fresh_device_produces_all_phases(self):
         from rig.models.device import Device, DeviceType
         from rig.models.rig import Rig
-        from rig.models.scene import Scene
         from rig_chasebliss.device import ChaseBlissConfig, _detect_cba_setup_for_device
         from rig_chasebliss.preset import DigitalPreset
 
@@ -204,14 +203,17 @@ class TestChaseBlissApplierSetup:
         ctrl = Device(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config={"type": "controller", "midi_channel": 1, "banks": []},
+            config={
+                "type": "controller",
+                "midi_channel": 1,
+                "banks": [],
+                "scenes": {"scene-a": {"presets": {"cba-mood": "shimmer"}}},
+            },
         )
-        scene = Scene(name="scene-a", presets={"cba-mood": "shimmer"})
         rig = Rig(
             name="test",
             signal_chain=["cba-mood"],
             devices={"cba-mood": bro, "mc6": ctrl},
-            scenes={"scene-a": scene},
         )
         state = RigState()
 
