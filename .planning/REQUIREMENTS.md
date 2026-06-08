@@ -56,9 +56,9 @@ Add full MIDI CC catalog, preset validation, and apply integration for Mood MkII
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| CBA-04 | — | Pending roadmap |
-| CBA-01 | — | Pending roadmap |
-| CBA-02 | — | Pending roadmap |
-| CBA-03 | — | Pending roadmap |
-| CBA-05 | — | Pending roadmap |
-| CBA-06 | — | Pending roadmap |
+| CBA-04 | Phase 14 | Pending |
+| CBA-01 | Phase 14 | Pending |
+| CBA-02 | Phase 14 | Pending |
+| CBA-03 | Phase 14 | Pending |
+| CBA-05 | Phase 15 | Pending |
+| CBA-06 | Phase 16 | Pending |

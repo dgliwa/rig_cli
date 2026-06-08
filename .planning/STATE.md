@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Chase Bliss Pedal Support
-status: planning
-last_updated: "2026-06-08T18:04:25.084Z"
+status: in_progress
+last_updated: "2026-06-08"
 last_activity: 2026-06-08
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,18 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-08)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** v1.2 archived — planning next milestone
+**Current focus:** v1.3 Chase Bliss Pedal Support — Phase 14 next
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 14 — CBA Catalog Expansion
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-08 — Milestone v1.3 started
+Status: Ready to plan
+Last activity: 2026-06-08 — Roadmap created for v1.3
+
+```
+Progress: ░░░░░░░░░░ 0% (0/3 phases)
+```
 
 ## Performance Metrics
 
@@ -64,6 +68,13 @@ Last activity: 2026-06-08 — Milestone v1.3 started
 - **Scenes extracted from controller config** — controller holds scenes with bank/switch; loader extracts `presets`/`description`/`tags` to `Scene` model; controller-specific fields stay in device config
 - **`config.type` is the entry point key** — plugin dispatch uses `config.type` (e.g. `"midi"`, `"chase_bliss"`), while device-level `type` is the `DeviceType` enum (`"digital"`, `"analog"`, `"modeler"`, `"controller"`)
 - **`composes` is optional controller metadata** — validated against device IDs; not used for graph ordering (yet)
+
+### v1.3 roadmap decisions
+
+- **CBA-04 + CBA-01 + CBA-02 + CBA-03 grouped in Phase 14** — the `default` field on `Control` is a prerequisite for all catalog data to be complete; writing catalogs before the field exists would require an immediate follow-up pass; single phase avoids partial state
+- **Validation (Phase 15) before reset (Phase 16)** — both phases consume catalog controls; validation naturally precedes any action that touches the device; convention from research
+- **All three phases live in rig-chasebliss package** — no core changes; `Control` model change is additive and backward-compatible
+- **Imperative validation in apply(), not Pydantic model_validator** — catalog lookup at model construction time would couple the model layer to the plugin; validation at apply time is correct
 
 ## Deferred Items
 

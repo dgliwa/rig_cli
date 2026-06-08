@@ -5,6 +5,7 @@
 - ✅ **v1.0 I/O Decoupling & Plugin Architecture** — Phases 1-5 (shipped 2026-06-07)
 - ✅ **v1.1 Package Extraction & Plugin Isolation** — Phases 6-8 (shipped 2026-06-07)
 - ✅ **v1.2 Cleaner Core** — Phases 9-13 (shipped 2026-06-08)
+- **v1.3 Chase Bliss Pedal Support** — Phases 14-16 (active)
 
 ## Phases
 
@@ -39,6 +40,47 @@
 
 </details>
 
+### v1.3 Chase Bliss Pedal Support (Phases 14-16)
+
+- [ ] **Phase 14: CBA Catalog Expansion** - Add Control.default field + Wombtone MkII, Brothers AM catalogs + Mood MkII fixes
+- [ ] **Phase 15: Preset Parameter Validation** - Validate CBA preset parameter names and values against catalog before apply
+- [ ] **Phase 16: Reset-to-Defaults** - Send all resettable controls to default CC values before applying preset CCs
+
+## Phase Details
+
+### Phase 14: CBA Catalog Expansion
+**Goal**: The Control model carries a default value and all three CBA pedal catalogs are complete and correct
+**Depends on**: Nothing (first phase of v1.3)
+**Requirements**: CBA-04, CBA-01, CBA-02, CBA-03
+**Success Criteria** (what must be TRUE):
+  1. `Control` instances can be constructed with a `default` float or `None`; existing Control construction without `default` continues to work unchanged
+  2. Footswitch and utility controls in all catalogs have `default=None`; parameter controls have a numeric default matching the pedal's factory setting
+  3. `WOMBTONE_MKII_CONTROLS` is present in the catalog module with all 8 parameter controls (CC14-21) populated with correct CC numbers, ranges, and defaults
+  4. `BROTHERS_AM_CONTROLS` is present with all 24 controls (8 knobs, 3 toggles, 15 dip switches) populated with correct CC numbers, ranges, and defaults
+  5. Mood MkII catalog contains CC24-29, CC31-33, and CC52; CC102 maps to `wet_bypass` and CC103 to `loop_bypass`; all existing controls have `default=` values
+**Plans**: TBD
+
+### Phase 15: Preset Parameter Validation
+**Goal**: Applying a CBA preset with an unknown or out-of-range parameter fails immediately with a clear error, before any physical device interaction
+**Depends on**: Phase 14
+**Requirements**: CBA-05
+**Success Criteria** (what must be TRUE):
+  1. Applying a preset with a parameter name not in the device catalog raises `ValidationError` with a message that names the offending parameter
+  2. Applying a preset with a parameter value outside the control's `min`/`max` range raises `ValidationError` with a message that includes the value and the allowed range
+  3. Validation runs before the user is prompted to navigate to a preset slot on the pedal — no physical interaction is required before an error is surfaced
+  4. Validation runs in dry-run mode, not only on live apply
+**Plans**: TBD
+
+### Phase 16: Reset-to-Defaults
+**Goal**: Before each preset's CC values are sent to a CBA pedal, all resettable controls are first driven to their catalog default, ensuring clean preset creation
+**Depends on**: Phase 15
+**Requirements**: CBA-06
+**Success Criteria** (what must be TRUE):
+  1. When applying a CBA preset, a batch of CC messages for all controls with a non-None default is sent before the preset's own CC messages
+  2. Footswitch and utility controls (those with `default=None`) are excluded from the reset batch — no spurious CC messages are sent for them
+  3. Reset fires per-preset, immediately before that preset's CC messages, not once per apply session
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -56,3 +98,6 @@
 | 11. Dead Code & Compat Removal | v1.2 | 1/1 | Complete | 2026-06-08 |
 | 12. Clean Up Deferred Items | v1.2 | 1/1 | Complete | 2026-06-08 |
 | 13. Resolve Remaining TODO:1.2 Markers | v1.2 | 1/1 | Complete | 2026-06-08 |
+| 14. CBA Catalog Expansion | v1.3 | 0/? | Not started | - |
+| 15. Preset Parameter Validation | v1.3 | 0/? | Not started | - |
+| 16. Reset-to-Defaults | v1.3 | 0/? | Not started | - |
