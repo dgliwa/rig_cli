@@ -76,6 +76,7 @@ def plan(
 
     for name in scene_names:
         sp = result.scenes.get(name)
+        # TODO: scene plans should have their own logging output class
         if sp is None:
             console.print(f"[yellow]Scene '{name}' not found[/yellow]")
             continue

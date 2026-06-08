@@ -217,6 +217,7 @@ def load_rig(root_path: str) -> Rig:
             device_scenes = _extract_controller_scenes(device_entry, device)
             scenes.update(device_scenes)
 
+    # TODO: 1.2 scenes should only live at the controller level, not the rig level (since controllers CONTROL the scenes)
     rig = Rig(
         name=rig_name,
         description=rig_description,

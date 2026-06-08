@@ -105,6 +105,15 @@
 **Requirements**: DEFER-01, DEFER-02
 **Result**: `rig generate mc6` removed, `composes` validation removed, 262 tests pass
 
+### v1.3 Design Cleanup (Phases 13)
+
+- [ ] **Phase 13: Resolve Remaining TODO:1.2 Markers** — Move scenes off Rig model onto controller, move HX preset logic into HX plugin, sweep all TODO:1.2 markers from codebase
+
+### Phase 13: Resolve Remaining TODO:1.2 Markers
+**Goal**: Address the 3 remaining `TODO: 1.2` architectural notes — move scenes off the flat `Rig.scenes` model onto controllers where they belong, and move HX-specific preset-number lookup out of core `compute.py` into the HX plugin
+**Depends on**: Phase 12
+**Requirements**: CLEANUP-01, DESIGN-01, DESIGN-02
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -121,3 +130,4 @@
 | 10. Schema & Loader Rewrite | v1.2 | 1/1 | Complete | 2026-06-08 |
 | 11. Dead Code & Compat Removal | v1.2 | 1/1 | Complete | 2026-06-08 |
 | 12. Clean Up Deferred Items | v1.2 | 1/1 | Complete | 2026-06-08 |
+| 13. Resolve Remaining TODO:1.2 Markers | v1.3 | 0/? | Planning | - |

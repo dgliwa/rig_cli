@@ -39,6 +39,11 @@ Collapse the multi-file config repo into a single flat `rig.yaml`, strip all plu
 - [x] **DEFER-01**: Vestigial `rig generate mc6` CLI command and `rig_morningstar.generator` module removed
 - [x] **DEFER-02**: Unused `composes` validation removed from loader
 
+### DESIGN — Post-v1.2 design cleanup
+
+- [ ] **DESIGN-01**: `Rig.scenes` removed — scenes live on controller devices only; all consumers access scenes through controller lookup
+- [ ] **DESIGN-02**: HXStompPreset preset_number lookup moved out of core `compute.py` into HX plugin
+
 ---
 
 ## Future Requirements
@@ -80,3 +85,5 @@ Collapse the multi-file config repo into a single flat `rig.yaml`, strip all plu
 | CLEANUP-02 | Phase 11 | — |
 | DEFER-01 | Phase 12 | — |
 | DEFER-02 | Phase 12 | — |
+| DESIGN-01 | Phase 13 | — |
+| DESIGN-02 | Phase 13 | — |

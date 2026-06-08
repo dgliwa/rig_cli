@@ -60,12 +60,14 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
     graph = DeviceGraph(rig)
     ordered_devices = [d.id for d in graph.apply_order()]
 
+    # TODO: not a fan of defining functions INSIDE functions
     def _action_sort_key(action: DeviceAction) -> int:
         try:
             return ordered_devices.index(action.device)
         except ValueError:
             return len(ordered_devices)
 
+    # TODO: 1.2 scenes will go on the controller moving forward
     for scene_name, scene in rig.scenes.items():
         logger.debug("Planning scene '%s' with %d pedal(s)", scene_name, len(scene.presets))
         device_actions: list[DeviceAction] = []
@@ -103,6 +105,7 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
             is_hx = pedal.type.value == "modeler"
             preset_number = None
 
+            # TODO: 1.2 why is this in here? this should be part of the hx preset definition?
             if is_hx:
                 for hp in [p for p in pedal.presets if hasattr(p, "hlx_file")]:
                     if hp.id == preset_id:

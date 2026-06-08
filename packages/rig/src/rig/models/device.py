@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from rig.models.preset import Preset
 
 
+# TODO: we inconsistently use Enums and Literals. Pick one (whichever is the better python convention)
 class DeviceType(StrEnum):
     DIGITAL = "digital"
     ANALOG = "analog"
