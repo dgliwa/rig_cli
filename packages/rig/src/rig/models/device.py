@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
+from rig.models.preset import Preset
 
 
 class DeviceType(StrEnum):
@@ -15,14 +15,11 @@ class DeviceType(StrEnum):
     CONTROLLER = "controller"
 
 
-Preset = AnalogPreset | DigitalPreset | HXStompPreset
-
-
 class Device(BaseModel):
     id: str
     type: DeviceType
     config: Any = None
-    presets: list[AnalogPreset | DigitalPreset | HXStompPreset] = Field(default_factory=list)
+    presets: list[Preset] = Field(default_factory=list)
     image: str | None = None
     notes: str | None = None
 
@@ -41,7 +38,7 @@ class Device(BaseModel):
         for preset in self.presets:
             if (
                 preset.id == preset_id
-                and isinstance(preset, (DigitalPreset, HXStompPreset))
+                and hasattr(preset, "preset_number")
                 and preset.preset_number is not None
             ):
                 return {

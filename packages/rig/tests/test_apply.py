@@ -9,11 +9,12 @@ import pytest
 from rig.engine.apply import ApplyResult, apply_plan
 from rig.engine.plan import compute_plan
 from rig.models.device import Device, DeviceType
-from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
 from rig_chasebliss.device import ChaseBlissConfig, ChaseBlissDevice
+from rig_chasebliss.preset import DigitalPreset
 from rig_hx.device import HXStompDevice
+from rig_hx.preset import HXStompPreset
 from tests.fakes import InMemoryPromptAdapter, InMemoryStateAdapter
 
 
@@ -66,8 +67,6 @@ def _make_config() -> Rig:
     )
     ctrl = Device(
         id="mc6",
-        manufacturer="Morningstar",
-        model="MC6",
         type=DeviceType.CONTROLLER,
         config={"type": "controller", "midi_channel": 1, "banks": []},
     )
@@ -569,8 +568,6 @@ class TestDevicePluginRouting:
         )
         ctrl = Device(
             id="mc6",
-            manufacturer="Morningstar",
-            model="MC6",
             type=DeviceType.CONTROLLER,
             config={"type": "controller", "midi_channel": 1, "banks": []},
         )

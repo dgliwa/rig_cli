@@ -6,7 +6,6 @@ from typing import Literal
 from rig.engine.plan.models import DeviceAction, Plan, ScenePlan
 from rig.engine.state import DeviceState, RigState, read_state
 from rig.models.graph import DeviceGraph
-from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 
 logger = logging.getLogger(__name__)
@@ -17,7 +16,7 @@ def _get_preset_number(rig: Rig, pedal_id: str, preset_id: str) -> int | None:
     if device is None:
         return None
     for p in device.presets:
-        if isinstance(p, DigitalPreset) and p.id == preset_id:
+        if hasattr(p, "preset_number") and p.id == preset_id:
             return p.preset_number
     return None
 
@@ -40,8 +39,8 @@ def _detect_unused_presets(rig: Rig) -> list[str]:
     issues: list[str] = []
     for device in rig.devices.values():
         for preset in device.presets:
-            # TODO: 1.2?? i don't want to have this here.
-            if isinstance(preset, AnalogPreset):
+            # Analog presets are manually set — skip unused-preset detection
+            if hasattr(preset, "values"):
                 continue
             if preset.id not in referenced:
                 issues.append(f"{device.id}: '{preset.id}' unused")
@@ -106,7 +105,7 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
             preset_number = None
 
             if is_hx:
-                for hp in [p for p in pedal.presets if isinstance(p, HXStompPreset)]:
+                for hp in [p for p in pedal.presets if hasattr(p, "hlx_file")]:
                     if hp.id == preset_id:
                         preset_number = hp.preset_number
                         break

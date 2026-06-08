@@ -1,17 +1,15 @@
 import json
 
 from rig.models.device import Device, DeviceType
-from rig.models.preset import HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
+from rig_hx.preset import HXStompPreset
 from rig_morningstar.generator import generate_mc6, write_mc6_config
 
 
 def _make_rig() -> Rig:
     hx = Device(
         id="hx-stomp",
-        manufacturer="Line6",
-        model="HX Stomp",
         type=DeviceType.MODELER,
         config={"type": "midi", "midi_channel": 1},
         presets=[
@@ -28,8 +26,6 @@ def _make_rig() -> Rig:
     # Controller, ControllerType, MC6Config imports are kept to verify re-export backward compat
     controller_device = Device(
         id="mc6",
-        manufacturer="Morningstar",
-        model="MC6",
         type=DeviceType.CONTROLLER,
         config={
             "type": "controller",

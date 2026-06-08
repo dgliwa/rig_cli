@@ -10,12 +10,12 @@ from rig.engine.appliers.base import (
     mark_preset_saved,
     update_device_state,
 )
-from rig.engine.plan import CbaSetupAction
 from rig_chasebliss.interaction import (
     prompt_cba_build_preset,
     prompt_cba_channel,
     prompt_cba_register,
 )
+from rig_chasebliss.models import CbaSetupAction
 
 logger = logging.getLogger(__name__)
 console = Console()

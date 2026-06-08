@@ -23,7 +23,6 @@ from rig.engine.appliers.base import (
 from rig.engine.plugin import DeviceApplyContext, PluginContext, SetupContext, SetupResult
 from rig.engine.state import DeviceState
 from rig.models.device import DeviceType
-from rig.models.preset import DigitalPreset, HXStompPreset
 from rig_chasebliss.catalog import Control
 
 
@@ -49,7 +48,7 @@ def _detect_cba_setup_for_device(device: Any, state: Any, rig: Any) -> list[Any]
 
     Checks state for channel establishment, saved presets, and scene registration.
     """
-    from rig.engine.plan.models import CbaSetupAction
+    from rig_chasebliss.models import CbaSetupAction
 
     actions: list[CbaSetupAction] = []
     if not isinstance(device.config, ChaseBlissConfig):
@@ -61,7 +60,7 @@ def _detect_cba_setup_for_device(device: Any, state: Any, rig: Any) -> list[Any]
     if not ds.channel_established:
         actions.append(CbaSetupAction(device=device.id, midi_channel=ch, type="establish_channel"))
 
-    for preset in [p for p in device.presets if isinstance(p, DigitalPreset)]:
+    for preset in [p for p in device.presets if hasattr(p, "preset_number")]:
         if not ds.presets_saved.get(preset.id):
             actions.append(
                 CbaSetupAction(
@@ -181,7 +180,7 @@ class ChaseBlissDevice(BaseModel):
         for preset in self.presets:
             if (
                 preset.id == preset_id
-                and isinstance(preset, (DigitalPreset, HXStompPreset))
+                and hasattr(preset, "preset_number")
                 and preset.preset_number is not None
             ):
                 return {

@@ -425,7 +425,7 @@ def test_midi_device_apply_skip_returns_skipped() -> None:
 
 
 def test_midi_device_get_scene_pc_command_with_digital_preset() -> None:
-    from rig.models.preset import DigitalPreset
+    from rig_chasebliss.preset import DigitalPreset
     from rig_hx.device import HXStompDevice
 
     preset = DigitalPreset(id="clean", name="Clean", preset_number=5)
@@ -439,7 +439,7 @@ def test_midi_device_get_scene_pc_command_with_digital_preset() -> None:
 
 
 def test_midi_device_get_scene_pc_command_no_matching_preset_returns_none() -> None:
-    from rig.models.preset import DigitalPreset
+    from rig_chasebliss.preset import DigitalPreset
     from rig_hx.device import HXStompDevice
 
     preset = DigitalPreset(id="clean", name="Clean", preset_number=5)
@@ -449,8 +449,8 @@ def test_midi_device_get_scene_pc_command_no_matching_preset_returns_none() -> N
 
 
 def test_chase_bliss_device_get_scene_pc_command_with_digital_preset() -> None:
-    from rig.models.preset import DigitalPreset
     from rig_chasebliss.device import ChaseBlissConfig, ChaseBlissDevice
+    from rig_chasebliss.preset import DigitalPreset
 
     preset = DigitalPreset(id="bloom", name="Bloom", preset_number=2)
     cfg = ChaseBlissConfig(midi_channel=7, controls=[])

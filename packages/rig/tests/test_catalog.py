@@ -2,10 +2,11 @@ from pathlib import Path
 
 from rig.config.loader import load_rig
 from rig.models.device import Device, DeviceType
-from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig_chasebliss.catalog import MOOD_MKII_CONTROLS, Control, ControlType
 from rig_chasebliss.device import ChaseBlissConfig
+from rig_chasebliss.preset import DigitalPreset
+from rig_hx.preset import HXStompPreset
 from rig_morningstar.generator import generate_mc6
 
 FIXTURE_PATH = str(Path(__file__).parent / "fixtures" / "sample_rig")
@@ -73,24 +74,18 @@ class TestGetScenePcCommand:
         digital_preset = DigitalPreset(id="preset-1", pedal="mood", name="Shimmer", preset_number=1)
         hx_pedal = Device(
             id="hx-stomp",
-            manufacturer="Line 6",
-            model="HX Stomp XL",
             type=DeviceType.MODELER,
             config={"type": "midi", "midi_channel": 1},
             presets=[hx_preset],
         )
         mood_pedal = Device(
             id="mood",
-            manufacturer="Chase Bliss Audio",
-            model="MOOD MKII",
             type=DeviceType.DIGITAL,
             config=ChaseBlissConfig(midi_channel=2),
             presets=[digital_preset],
         )
         analog_pedal = Device(
             id="comp",
-            manufacturer="Acme",
-            model="Compressor",
             type=DeviceType.ANALOG,
             config=None,
         )

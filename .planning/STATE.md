@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cleaner Core
-status: in_progress
-last_updated: "2026-06-08T05:00:00.000Z"
-last_activity: 2026-06-08
+status: executing
+last_updated: "2026-06-08T14:25:42.935Z"
+last_activity: 2026-06-08 -- Phase 11 execution started
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 5
+  total_plans: 3
   completed_plans: 5
   percent: 67
 ---
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-07)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** Phase 11 — Dead Code & Compat Removal
+**Current focus:** Phase 11 — dead-code-compat-removal
 
 ## Current Position
 
-Phase: 11 — Dead Code & Compat Removal
-Plan: —
-Status: Not started
-Last activity: 2026-06-08 — Phase 10 complete
+Phase: 11 (dead-code-compat-removal) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 11
+Last activity: 2026-06-08 -- Phase 11 execution started
 
 Progress: [████████████░░░░░░░░] 67% (2/3 phases)
 

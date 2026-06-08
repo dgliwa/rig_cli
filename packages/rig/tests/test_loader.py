@@ -140,7 +140,7 @@ class TestLoadRig:
         assert "brothers" in config.devices
 
     def test_hx_preset_loaded_as_hx_type(self, rig_dir):
-        from rig.models.preset import HXStompPreset
+        from rig_hx.preset import HXStompPreset
 
         yaml = """\
 name: test-rig

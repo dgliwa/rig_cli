@@ -1,7 +1,9 @@
 from rig.models.device import Device, DeviceType
-from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
+from rig_analog.preset import AnalogPreset
+from rig_chasebliss.preset import DigitalPreset
+from rig_hx.preset import HXStompPreset
 
 
 class TestPresetModels:
@@ -79,8 +81,6 @@ def _make_controller_device(scenes: dict | None = None) -> Device:
     """Helper: build a Device with DeviceType.CONTROLLER."""
     return Device(
         id="mc6",
-        manufacturer="Morningstar",
-        model="MC6",
         type=DeviceType.CONTROLLER,
         config={"type": "controller", "midi_channel": 1, "banks": []},
     )
@@ -90,8 +90,6 @@ def _make_analog_device(device_id: str) -> Device:
     """Helper: build a minimal analog device."""
     return Device(
         id=device_id,
-        manufacturer="Wampler",
-        model="Tumnus",
         type=DeviceType.ANALOG,
         config=None,
     )

@@ -3,17 +3,17 @@ import json
 from rig.engine.diff import compute_diff
 from rig.engine.plan import compute_plan
 from rig.models.device import Device, DeviceType
-from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
+from rig_analog.preset import AnalogPreset
 from rig_chasebliss.device import ChaseBlissConfig
+from rig_chasebliss.preset import DigitalPreset
+from rig_hx.preset import HXStompPreset
 
 
 def _make_rig(scene_presets: dict | None = None) -> Rig:
     hx = Device(
         id="hx-stomp",
-        manufacturer="Line6",
-        model="HX Stomp",
         type=DeviceType.MODELER,
         config={"type": "midi", "midi_channel": 1},
         presets=[
@@ -24,23 +24,17 @@ def _make_rig(scene_presets: dict | None = None) -> Rig:
     )
     bro = Device(
         id="brothers",
-        manufacturer="CBA",
-        model="Brothers",
         type=DeviceType.DIGITAL,
         config=ChaseBlissConfig(midi_channel=3),
         presets=[DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)],
     )
     tum = Device(
         id="tumnus",
-        manufacturer="Wampler",
-        model="Tumnus",
         type=DeviceType.ANALOG,
         config={"type": "manual"},
     )
     ctrl = Device(
         id="mc6",
-        manufacturer="Morningstar",
-        model="MC6",
         type=DeviceType.CONTROLLER,
         config={"type": "controller", "midi_channel": 1, "banks": []},
     )
@@ -146,8 +140,6 @@ def _make_rig_with_extra_preset() -> Rig:
     """Rig with an extra DigitalPreset on brothers that is NOT referenced in any scene."""
     hx = Device(
         id="hx-stomp",
-        manufacturer="Line6",
-        model="HX Stomp",
         type=DeviceType.MODELER,
         config={"type": "midi", "midi_channel": 1},
         presets=[
@@ -158,8 +150,6 @@ def _make_rig_with_extra_preset() -> Rig:
     )
     bro = Device(
         id="brothers",
-        manufacturer="CBA",
-        model="Brothers",
         type=DeviceType.DIGITAL,
         config=ChaseBlissConfig(midi_channel=3),
         presets=[
@@ -169,15 +159,11 @@ def _make_rig_with_extra_preset() -> Rig:
     )
     tum = Device(
         id="tumnus",
-        manufacturer="Wampler",
-        model="Tumnus",
         type=DeviceType.ANALOG,
         config={"type": "manual"},
     )
     ctrl = Device(
         id="mc6",
-        manufacturer="Morningstar",
-        model="MC6",
         type=DeviceType.CONTROLLER,
         config={"type": "controller", "midi_channel": 1, "banks": []},
     )
@@ -216,8 +202,6 @@ class TestUnusedPresets:
     def test_unused_hx_preset_detected(self):
         hx = Device(
             id="hx-stomp",
-            manufacturer="Line6",
-            model="HX Stomp",
             type=DeviceType.MODELER,
             config={"type": "midi", "midi_channel": 1},
             presets=[
@@ -237,8 +221,6 @@ class TestUnusedPresets:
         )
         bro = Device(
             id="brothers",
-            manufacturer="CBA",
-            model="Brothers",
             type=DeviceType.DIGITAL,
             config=ChaseBlissConfig(midi_channel=3),
             presets=[
@@ -247,15 +229,11 @@ class TestUnusedPresets:
         )
         tum = Device(
             id="tumnus",
-            manufacturer="Wampler",
-            model="Tumnus",
             type=DeviceType.ANALOG,
             config={"type": "manual"},
         )
         ctrl = Device(
             id="mc6",
-            manufacturer="Morningstar",
-            model="MC6",
             type=DeviceType.CONTROLLER,
             config={"type": "controller", "midi_channel": 1, "banks": []},
         )
@@ -270,8 +248,6 @@ class TestUnusedPresets:
     def test_analog_presets_excluded_from_unused(self):
         tum = Device(
             id="tumnus",
-            manufacturer="Wampler",
-            model="Tumnus",
             type=DeviceType.ANALOG,
             config={"type": "manual"},
             presets=[
@@ -285,8 +261,6 @@ class TestUnusedPresets:
         )
         hx = Device(
             id="hx-stomp",
-            manufacturer="Line6",
-            model="HX Stomp",
             type=DeviceType.MODELER,
             config={"type": "midi", "midi_channel": 1},
             presets=[
@@ -300,8 +274,6 @@ class TestUnusedPresets:
         )
         bro = Device(
             id="brothers",
-            manufacturer="CBA",
-            model="Brothers",
             type=DeviceType.DIGITAL,
             config=ChaseBlissConfig(midi_channel=3),
             presets=[
@@ -310,8 +282,6 @@ class TestUnusedPresets:
         )
         ctrl = Device(
             id="mc6",
-            manufacturer="Morningstar",
-            model="MC6",
             type=DeviceType.CONTROLLER,
             config={"type": "controller", "midi_channel": 1, "banks": []},
         )
@@ -403,8 +373,6 @@ def _make_ordered_rig() -> Rig:
     """Rig with two signal-chain devices at known positions and an off-chain CBA device."""
     hx = Device(
         id="hx-stomp",
-        manufacturer="Line6",
-        model="HX Stomp",
         type=DeviceType.MODELER,
         config={"type": "midi", "midi_channel": 1},
         presets=[
@@ -415,16 +383,12 @@ def _make_ordered_rig() -> Rig:
     )
     tuner = Device(
         id="polytune",
-        manufacturer="TC Electronic",
-        model="Polytune",
         type=DeviceType.DIGITAL,
         config={"type": "midi", "midi_channel": 2},
         presets=[DigitalPreset(id="mute", pedal="polytune", name="Mute", preset_number=1)],
     )
     ctrl = Device(
         id="mc6",
-        manufacturer="Morningstar",
-        model="MC6",
         type=DeviceType.CONTROLLER,
         config={"type": "controller", "midi_channel": 1, "banks": []},
     )
@@ -466,8 +430,6 @@ class TestDeviceOrdering:
         """D-07: devices in the signal chain appear before off-chain devices in device_actions."""
         hx = Device(
             id="hx-stomp",
-            manufacturer="Line6",
-            model="HX Stomp",
             type=DeviceType.MODELER,
             config={"type": "midi", "midi_channel": 1},
             presets=[
@@ -481,8 +443,6 @@ class TestDeviceOrdering:
         )
         bro = Device(
             id="brothers",
-            manufacturer="CBA",
-            model="Brothers",
             type=DeviceType.DIGITAL,
             config={"type": "midi", "midi_channel": 3},
             presets=[
@@ -491,8 +451,6 @@ class TestDeviceOrdering:
         )
         ctrl = Device(
             id="mc6",
-            manufacturer="Morningstar",
-            model="MC6",
             type=DeviceType.CONTROLLER,
             config={"type": "controller", "midi_channel": 1, "banks": []},
         )

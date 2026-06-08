@@ -37,7 +37,7 @@ import yaml
 from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
 from rig.engine.plugin_registry import get_registry
 from rig.models.device import DeviceType
-from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
+from rig.models.preset import Preset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
 
@@ -68,14 +68,23 @@ def _read_yaml(path: Path):
         raise ParseError(f"Invalid YAML in {path}: {e}")
 
 
-def _parse_presets(device_type: str, preset_list: list[dict]) -> list[Any]:
-    """Parse raw preset dicts into the correct preset model type."""
+def _parse_presets(device_type: str, preset_list: list[dict]) -> list[Preset]:
+    """Parse raw preset dicts into the correct preset model type.
+
+    Dispatches to the correct plugin's preset model based on device_type.
+    """
     if not preset_list:
         return []
     if device_type == "analog":
+        from rig_analog.preset import AnalogPreset
+
         return [AnalogPreset(**p) for p in preset_list]
     if device_type == "modeler":
+        from rig_hx.preset import HXStompPreset
+
         return [HXStompPreset(**p) for p in preset_list]
+    from rig_chasebliss.preset import DigitalPreset
+
     return [DigitalPreset(**p) for p in preset_list]
 
 

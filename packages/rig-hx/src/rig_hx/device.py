@@ -12,7 +12,6 @@ from rig.engine.appliers.base import DeviceApplyResult, update_device_state
 from rig.engine.plugin import DeviceApplyContext, PluginContext, SetupContext, SetupResult
 from rig.engine.state import DeviceState
 from rig.models.device import DeviceType
-from rig.models.preset import DigitalPreset, HXStompPreset
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -76,7 +75,7 @@ class HXStompDevice(BaseModel):
         for preset in self.presets:
             if (
                 preset.id == preset_id
-                and isinstance(preset, (DigitalPreset, HXStompPreset))
+                and hasattr(preset, "preset_number")
                 and preset.preset_number is not None
             ):
                 return {

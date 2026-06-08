@@ -13,9 +13,9 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from rig.engine.appliers.base import ApplyContext
-from rig.engine.plan import CbaSetupAction
 from rig.engine.state import RigState
 from rig_chasebliss.applier import ChaseBlissApplier
+from rig_chasebliss.models import CbaSetupAction
 
 
 def _make_ctx(
@@ -187,26 +187,22 @@ class TestChaseBlissApplierSetup:
 
     def test_detect_cba_setup_fresh_device_produces_all_phases(self):
         from rig.models.device import Device, DeviceType
-        from rig.models.preset import DigitalPreset
         from rig.models.rig import Rig
         from rig.models.scene import Scene
         from rig_chasebliss.device import ChaseBlissConfig, _detect_cba_setup_for_device
+        from rig_chasebliss.preset import DigitalPreset
 
         bro = Device(
             id="cba-mood",
-            manufacturer="CBA",
-            model="Mood MKII",
             type=DeviceType.DIGITAL,
             config=ChaseBlissConfig(midi_channel=3),
             presets=[
-                DigitalPreset(id="shimmer", pedal="cba-mood", name="Shimmer", preset_number=2),
-                DigitalPreset(id="drone", pedal="cba-mood", name="Drone", preset_number=3),
+                DigitalPreset(id="shimmer", name="Shimmer", preset_number=2),
+                DigitalPreset(id="drone", name="Drone", preset_number=3),
             ],
         )
         ctrl = Device(
             id="mc6",
-            manufacturer="Morningstar",
-            model="MC6",
             type=DeviceType.CONTROLLER,
             config={"type": "controller", "midi_channel": 1, "banks": []},
         )
