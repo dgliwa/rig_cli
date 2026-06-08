@@ -49,6 +49,20 @@ A single command should bring the physical rig to the exact state described in t
 | UI (#18) | Speculative — not planned |
 | CI independent package publishing | Low-priority infra — local `uv` workflow sufficient for now |
 
+## Current Milestone: v1.2 Cleaner Core
+
+**Goal:** Collapse the multi-file config repo into a single flat `rig.yaml`, strip all plugin-specific code from core, and remove backwards-compat shims introduced in v1.0/v1.1.
+
+**Target features:**
+- Single `rig.yaml` with a flat ordered device list (list order = signal chain)
+- Type-only device identity — drop `manufacturer`/`model` from core `Device`
+- Controller as an optional device type that composes other devices by ID; scenes nested inside the controller device
+- `SignalChainPosition` model removed — device list order is the chain
+- All plugin-specific configs evicted from core (`ManualConfig`, `MidiConfig`, `ChaseBlissConfig`, `ControllerConfig`, `Control`, `ControlType`)
+- All v1.2 TODO compat shims removed from `Rig` model (`pedals` alias, `digital_presets`/`hx_presets`/`analog_presets`, `mc6` compat property, etc.)
+- Loader rewritten to parse single-file `rig.yaml`
+- No backwards compatibility — clean break
+
 ## Context
 
 - **v1.1 shipped 2026-06-07**: 3 phases (6–8), 8 plans, ~20,658 LOC Python across all packages
@@ -99,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-07 after v1.1 milestone — Package Extraction & Plugin Isolation*
+*Last updated: 2026-06-07 after v1.2 milestone started — Cleaner Core*
