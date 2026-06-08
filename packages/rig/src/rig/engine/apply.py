@@ -71,6 +71,8 @@ def apply_plan(
     if config_path:
         state = state_writer.read(config_path)
 
+    connected_devices: set[str] = set()
+
     ctx = ApplyContext(
         dry_run=dry_run,
         confirmation_io=confirmation_io or RichConfirmationIO(),
@@ -78,6 +80,7 @@ def apply_plan(
         state=state,
         config_path=config_path,
         rig=rig,
+        connected_devices=connected_devices,
     )
 
     state_modified = False
@@ -95,6 +98,7 @@ def apply_plan(
             confirmation_io=confirmation_io or RichConfirmationIO(),
             midi=midi,
             config_path=config_path,
+            connected_devices=connected_devices,
         )
         for _device_id, device in rig.devices.items():
             if hasattr(device, "setup"):
