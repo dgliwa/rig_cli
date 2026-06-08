@@ -31,8 +31,13 @@ Collapse the multi-file config repo into a single flat `rig.yaml`, strip all plu
 
 ### CLEANUP — Dead code & compat removal
 
-- [ ] **CLEANUP-01**: All `TODO: 1.2` markers and their associated dead code removed from the codebase
-- [ ] **CLEANUP-02**: Multi-file config repo support removed — only single `rig.yaml` is accepted
+- [x] **CLEANUP-01**: All `TODO: 1.2` markers and their associated dead code removed from the codebase
+- [x] **CLEANUP-02**: Multi-file config repo support removed — only single `rig.yaml` is accepted
+
+### DEFER — Deferred item cleanup
+
+- [ ] **DEFER-01**: Vestigial `rig generate mc6` CLI command and `rig_morningstar.generator` module removed
+- [ ] **DEFER-02**: Unused `composes` validation removed from loader
 
 ---
 
@@ -73,3 +78,5 @@ Collapse the multi-file config repo into a single flat `rig.yaml`, strip all plu
 | LOADER-02 | Phase 10 | — |
 | CLEANUP-01 | Phase 11 | — |
 | CLEANUP-02 | Phase 11 | — |
+| DEFER-01 | Phase 12 | — |
+| DEFER-02 | Phase 12 | — |
