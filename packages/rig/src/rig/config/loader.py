@@ -50,7 +50,7 @@ def _parse_device(data: dict):
     # Parse the config using Device's discriminated union so the config field is a typed
     # model (MidiConfig, ChaseBlissConfig, etc.) rather than a raw dict.
     temp = Device(**data)
-    return model_class(**{**data, "config": temp.config})
+    return model_class(**{**data, "config": temp.config, "presets": temp.presets})
 
 
 def _load_devices_dir(devices_dir: Path) -> dict[str, Any]:
@@ -78,7 +78,6 @@ def _merge_presets(devices_dir: Path, devices: dict[str, Any]) -> dict[str, Any]
     updated: dict[str, Any] = {}
     for device_id, device in devices.items():
         if device.presets:
-            # Inline presets already present; no directory loading needed
             updated[device_id] = device
             logger.debug("Using %d inline presets for '%s'", len(device.presets), device_id)
             continue

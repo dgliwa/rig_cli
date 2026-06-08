@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 I/O Decoupling & Plugin Architecture** — Phases 1-5 (shipped 2026-06-07)
-- 🔄 **v1.1 Package Extraction & Plugin Isolation** — Phases 6-8 (started 2026-06-07)
+- ✅ **v1.1 Package Extraction & Plugin Isolation** — Phases 6-8 (shipped 2026-06-07)
 
 ## Phases
 
@@ -18,8 +18,8 @@
 
 </details>
 
-<details open>
-<summary>🔄 v1.1 Package Extraction & Plugin Isolation (Phases 6-8) — IN PROGRESS</summary>
+<details>
+<summary>✅ v1.1 Package Extraction & Plugin Isolation (Phases 6-8) — SHIPPED 2026-06-07</summary>
 
 - [x] **Phase 6: Core Package & Entry Point Discovery** (2/2 plans) — completed 2026-06-07
   - Goal: `rig` discovers devices via `importlib.metadata.entry_points('rig.devices')` with zero hard imports
@@ -41,18 +41,18 @@
     5. Engine no longer manages MIDI connections for plugin devices — devices handle their own
   - **Context:** WIP has `packages/rig-*/pyproject.toml` with entry point stubs — needs proper MIDI lifecycle in ChaseBlissDevice and MC6Device
 
-- [ ] **Phase 8: Core Cleanup — Dead Code & Plugin Isolation** — Remove duplicate/dead code from core, move plugin-specific interaction code to respective packages, refactor Controller model as Protocol
+- [x] **Phase 8: Core Cleanup — Dead Code & Plugin Isolation** (3/3 plans) — completed 2026-06-07
   - Goal: Core has zero hard dependencies on plugin-specific code; no dead code in `packages/rig`
   - Requirements: CLEANUP-01, CLEANUP-02, CLEANUP-03, CLEANUP-04
-  - Success criteria:
-    1. `rig/midi/mc6.py` deleted — tests use `rig_morningstar.sysex`
-    2. `rig/generators/mc6_presets.py` deleted — tests use `rig_morningstar.generator`
-    3. `rig/catalog/chase_bliss.py` deleted — use `rig_chasebliss.catalog`
-    4. `rig/engine/appliers/chase_bliss.py` deleted — test uses `rig_chasebliss.applier`
-    5. `rig/interaction/cba.py` moved to `rig-chasebliss` — plugin owns CBA prompts
-    6. `rig/interaction/analog.py` moved to `rig-analog` — plugin owns analog prompts
-    7. `rig/models/controller.py` refactored — `Controller` is a Protocol, MC6Config moved to `rig-morningstar`
-    8. All 300+ tests pass with zero hard plugin deps from core
+  - Success criteria achieved:
+    1. `rig/midi/mc6.py` deleted — tests use `rig_morningstar.sysex` ✓
+    2. `rig/generators/mc6_presets.py` deleted — tests use `rig_morningstar.generator` ✓
+    3. `rig/catalog/chase_bliss.py` deleted — tests use `rig_chasebliss.catalog` ✓
+    4. `rig/engine/appliers/chase_bliss.py` deleted — tests use `rig_chasebliss.applier` ✓
+    5. `rig/interaction/cba.py` moved to `rig-chasebliss` — plugin owns CBA prompts ✓
+    6. `rig/interaction/analog.py` moved to `rig-analog` — plugin owns analog prompts ✓
+    7. `rig/models/controller.py` deleted — `ControllerConfig` stays in `device.py` ✓
+    8. All 300+ tests pass (300 passing) with zero hard plugin deps from core ✓
 
 </details>
 
@@ -66,5 +66,5 @@
 | 4. Plugin Migration | v1.0 | 4/4 | Complete | 2026-06-06 |
 | 5. Dependency Graph & Plan Command | v1.0 | 6/6 | Complete | 2026-06-07 |
 | 6. Core Package & Entry Point Discovery | v1.1 | 2/2 | Complete | 2026-06-07 |
-| 7. Plugin Package Wiring & Device-Level MIDI | v1.1 | 3/3 | Complete    | 2026-06-07 |
-| 8. Core Cleanup — Dead Code & Plugin Isolation | v1.1 | 0/0 | Not started | — |
+| 7. Plugin Package Wiring & Device-Level MIDI | v1.1 | 3/3 | Complete | 2026-06-07 |
+| 8. Core Cleanup — Dead Code & Plugin Isolation | v1.1 | 3/3 | Complete | 2026-06-07 |
