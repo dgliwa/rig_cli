@@ -13,7 +13,6 @@ from rig.models.device import (
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
-from rig.models.signal_chain import SignalChainPosition
 
 
 def _make_rig(scene_presets: dict | None = None) -> Rig:
@@ -57,7 +56,7 @@ def _make_rig(scene_presets: dict | None = None) -> Rig:
     )
     return Rig(
         name="test",
-        signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+        signal_chain=["hx-stomp"],
         devices={"hx-stomp": hx, "brothers": bro, "tumnus": tum, "mc6": ctrl},
         scenes={"test-scene": scene},
     )
@@ -295,7 +294,7 @@ def _make_rig_with_extra_preset() -> Rig:
     )
     return Rig(
         name="test",
-        signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+        signal_chain=["hx-stomp"],
         devices={"hx-stomp": hx, "brothers": bro, "tumnus": tum, "mc6": ctrl},
     )
 
@@ -381,7 +380,7 @@ class TestUnusedPresets:
         )
         rig = Rig(
             name="test",
-            signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+            signal_chain=["hx-stomp"],
             devices={"hx-stomp": hx, "brothers": bro, "tumnus": tum, "mc6": ctrl},
         )
         plan = compute_plan(rig)
@@ -445,7 +444,7 @@ class TestUnusedPresets:
         )
         rig = Rig(
             name="test",
-            signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+            signal_chain=["hx-stomp"],
             devices={"hx-stomp": hx, "brothers": bro, "tumnus": tum, "mc6": ctrl},
         )
         plan = compute_plan(rig)
@@ -563,8 +562,8 @@ def _make_ordered_rig() -> Rig:
     return Rig(
         name="test",
         signal_chain=[
-            SignalChainPosition(device_ref="polytune", position=1),
-            SignalChainPosition(device_ref="hx-stomp", position=2),
+            "polytune",
+            "hx-stomp",
         ],
         devices={"hx-stomp": hx, "polytune": tuner, "mc6": ctrl},
         scenes={"test-scene": scene},
@@ -631,7 +630,7 @@ class TestDeviceOrdering:
         )
         rig = Rig(
             name="test",
-            signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+            signal_chain=["hx-stomp"],
             devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
             scenes={"test-scene": scene},
         )

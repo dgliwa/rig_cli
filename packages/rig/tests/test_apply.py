@@ -12,7 +12,6 @@ from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, Device
 from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
-from rig.models.signal_chain import SignalChainPosition
 from rig_chasebliss.device import ChaseBlissDevice
 from rig_hx.device import HXStompDevice
 from tests.fakes import InMemoryPromptAdapter, InMemoryStateAdapter
@@ -78,7 +77,7 @@ def _make_config() -> Rig:
     )
     return Rig(
         name="test",
-        signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+        signal_chain=["hx-stomp"],
         devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
         scenes={"test-scene": scene},
     )
@@ -587,7 +586,7 @@ class TestDevicePluginRouting:
         )
         return Rig(
             name="test",
-            signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+            signal_chain=["hx-stomp"],
             devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
             scenes={"test-scene": scene},
         )

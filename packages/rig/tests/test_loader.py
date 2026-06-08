@@ -69,7 +69,7 @@ class TestLoadRig:
         )
         config = load_rig(str(rig_dir))
         assert len(config.signal_chain) == 2
-        assert config.signal_chain[0].device_ref == "brothers"
+        assert config.signal_chain[0] == "brothers"
 
     def test_loads_presets(self, rig_dir):
         config = load_rig(str(rig_dir))

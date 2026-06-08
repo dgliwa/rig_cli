@@ -16,7 +16,6 @@ from rig.models.preset import (
 )
 from rig.models.rig import Rig, RigConfig
 from rig.models.scene import Scene
-from rig.models.signal_chain import SignalChainPosition
 
 __all__ = [
     "Device",
@@ -33,6 +32,5 @@ __all__ = [
     "DigitalPreset",
     "HXStompPreset",
     "Scene",
-    "SignalChainPosition",
     "RigConfig",
 ]

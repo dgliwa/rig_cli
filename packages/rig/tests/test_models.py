@@ -16,7 +16,6 @@ from rig.models.preset import (
 )
 from rig.models.rig import Rig
 from rig.models.scene import Scene
-from rig.models.signal_chain import SignalChainPosition
 
 
 class TestControllerConfig:
@@ -161,26 +160,6 @@ class TestSceneModel:
         assert scene.tempo == 118
 
 
-class TestSignalChainModel:
-    def test_signal_chain_position_defaults(self):
-        pos = SignalChainPosition(device_ref="tumnus", position=1)
-        assert pos.loop == "front"
-        assert pos.stereo is False
-
-    def test_signal_chain_fx_loop(self):
-        pos = SignalChainPosition(device_ref="wombtone", position=5, loop="fx_loop")
-        assert pos.loop == "fx_loop"
-
-    def test_signal_chain_stereo(self):
-        pos = SignalChainPosition(device_ref="hx-stomp", position=4, stereo=True)
-        assert pos.stereo is True
-
-    def test_signal_chain_pedal_ref_compat(self):
-        # Ensure legacy pedal_ref attribute still accessible for backward compat
-        pos = SignalChainPosition(device_ref="tumnus", position=1)
-        assert pos.pedal_ref == "tumnus"
-
-
 def _make_controller_device(scenes: dict | None = None) -> Device:
     """Helper: build a Device with DeviceType.CONTROLLER and ControllerConfig."""
     return Device(
@@ -244,10 +223,7 @@ class TestApplyOrder:
         d2 = _make_analog_device("brothers")
         rig = Rig(
             name="Test",
-            signal_chain=[
-                SignalChainPosition(device_ref="brothers", position=2),
-                SignalChainPosition(device_ref="tumnus", position=1),
-            ],
+            signal_chain=["tumnus", "brothers"],
             devices={"tumnus": d1, "brothers": d2},
         )
         order = rig.apply_order()
@@ -258,9 +234,7 @@ class TestApplyOrder:
         ctrl = _make_controller_device()
         rig = Rig(
             name="Test",
-            signal_chain=[
-                SignalChainPosition(device_ref="tumnus", position=1),
-            ],
+            signal_chain=["tumnus"],
             devices={"tumnus": d1, "mc6": ctrl},
         )
         order = rig.apply_order()
@@ -271,9 +245,7 @@ class TestApplyOrder:
         d2 = _make_analog_device("extra")
         rig = Rig(
             name="Test",
-            signal_chain=[
-                SignalChainPosition(device_ref="tumnus", position=1),
-            ],
+            signal_chain=["tumnus"],
             devices={"tumnus": d1, "extra": d2},
         )
         order = rig.apply_order()

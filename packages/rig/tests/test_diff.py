@@ -5,7 +5,6 @@ from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, Device
 from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
-from rig.models.signal_chain import SignalChainPosition
 
 
 def _make_rig() -> Rig:
@@ -45,7 +44,7 @@ def _make_rig() -> Rig:
     )
     return Rig(
         name="test",
-        signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+        signal_chain=["hx-stomp"],
         devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
         scenes={"test-scene": scene},
     )

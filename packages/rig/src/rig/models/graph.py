@@ -34,7 +34,7 @@ class DeviceGraph:
                 break
 
         chain_positions: dict[str, int] = {
-            sc.device_ref: sc.position for sc in self._rig.signal_chain
+            device_id: i for i, device_id in enumerate(self._rig.signal_chain)
         }
 
         in_chain: list[Device] = []
@@ -57,8 +57,7 @@ class DeviceGraph:
 
     def _detect_cycles(self) -> None:
         seen: set[str] = set()
-        for sc in self._rig.signal_chain:
-            device_ref = sc.device_ref
-            if device_ref in seen:
-                raise CycleError(f"Device '{device_ref}' appears multiple times in signal chain")
-            seen.add(device_ref)
+        for device_id in self._rig.signal_chain:
+            if device_id in seen:
+                raise CycleError(f"Device '{device_id}' appears multiple times in signal chain")
+            seen.add(device_id)

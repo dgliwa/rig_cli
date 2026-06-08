@@ -191,7 +191,6 @@ class TestChaseBlissApplierSetup:
         from rig.models.preset import DigitalPreset
         from rig.models.rig import Rig
         from rig.models.scene import Scene
-        from rig.models.signal_chain import SignalChainPosition
 
         bro = Device(
             id="cba-mood",
@@ -214,7 +213,7 @@ class TestChaseBlissApplierSetup:
         scene = Scene(name="scene-a", presets={"cba-mood": "shimmer"})
         rig = Rig(
             name="test",
-            signal_chain=[SignalChainPosition(device_ref="cba-mood", position=1)],
+            signal_chain=["cba-mood"],
             devices={"cba-mood": bro, "mc6": ctrl},
             scenes={"scene-a": scene},
         )

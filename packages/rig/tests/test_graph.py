@@ -12,7 +12,6 @@ from rig.models.device import (
 )
 from rig.models.graph import CycleError, DeviceGraph
 from rig.models.rig import Rig
-from rig.models.signal_chain import SignalChainPosition
 
 
 def _make_device(id: str, type: DeviceType, config=None) -> Device:
@@ -30,9 +29,7 @@ def _make_rig(devices: list[Device], signal_chain_ids: list[str], scenes=None) -
     return Rig(
         name="test",
         devices={d.id: d for d in devices},
-        signal_chain=[
-            SignalChainPosition(device_ref=id, position=i) for i, id in enumerate(signal_chain_ids)
-        ],
+        signal_chain=list(signal_chain_ids),
     )
 
 

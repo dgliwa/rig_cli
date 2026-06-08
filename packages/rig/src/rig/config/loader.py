@@ -10,7 +10,8 @@ from rig.models.device import ChaseBlissConfig, Device, DeviceType
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
-from rig.models.signal_chain import SignalChainPosition
+
+# SignalChainPosition removed in Wave 2 — signal chain is now list[str]
 
 logger = logging.getLogger(__name__)
 
@@ -142,12 +143,10 @@ def _validate_references(rig: Rig):
     }
 
     logger.debug("Validating signal chain references")
-    for pos in rig.signal_chain:
-        if pos.device_ref not in valid_chain_ids:
-            logger.error("Signal chain references unknown device '%s'", pos.device_ref)
-            raise MissingReferenceError(
-                f"Signal chain references unknown device '{pos.device_ref}'"
-            )
+    for device_id in rig.signal_chain:
+        if device_id not in valid_chain_ids:
+            logger.error("Signal chain references unknown device '%s'", device_id)
+            raise MissingReferenceError(f"Signal chain references unknown device '{device_id}'")
 
     logger.debug("Validating scene preset references")
     for scene_name, scene in rig.scenes.items():
@@ -205,7 +204,11 @@ def load_rig(root_path: str) -> Rig:
         devices_dir = _resolve(root, "pedals")
     scenes_dir = _resolve(root, "scenes")
 
-    chain = [SignalChainPosition(**pos) for pos in signal_data.get("chain", [])]
+    chain = [
+        pos.get("device") or pos.get("pedal") or pos.get("device_ref") or pos.get("pedal_ref")
+        for pos in signal_data.get("chain", [])
+        if pos.get("device") or pos.get("pedal") or pos.get("device_ref") or pos.get("pedal_ref")
+    ]
 
     devices = _load_devices_dir(devices_dir)
     devices = _merge_presets(devices_dir, devices)

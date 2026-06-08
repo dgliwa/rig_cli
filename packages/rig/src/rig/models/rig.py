@@ -15,7 +15,7 @@ class Rig(BaseModel):
 
     name: str
     description: str | None = None
-    signal_chain: list[Any]
+    signal_chain: list[str] = []
     devices: dict[str, Any] = {}
     midi_channel: int | None = None
     scenes: dict[str, Scene] = {}

@@ -4,7 +4,6 @@ from rig.models.device import ControllerConfig, Device, DeviceType, MidiConfig
 from rig.models.preset import HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
-from rig.models.signal_chain import SignalChainPosition
 from rig_morningstar.generator import generate_mc6, write_mc6_config
 
 
@@ -53,7 +52,7 @@ def _make_rig() -> Rig:
     }
     return Rig(
         name="test",
-        signal_chain=[SignalChainPosition(device_ref="hx-stomp", position=1)],
+        signal_chain=["hx-stomp"],
         devices={"hx-stomp": hx, "mc6": controller_device},
         scenes=scenes,
     )
