@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Cleaner Core
-status: complete
-last_updated: "2026-06-08T10:10:00.000Z"
-last_activity: 2026-06-08 -- Phase 12 complete
+milestone: v1.3
+milestone_name: Design Cleanup
+status: v1.3 Design Cleanup shipped
+last_updated: "2026-06-08T00:00:00Z"
+last_activity: 2026-06-08 -- Phase 13 complete
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 7
+  total_phases: 1
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
   percent: 100
 ---
 
@@ -17,17 +17,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-07)
+See: .planning/PROJECT.md (updated 2026-06-08)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** All phases complete
+**Current focus:** All phases complete — v1.3 shipped
 
 ## Current Position
 
-Phase: 12 (clean-up-deferred-items) — COMPLETE ✅
+Phase: 13 (resolve-remaining-todos) — COMPLETE ✅
 Plan: 1 of 1
-Status: v1.2 Cleaner Core shipped
-Last activity: 2026-06-08 -- Phase 12 complete
+Status: v1.3 Design Cleanup shipped
+Last activity: 2026-06-08 -- Phase 13 complete
 
 Progress: [████████████████████] 100% (4/4 phases)
 
@@ -59,6 +59,7 @@ Progress: [████████████████████] 100% (4
 | 10 | 1 | - | - |
 | 11 | 1 | - | - |
 | 12 | 1 | - | - |
+| 13 | 0 | - | - |
 
 ## Decisions
 

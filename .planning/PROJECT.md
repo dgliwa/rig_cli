@@ -31,6 +31,8 @@ A single command should bring the physical rig to the exact state described in t
 - ✓ **Device-level MIDI lifecycle** — `Device.setup()` is sole MIDI connection mechanism; Phase -1 engine loop removed; engine has no plugin-specific MIDI logic — v1.1
 - ✓ **Dead code elimination** — 7 core files deleted (mc6.py, chase_bliss.py, appliers/chase_bliss.py, catalog, controller model, interaction modules); plugins own their full implementations — v1.1
 
+- ✓ **Rig.scenes as computed property** — scenes aggregated from controller devices, not stored as a flat field on Rig; `compute.py` HX-specific branch removed, all preset lookups go through `_get_preset_number`; zero `TODO: 1.2` markers remain — v1.3
+
 ### Active
 
 - [ ] **PKG-07**: Plugin authoring docs — how to write a new plugin package
@@ -91,6 +93,8 @@ A single command should bring the physical rig to the exact state described in t
 | `DeviceGraph` for topology ordering in `rig plan` | MC6 must be configured after all scenes it references | ✓ Good |
 | `detect_cba_setup` forward-looking (all 3 phases in one call) | Single `rig apply` converges fresh CBA device; no re-detection loop | ✓ Good |
 | `Device.plan()` / `Device.diff()` as forward stubs (NotImplementedError) | Phase 4 laid the Protocol; Phase 5 wires plan through `compute_plan`, not device methods | ⚠️ Revisit — stubs are dead code in current architecture |
+| `Rig.scenes` as property not field | Scenes live in controller config; flat field was a historical compat shim — property aggregates from controllers, cleaner domain model | ✓ Good — v1.3 |
+| Single `_get_preset_number` for all preset types | HX-specific branch in `compute.py` was dead code — `HXStompPreset.preset_number` works the same way as `DigitalPreset`; unified lookup reduces branching | ✓ Good — v1.3 |
 | Entry points as sole discovery path (no code-level fallback) | Eliminates import-time coupling; enables third-party plugins without core changes | ✓ Good — v1.1 |
 | Device-level MIDI lifecycle (`Device.setup()` owns connection) | Cleaner separation; engine doesn't need to know which devices need MIDI setup | ✓ Good — v1.1 |
 | `MidiConnectionIO` Protocol removed entirely | Once devices own MIDI setup, the Protocol has no remaining purpose — remove rather than leave empty | ✓ Good — v1.1 |
@@ -113,4 +117,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-07 after v1.2 milestone started — Cleaner Core*
+*Last updated: 2026-06-08 after Phase 13 — v1.3 Design Cleanup*

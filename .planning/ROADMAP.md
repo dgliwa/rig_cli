@@ -66,40 +66,49 @@
 ## Phase Details
 
 ### Phase 9: Core Model Cleanup
+
 **Goal**: Core models contain no plugin-specific types, no compat shims, and no deprecated fields — the domain is expressed purely through `type`-keyed device identity and the new schema primitives
 **Depends on**: Phase 8 (v1.1 dead code eliminated)
 **Requirements**: MODEL-01, MODEL-02, MODEL-03, MODEL-04, SCHEMA-03, SCHEMA-06
 **Success Criteria** (what must be TRUE):
+
   1. `device.py` imports contain no `ManualConfig`, `MidiConfig`, `ChaseBlissConfig`, or `ControllerConfig` — grep returns zero hits
   2. `Control` and `ControlType` classes are absent from `packages/rig/src/rig/models/`
   3. `Rig` model has no `pedals`, `digital_presets`, `hx_presets`, `analog_presets`, `mc6`, or `_controller_device` attributes
   4. `Scene` model has no `mc6_bank` or `mc6_switch` fields
   5. `SignalChainPosition` class is absent from `packages/rig/src/rig/models/signal_chain.py` (file may be deleted or emptied)
+
 **Plans**: TBD
 
 ### Phase 10: Schema & Loader Rewrite
+
 **Goal**: Users can run `rig validate` against a single `rig.yaml` where device list order defines the signal chain, controller devices compose other devices by ID, and scenes live inside the controller
 **Depends on**: Phase 9
 **Requirements**: SCHEMA-01, SCHEMA-02, SCHEMA-04, SCHEMA-05, LOADER-01, LOADER-02
 **Success Criteria** (what must be TRUE):
+
   1. `rig validate path/to/rig.yaml` succeeds when `rig.yaml` is a single file with a flat `devices` list
   2. Device list order in `rig.yaml` is treated as the signal chain — no `signal-chain.yaml` file is read or required
   3. A controller device with `composes: [device_id_1, device_id_2]` correctly references the devices it controls
   4. Scenes defined inside a controller device with `bank`, `switch`, and `presets: {device_id: preset_id}` are loaded and accessible via `Rig.scenes`
   5. Device construction is dispatched to the matching plugin using the `type` field as the entry point lookup key — unknown `type` values produce a clear error
+
 **Plans**: TBD
 **UI hint**: no
 
 ### Phase 11: Dead Code & Compat Removal
+
 **Goal**: The codebase contains no `TODO: 1.2` markers, no multi-file config parsing paths, and no code that was retained solely for backwards compatibility with the pre-v1.2 config layout
 **Depends on**: Phase 10
 **Requirements**: CLEANUP-01, CLEANUP-02
 **Success Criteria** (what must be TRUE):
+
   1. `grep -r "TODO.*1\.2" packages/rig/src/` returns zero results
   2. `load_rig()` has no code paths that read `signal-chain.yaml`, `scenes/*.yaml`, `pedals/*.yaml`, or `mc6.yaml` — the function accepts only a single `rig.yaml` path
   3. All tests pass after removal — no test fixture depends on multi-file layout
 
 ### Phase 12: Clean Up Deferred Items
+
 **Goal**: Remove vestigial `generate_mc6` command and resolve the two deferred items from Phase 10 — either by removal (if unused) or by refactoring scene data sourcing and `composes` integration
 **Depends on**: Phase 11
 **Requirements**: DEFER-01, DEFER-02
@@ -107,9 +116,10 @@
 
 ### v1.3 Design Cleanup (Phases 13)
 
-- [ ] **Phase 13: Resolve Remaining TODO:1.2 Markers** — Move scenes off Rig model onto controller, move HX preset logic into HX plugin, sweep all TODO:1.2 markers from codebase
+- [x] **Phase 13: Resolve Remaining TODO:1.2 Markers** — Move scenes off Rig model onto controller, move HX preset logic into HX plugin, sweep all TODO:1.2 markers from codebase (completed 2026-06-08)
 
 ### Phase 13: Resolve Remaining TODO:1.2 Markers
+
 **Goal**: Address the 3 remaining `TODO: 1.2` architectural notes — move scenes off the flat `Rig.scenes` model onto controllers where they belong, and move HX-specific preset-number lookup out of core `compute.py` into the HX plugin
 **Depends on**: Phase 12
 **Requirements**: CLEANUP-01, DESIGN-01, DESIGN-02
@@ -130,4 +140,4 @@
 | 10. Schema & Loader Rewrite | v1.2 | 1/1 | Complete | 2026-06-08 |
 | 11. Dead Code & Compat Removal | v1.2 | 1/1 | Complete | 2026-06-08 |
 | 12. Clean Up Deferred Items | v1.2 | 1/1 | Complete | 2026-06-08 |
-| 13. Resolve Remaining TODO:1.2 Markers | v1.3 | 0/? | Planning | - |
+| 13. Resolve Remaining TODO:1.2 Markers | v1.3 | 0/1 | Complete    | 2026-06-08 |
