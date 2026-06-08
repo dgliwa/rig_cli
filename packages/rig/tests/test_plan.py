@@ -2,17 +2,11 @@ import json
 
 from rig.engine.diff import compute_diff
 from rig.engine.plan import compute_plan
-from rig.models.device import (
-    ChaseBlissConfig,
-    ControllerConfig,
-    Device,
-    DeviceType,
-    ManualConfig,
-    MidiConfig,
-)
+from rig.models.device import Device, DeviceType
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
+from rig_chasebliss.device import ChaseBlissConfig
 
 
 def _make_rig(scene_presets: dict | None = None) -> Rig:
@@ -21,7 +15,7 @@ def _make_rig(scene_presets: dict | None = None) -> Rig:
         manufacturer="Line6",
         model="HX Stomp",
         type=DeviceType.MODELER,
-        config=MidiConfig(midi_channel=1),
+        config={"type": "midi", "midi_channel": 1},
         presets=[
             HXStompPreset(
                 id="clean-edge", name="Clean Edge", preset_number=12, hlx_file="hlx/clean-edge.hlx"
@@ -41,14 +35,14 @@ def _make_rig(scene_presets: dict | None = None) -> Rig:
         manufacturer="Wampler",
         model="Tumnus",
         type=DeviceType.ANALOG,
-        config=ManualConfig(),
+        config={"type": "manual"},
     )
     ctrl = Device(
         id="mc6",
         manufacturer="Morningstar",
         model="MC6",
         type=DeviceType.CONTROLLER,
-        config=ControllerConfig(midi_channel=1),
+        config={"type": "controller", "midi_channel": 1, "banks": []},
     )
     scene = Scene(
         name="test-scene",
@@ -87,7 +81,6 @@ class TestComputePlan:
         plan = compute_plan(rig, root_path=str(tmp_path))
         assert plan.status == "clean"
         assert plan.scenes["test-scene"].status == "unchanged"
-        assert plan.cba_setup == []
 
     def test_plan_detects_new_scene(self, tmp_path):
         rig = _make_rig()
@@ -149,102 +142,6 @@ class TestComputePlan:
         assert hx_action.status == "verify"
 
 
-class TestCbaDetection:
-    def test_detects_channel_establishment_needed(self):
-        rig = _make_rig()
-        plan = compute_plan(rig)
-        cba_actions = [a for a in plan.cba_setup if a.device == "brothers"]
-        assert any(a.type == "establish_channel" for a in cba_actions)
-        assert plan.status == "changes_detected"
-
-    def test_skips_channel_when_already_established(self, tmp_path):
-        rig = _make_rig()
-        state = tmp_path / ".rig" / "state.json"
-        state.parent.mkdir(parents=True)
-        state.write_text(
-            json.dumps(
-                {
-                    "devices": {"brothers": {"channel_established": True, "midi_channel": 3}},
-                }
-            )
-        )
-        plan = compute_plan(rig, root_path=str(tmp_path))
-        cba = [a for a in plan.cba_setup if a.device == "brothers"]
-        assert not any(a.type == "establish_channel" for a in cba)
-
-    def test_detects_preset_build_needed(self, tmp_path):
-        rig = _make_rig()
-        state = tmp_path / ".rig" / "state.json"
-        state.parent.mkdir(parents=True)
-        state.write_text(
-            json.dumps(
-                {
-                    "devices": {
-                        "brothers": {
-                            "channel_established": True,
-                            "midi_channel": 3,
-                            "presets_saved": {},
-                        }
-                    },
-                }
-            )
-        )
-        plan = compute_plan(rig, root_path=str(tmp_path))
-        cba = [a for a in plan.cba_setup if a.device == "brothers"]
-        assert any(a.type == "build_preset" for a in cba)
-        build = [a for a in cba if a.type == "build_preset"]
-        assert len(build) == 1
-        assert build[0].preset_id == "low-gain"
-
-    def test_skips_preset_when_already_saved(self, tmp_path):
-        rig = _make_rig()
-        state = tmp_path / ".rig" / "state.json"
-        state.parent.mkdir(parents=True)
-        state.write_text(
-            json.dumps(
-                {
-                    "devices": {
-                        "brothers": {
-                            "channel_established": True,
-                            "midi_channel": 3,
-                            "presets_saved": {"low-gain": True},
-                        }
-                    },
-                }
-            )
-        )
-        plan = compute_plan(rig, root_path=str(tmp_path))
-        cba = [a for a in plan.cba_setup if a.device == "brothers"]
-        assert not any(a.type == "build_preset" for a in cba)
-
-    def test_detects_registration_needed(self, tmp_path):
-        rig = _make_rig()
-        state = tmp_path / ".rig" / "state.json"
-        state.parent.mkdir(parents=True)
-        state.write_text(
-            json.dumps(
-                {
-                    "devices": {
-                        "brothers": {
-                            "channel_established": True,
-                            "midi_channel": 3,
-                            "presets_saved": {"low-gain": True},
-                        }
-                    },
-                }
-            )
-        )
-        plan = compute_plan(rig, root_path=str(tmp_path))
-        cba = [a for a in plan.cba_setup if a.device == "brothers"]
-        assert any(a.type == "register_scenes" for a in cba)
-
-    def test_non_cba_pedal_ignored(self):
-        rig = _make_rig()
-        plan = compute_plan(rig)
-        assert not any(a.device == "hx-stomp" for a in plan.cba_setup)
-        assert not any(a.device == "tumnus" for a in plan.cba_setup)
-
-
 def _make_rig_with_extra_preset() -> Rig:
     """Rig with an extra DigitalPreset on brothers that is NOT referenced in any scene."""
     hx = Device(
@@ -252,7 +149,7 @@ def _make_rig_with_extra_preset() -> Rig:
         manufacturer="Line6",
         model="HX Stomp",
         type=DeviceType.MODELER,
-        config=MidiConfig(midi_channel=1),
+        config={"type": "midi", "midi_channel": 1},
         presets=[
             HXStompPreset(
                 id="clean-edge", name="Clean Edge", preset_number=12, hlx_file="hlx/clean-edge.hlx"
@@ -275,22 +172,14 @@ def _make_rig_with_extra_preset() -> Rig:
         manufacturer="Wampler",
         model="Tumnus",
         type=DeviceType.ANALOG,
-        config=ManualConfig(),
+        config={"type": "manual"},
     )
     ctrl = Device(
         id="mc6",
         manufacturer="Morningstar",
         model="MC6",
         type=DeviceType.CONTROLLER,
-        config=ControllerConfig(
-            midi_channel=1,
-            scenes={
-                "test-scene": Scene(
-                    name="test-scene",
-                    presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
-                )
-            },
-        ),
+        config={"type": "controller", "midi_channel": 1, "banks": []},
     )
     return Rig(
         name="test",
@@ -330,7 +219,7 @@ class TestUnusedPresets:
             manufacturer="Line6",
             model="HX Stomp",
             type=DeviceType.MODELER,
-            config=MidiConfig(midi_channel=1),
+            config={"type": "midi", "midi_channel": 1},
             presets=[
                 HXStompPreset(
                     id="clean-edge",
@@ -361,22 +250,14 @@ class TestUnusedPresets:
             manufacturer="Wampler",
             model="Tumnus",
             type=DeviceType.ANALOG,
-            config=ManualConfig(),
+            config={"type": "manual"},
         )
         ctrl = Device(
             id="mc6",
             manufacturer="Morningstar",
             model="MC6",
             type=DeviceType.CONTROLLER,
-            config=ControllerConfig(
-                midi_channel=1,
-                scenes={
-                    "test-scene": Scene(
-                        name="test-scene",
-                        presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
-                    )
-                },
-            ),
+            config={"type": "controller", "midi_channel": 1, "banks": []},
         )
         rig = Rig(
             name="test",
@@ -392,7 +273,7 @@ class TestUnusedPresets:
             manufacturer="Wampler",
             model="Tumnus",
             type=DeviceType.ANALOG,
-            config=ManualConfig(),
+            config={"type": "manual"},
             presets=[
                 AnalogPreset(
                     id="edge-of-breakup",
@@ -407,7 +288,7 @@ class TestUnusedPresets:
             manufacturer="Line6",
             model="HX Stomp",
             type=DeviceType.MODELER,
-            config=MidiConfig(midi_channel=1),
+            config={"type": "midi", "midi_channel": 1},
             presets=[
                 HXStompPreset(
                     id="clean-edge",
@@ -432,15 +313,7 @@ class TestUnusedPresets:
             manufacturer="Morningstar",
             model="MC6",
             type=DeviceType.CONTROLLER,
-            config=ControllerConfig(
-                midi_channel=1,
-                scenes={
-                    "test-scene": Scene(
-                        name="test-scene",
-                        presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
-                    )
-                },
-            ),
+            config={"type": "controller", "midi_channel": 1, "banks": []},
         )
         rig = Rig(
             name="test",
@@ -533,7 +406,7 @@ def _make_ordered_rig() -> Rig:
         manufacturer="Line6",
         model="HX Stomp",
         type=DeviceType.MODELER,
-        config=MidiConfig(midi_channel=1),
+        config={"type": "midi", "midi_channel": 1},
         presets=[
             HXStompPreset(
                 id="clean-edge", name="Clean Edge", preset_number=12, hlx_file="hlx/clean-edge.hlx"
@@ -545,7 +418,7 @@ def _make_ordered_rig() -> Rig:
         manufacturer="TC Electronic",
         model="Polytune",
         type=DeviceType.DIGITAL,
-        config=MidiConfig(midi_channel=2),
+        config={"type": "midi", "midi_channel": 2},
         presets=[DigitalPreset(id="mute", pedal="polytune", name="Mute", preset_number=1)],
     )
     ctrl = Device(
@@ -553,7 +426,7 @@ def _make_ordered_rig() -> Rig:
         manufacturer="Morningstar",
         model="MC6",
         type=DeviceType.CONTROLLER,
-        config=ControllerConfig(midi_channel=1),
+        config={"type": "controller", "midi_channel": 1, "banks": []},
     )
     scene = Scene(
         name="test-scene",
@@ -596,7 +469,7 @@ class TestDeviceOrdering:
             manufacturer="Line6",
             model="HX Stomp",
             type=DeviceType.MODELER,
-            config=MidiConfig(midi_channel=1),
+            config={"type": "midi", "midi_channel": 1},
             presets=[
                 HXStompPreset(
                     id="clean-edge",
@@ -611,7 +484,7 @@ class TestDeviceOrdering:
             manufacturer="CBA",
             model="Brothers",
             type=DeviceType.DIGITAL,
-            config=MidiConfig(midi_channel=3),
+            config={"type": "midi", "midi_channel": 3},
             presets=[
                 DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)
             ],
@@ -621,7 +494,7 @@ class TestDeviceOrdering:
             manufacturer="Morningstar",
             model="MC6",
             type=DeviceType.CONTROLLER,
-            config=ControllerConfig(midi_channel=1),
+            config={"type": "controller", "midi_channel": 1, "banks": []},
         )
         scene = Scene(
             name="test-scene",

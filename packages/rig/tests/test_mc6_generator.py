@@ -1,6 +1,6 @@
 import json
 
-from rig.models.device import ControllerConfig, Device, DeviceType, MidiConfig
+from rig.models.device import Device, DeviceType
 from rig.models.preset import HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
@@ -13,7 +13,7 @@ def _make_rig() -> Rig:
         manufacturer="Line6",
         model="HX Stomp",
         type=DeviceType.MODELER,
-        config=MidiConfig(midi_channel=1),
+        config={"type": "midi", "midi_channel": 1},
         presets=[
             HXStompPreset(
                 id="clean-edge",
@@ -31,9 +31,10 @@ def _make_rig() -> Rig:
         manufacturer="Morningstar",
         model="MC6",
         type=DeviceType.CONTROLLER,
-        config=ControllerConfig(
-            midi_channel=1,
-            banks=[
+        config={
+            "type": "controller",
+            "midi_channel": 1,
+            "banks": [
                 {
                     "bank": 1,
                     "name": "Scenes",
@@ -44,7 +45,7 @@ def _make_rig() -> Rig:
                     },
                 },
             ],
-        ),
+        },
     )
     scenes = {
         "billy-clean": Scene(name="billy-clean", presets={"hx-stomp": "clean-edge"}),

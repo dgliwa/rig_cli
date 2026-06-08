@@ -20,8 +20,7 @@ runner = CliRunner()
 def _write_minimal_digital_rig(root: Path) -> None:
     """Write a minimal rig with one digital device, one controller, and one scene under *root*.
 
-    Scenes must be wired through a CONTROLLER device's ControllerConfig for
-    Rig.scenes to resolve — matching the loader's domain model.
+    Scenes are passed to Rig as a direct field.
     """
     devices = root / "devices"
     devices.mkdir(parents=True)
@@ -134,32 +133,8 @@ class TestPlanSummaryLine:
         assert "Plan:" in result.output
         assert "No changes" in result.output
 
-    def test_cba_setup_actions_shown_in_setup_actions_section(self, tmp_path: Path) -> None:
-        """D-09: A CBA device in fresh state produces Setup Actions section in output."""
-        _write_cba_rig(tmp_path)
-        result = runner.invoke(app, ["plan", "--config", str(tmp_path)])
-        assert "Setup Actions" in result.output
 
-    def test_cba_plan_summary_reflects_nonzero_count(self, tmp_path: Path) -> None:
-        """D-09: Summary line is non-zero when CBA setup actions exist."""
-        _write_cba_rig(tmp_path)
-        result = runner.invoke(app, ["plan", "--config", str(tmp_path)])
-        # The plan has CBA setup actions → output must show a nonzero total in summary
-        assert "Plan:" in result.output
-        # CBA setup should drive the plan to show some count (configure or setup actions)
-        # The summary line must NOT read "0 to configure" when CBA setup actions exist
-        import re
-
-        configure_match = re.search(r"Plan: (\d+) to configure", result.output)
-        if configure_match:
-            count = int(configure_match.group(1))
-            assert count > 0, (
-                "Summary line shows '0 to configure' but CBA setup actions exist — "
-                "CBA setup actions are not reflected in the summary count."
-            )
-
-
-def _write_cba_rig(root: Path) -> None:
+def _write_analog_rig(root: Path) -> None:
     """Write a minimal rig with one Chase Bliss device (no prior state) under *root*."""
     devices = root / "devices"
     devices.mkdir(parents=True)
@@ -237,13 +212,6 @@ class TestPlanVisualMarkers:
         _write_analog_rig(tmp_path)
         result = runner.invoke(app, ["plan", "--config", str(tmp_path)])
         assert "⚠" in result.output, "Expected '⚠' marker for analog action"
-
-    def test_cba_setup_action_uses_tilde_marker(self, tmp_path: Path) -> None:
-        """CBA setup actions display ~ marker."""
-        _write_cba_rig(tmp_path)
-        result = runner.invoke(app, ["plan", "--config", str(tmp_path)])
-        assert "Setup Actions" in result.output
-        assert "~" in result.output, "Expected '~' marker for CBA setup action"
 
 
 def _write_analog_rig(root: Path) -> None:

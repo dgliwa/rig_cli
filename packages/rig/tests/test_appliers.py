@@ -186,11 +186,11 @@ class TestChaseBlissApplierSetup:
         assert results[0].status == "skipped"
 
     def test_detect_cba_setup_fresh_device_produces_all_phases(self):
-        from rig.engine.plan.compute import detect_cba_setup
-        from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, DeviceType
+        from rig.models.device import Device, DeviceType
         from rig.models.preset import DigitalPreset
         from rig.models.rig import Rig
         from rig.models.scene import Scene
+        from rig_chasebliss.device import ChaseBlissConfig, _detect_cba_setup_for_device
 
         bro = Device(
             id="cba-mood",
@@ -208,7 +208,7 @@ class TestChaseBlissApplierSetup:
             manufacturer="Morningstar",
             model="MC6",
             type=DeviceType.CONTROLLER,
-            config=ControllerConfig(midi_channel=1),
+            config={"type": "controller", "midi_channel": 1, "banks": []},
         )
         scene = Scene(name="scene-a", presets={"cba-mood": "shimmer"})
         rig = Rig(
@@ -219,7 +219,7 @@ class TestChaseBlissApplierSetup:
         )
         state = RigState()
 
-        actions = detect_cba_setup(rig, state)
+        actions = _detect_cba_setup_for_device(bro, state, rig)
         types = [a.type for a in actions]
 
         assert "establish_channel" in types

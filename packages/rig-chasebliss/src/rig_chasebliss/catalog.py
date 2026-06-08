@@ -1,4 +1,24 @@
-from rig.models.device import Control, ControlType
+from enum import StrEnum
+
+from pydantic import BaseModel, Field
+
+
+class ControlType(StrEnum):
+    KNOB = "knob"
+    SWITCH = "switch"
+    TOGGLE = "toggle"
+    DIPSWITCH = "dipswitch"
+
+
+class Control(BaseModel):
+    name: str = Field(..., min_length=1)
+    type: ControlType
+    midi_cc: int | None = None
+    min: float | str | bool | None = None
+    max: float | str | bool | None = None
+    positions: list[str] = []
+    expression_assignable: bool = False
+
 
 MOOD_MKII_CONTROLS: list[Control] = [
     Control(name="time", type=ControlType.KNOB, midi_cc=14, min=0, max=127),

@@ -64,11 +64,16 @@ class MC6Device(BaseModel):
 
         device_id = ctx.action.device
 
-        if not getattr(self.config, "banks", None) or ctx.midi is None:
+        banks = (
+            self.config.get("banks", [])
+            if isinstance(self.config, dict)
+            else getattr(self.config, "banks", [])
+        )
+        if not banks or ctx.midi is None:
             return DeviceApplyResult(device=device_id, status="skipped")
 
         if ctx.dry_run:
-            for bank in self.config.banks:
+            for bank in banks:
                 for switch_label, switch_data in bank.get("switches", {}).items():
                     scene_name = switch_data.get("scene", "")
                     console.print(
@@ -80,7 +85,7 @@ class MC6Device(BaseModel):
         if device_id not in ctx.connected_devices:
             return DeviceApplyResult(device=device_id, status="skipped")
 
-        for bank in self.config.banks:
+        for bank in banks:
             bank_num = bank["bank"]
             ctx.confirmation_io.prompt_mc6_navigate(bank_num)
 

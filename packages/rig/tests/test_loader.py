@@ -43,7 +43,7 @@ def rig_dir(tmp_path):
         "pedals/tumnus/presets/edge.yaml",
         "id: edge\npedal: tumnus\nname: Edge of Breakup\nvalues:\n  Gain: 3.5\n",
     )
-    # Controller device: scenes are wired to ControllerConfig by the loader
+    # Controller device: scenes are passed directly to Rig
     _write(
         d,
         "pedals/mc6.yaml",
@@ -134,17 +134,6 @@ class TestLoadRig:
         shutil.rmtree(str(rig_dir / "scenes"))
         config = load_rig(str(rig_dir))
         assert config.scenes == {}
-
-    def test_cba_pedal_without_midi_channel_rejected(self, rig_dir):
-        from pydantic import ValidationError
-
-        _write(
-            rig_dir,
-            "pedals/brothers.yaml",
-            "id: brothers\nmanufacturer: Chase Bliss\nmodel: Brothers\ntype: digital\nconfig: {type: chase_bliss}\n",
-        )
-        with pytest.raises(ValidationError, match="midi_channel"):
-            load_rig(str(rig_dir))
 
     def test_non_cba_pedal_without_midi_channel_accepted(self, rig_dir):
         _write(

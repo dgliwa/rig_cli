@@ -309,10 +309,11 @@ def test_mc6_device_diff_raises_not_implemented() -> None:
 
 
 def test_mc6_device_apply_no_banks_is_noop() -> None:
-    from rig.models.device import ControllerConfig
     from rig_morningstar.device import MC6Device
 
-    dev = MC6Device(id="mc6", name="MC6 MkII", config=ControllerConfig(midi_channel=1, banks=[]))
+    dev = MC6Device(
+        id="mc6", name="MC6 MkII", config={"type": "controller", "midi_channel": 1, "banks": []}
+    )
     ctx = _make_apply_ctx(device_id="mc6", preset_name="", dry_run=True)
     result = dev.apply(ctx)
     # MC6 apply with no banks returns a skipped/noop result
@@ -320,11 +321,12 @@ def test_mc6_device_apply_no_banks_is_noop() -> None:
 
 
 def test_mc6_device_apply_dry_run_with_banks_returns_skipped() -> None:
-    from rig.models.device import ControllerConfig
     from rig_morningstar.device import MC6Device
 
     banks = [{"bank": 1, "switches": {"A": {"scene": "Scene1"}}}]
-    dev = MC6Device(id="mc6", name="MC6 MkII", config=ControllerConfig(midi_channel=1, banks=banks))
+    dev = MC6Device(
+        id="mc6", name="MC6 MkII", config={"type": "controller", "midi_channel": 1, "banks": banks}
+    )
     ctx = _make_apply_ctx(device_id="mc6", preset_name="", dry_run=True)
     # dry_run with midi=None: apply_banks returns early
     ctx.midi = None
@@ -341,7 +343,9 @@ def test_mc6_device_apply_dry_run_uses_config_banks() -> None:
     mc6 = rig.devices["mc6"]
     assert isinstance(mc6, MC6Device)
     # Fixture has banks populated in config — proves loader wired data correctly
-    assert mc6.config.banks
+    config = mc6.config
+    banks = config.get("banks", []) if isinstance(config, dict) else getattr(config, "banks", [])
+    assert banks
 
     ctx = _make_apply_ctx(device_id="mc6", preset_name="", dry_run=True)
     ctx.midi = None
@@ -421,12 +425,11 @@ def test_midi_device_apply_skip_returns_skipped() -> None:
 
 
 def test_midi_device_get_scene_pc_command_with_digital_preset() -> None:
-    from rig.models.device import MidiConfig
     from rig.models.preset import DigitalPreset
     from rig_hx.device import HXStompDevice
 
     preset = DigitalPreset(id="clean", name="Clean", preset_number=5)
-    cfg = MidiConfig(midi_channel=3)
+    cfg = {"type": "midi", "midi_channel": 3}
     dev = HXStompDevice(id="hx", name="HX Stomp", config=cfg, presets=[preset])
     cmd = dev.get_scene_pc_command("clean")
     assert cmd is not None
@@ -436,20 +439,18 @@ def test_midi_device_get_scene_pc_command_with_digital_preset() -> None:
 
 
 def test_midi_device_get_scene_pc_command_no_matching_preset_returns_none() -> None:
-    from rig.models.device import MidiConfig
     from rig.models.preset import DigitalPreset
     from rig_hx.device import HXStompDevice
 
     preset = DigitalPreset(id="clean", name="Clean", preset_number=5)
-    cfg = MidiConfig(midi_channel=3)
+    cfg = {"type": "midi", "midi_channel": 3}
     dev = HXStompDevice(id="hx", name="HX Stomp", config=cfg, presets=[preset])
     assert dev.get_scene_pc_command("nonexistent") is None
 
 
 def test_chase_bliss_device_get_scene_pc_command_with_digital_preset() -> None:
-    from rig.models.device import ChaseBlissConfig
     from rig.models.preset import DigitalPreset
-    from rig_chasebliss.device import ChaseBlissDevice
+    from rig_chasebliss.device import ChaseBlissConfig, ChaseBlissDevice
 
     preset = DigitalPreset(id="bloom", name="Bloom", preset_number=2)
     cfg = ChaseBlissConfig(midi_channel=7, controls=[])

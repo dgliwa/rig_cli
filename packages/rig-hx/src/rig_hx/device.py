@@ -47,7 +47,11 @@ class HXStompDevice(BaseModel):
             ctx.connected_devices.add(self.id)
             return SetupResult()
 
-        ch = self.config.midi_channel if self.config is not None else 1
+        ch = (
+            self.config.get("midi_channel")
+            if isinstance(self.config, dict)
+            else getattr(self.config, "midi_channel", None) or 1
+        )
         from rig.interaction.midi import prompt_midi_connect
 
         cached_port = ctx.state.devices.get(self.id, DeviceState()).midi_port
@@ -62,7 +66,11 @@ class HXStompDevice(BaseModel):
 
     def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
         """Return a PC command dict for the given preset_id, or None if not applicable."""
-        ch = self.config.midi_channel if self.config is not None else None
+        ch = (
+            self.config.get("midi_channel")
+            if isinstance(self.config, dict)
+            else getattr(self.config, "midi_channel", None)
+        )
         if ch is None:
             return None
         for preset in self.presets:

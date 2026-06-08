@@ -1,92 +1,18 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
-from rig.models.scene import Scene
 
 
-# TODO: 1.2 re-evaluate this one
 class DeviceType(StrEnum):
     DIGITAL = "digital"
     ANALOG = "analog"
     MODELER = "modeler"
     CONTROLLER = "controller"
-
-
-# TODO: 1.2 this is only used in CB, should it move?
-class ControlType(StrEnum):
-    KNOB = "knob"
-    SWITCH = "switch"
-    TOGGLE = "toggle"
-    DIPSWITCH = "dipswitch"
-
-
-# TODO: 1.2 this is only used in CB, should it move?
-class Control(BaseModel):
-    name: str = Field(..., min_length=1)
-    type: ControlType
-    min: float | None = None
-    max: float | None = None
-    positions: list[str] | None = None
-    value: str | float | int | None = None
-    midi_cc: int | None = None
-    expression_assignable: bool = False
-
-
-class DeviceConfig(BaseModel):
-    """Base for device configuration strategies. Discriminated by ``type``."""
-
-    type: str
-    midi_channel: int | None = None
-
-    def get_cc_params(self, parameters: dict[str, Any]) -> list[dict[str, int]]:
-        return []
-
-
-# TODO: 1.2 this is only used in manual, should it move?
-class ManualConfig(DeviceConfig):
-    """Device with no MIDI — knobs and switches set by hand."""
-
-    type: Literal["manual"] = "manual"
-    controls: list[Control] = []
-
-
-# TODO: 1.2 is this used?
-class MidiConfig(DeviceConfig):
-    """Device controlled via MIDI."""
-
-    type: Literal["midi"] = "midi"
-    midi_channel: int
-    midi_device_id: int | None = None
-    controls: list[Control] = []
-
-    def get_cc_params(self, parameters: dict[str, Any]) -> list[dict[str, int]]:
-        by_name = {c.name: c for c in self.controls if c.midi_cc is not None}
-        return [
-            {"cc": by_name[k].midi_cc, "value": int(v)}
-            for k, v in parameters.items()
-            if k in by_name
-        ]
-
-
-# TODO: 1.2 this should move
-class ChaseBlissConfig(MidiConfig):
-    """Chase Bliss Audio pedal — MIDI with power-on channel learn."""
-
-    type: Literal["chase_bliss"] = "chase_bliss"
-
-
-# TODO: 1.2 this should be specifically a morningstar controller config
-class ControllerConfig(DeviceConfig):
-    """Configuration for a MIDI controller device (e.g. MC6)."""
-
-    type: Literal["controller"] = "controller"
-    banks: list[dict[str, Any]] = []
-    scenes: dict[str, Scene] = {}
 
 
 Preset = AnalogPreset | DigitalPreset | HXStompPreset
@@ -97,31 +23,21 @@ class Device(BaseModel):
     manufacturer: str
     model: str
     type: DeviceType
-    config: Annotated[
-        ManualConfig | MidiConfig | ChaseBlissConfig | ControllerConfig,
-        Field(discriminator="type"),
-    ]
-    # TODO: Can we just use Preset here?
+    config: Any = None
     presets: list[AnalogPreset | DigitalPreset | HXStompPreset] = Field(default_factory=list)
     image: str | None = None
     notes: str | None = None
 
-    # TODO: I feel like "controls" should live in the configs?
-    @model_validator(mode="after")
-    def _populate_cba_controls(self) -> Device:
-        if isinstance(self.config, ChaseBlissConfig) and not self.config.controls:
-            from rig_chasebliss.catalog import get_controls
+    def _get_midi_channel(self) -> int | None:
+        """Extract midi_channel from config regardless of whether it's a dict or model."""
+        if self.config is None:
+            return None
+        if isinstance(self.config, dict):
+            return self.config.get("midi_channel")
+        return getattr(self.config, "midi_channel", None)
 
-            controls = get_controls(self.manufacturer, self.model)
-            if controls:
-                object.__setattr__(
-                    self, "config", self.config.model_copy(update={"controls": controls})
-                )
-        return self
-
-    # TODO: this part of the contract could use some thinking - probably makes more sense for "Scene" to own the PC commands for a given device (falls in line with other domain structure suggestions)
     def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
-        ch = self.config.midi_channel
+        ch = self._get_midi_channel()
         if ch is None:
             return None
         for preset in self.presets:

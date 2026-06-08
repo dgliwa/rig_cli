@@ -6,7 +6,7 @@ import yaml
 
 from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
 from rig.engine.plugin_registry import get_registry
-from rig.models.device import ChaseBlissConfig, Device, DeviceType
+from rig.models.device import Device, DeviceType
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
@@ -162,28 +162,6 @@ def _validate_references(rig: Rig):
                 )
                 raise MissingReferenceError(
                     f"Scene '{scene_name}': device '{device_id}' has no preset '{preset_id}'"
-                )
-
-    # TODO: 1.2 for example, this instance based thing shouldn't happen - these should all conform to a protocol
-    logger.debug("Validating CBA preset parameter names against device controls")
-    for device_id, device in rig.devices.items():
-        if not isinstance(device.config, ChaseBlissConfig):
-            continue
-        control_names = {c.name for c in device.config.controls}
-        for preset in device.presets:
-            if not isinstance(preset, DigitalPreset):
-                continue
-            unknown = set(preset.parameters) - control_names
-            if unknown:
-                logger.error(
-                    "Preset '%s' on '%s' has unknown parameters: %s",
-                    preset.id,
-                    device_id,
-                    unknown,
-                )
-                raise ValidationError(
-                    f"Preset '{preset.id}' on '{device_id}' has unknown parameters: {unknown}. "
-                    f"Known controls: {sorted(control_names)}"
                 )
 
     logger.debug("All cross-references valid")

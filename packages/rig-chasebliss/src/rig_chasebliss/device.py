@@ -9,9 +9,10 @@ for scene switching (same as HXStompDevice/analog PC send behavior).
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel as PydanticBaseModel
 from rich.console import Console
 
 from rig.engine.appliers.base import (
@@ -21,8 +22,23 @@ from rig.engine.appliers.base import (
 )
 from rig.engine.plugin import DeviceApplyContext, PluginContext, SetupContext, SetupResult
 from rig.engine.state import DeviceState
-from rig.models.device import ChaseBlissConfig, DeviceType
+from rig.models.device import DeviceType
 from rig.models.preset import DigitalPreset, HXStompPreset
+from rig_chasebliss.catalog import Control
+
+
+class ChaseBlissConfig(PydanticBaseModel):
+    type: Literal["chase_bliss"] = "chase_bliss"
+    midi_channel: int | None = None
+    controls: list[Control] = []
+
+    def get_cc_params(self, parameters: dict[str, Any]) -> list[dict[str, int]]:
+        result = []
+        for ctrl in self.controls:
+            if ctrl.midi_cc is not None and ctrl.name in parameters:
+                result.append({"cc": ctrl.midi_cc, "value": int(parameters[ctrl.name])})
+        return result
+
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -155,7 +171,11 @@ class ChaseBlissDevice(BaseModel):
 
     def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
         """Return a PC command dict for the given preset_id, or None."""
-        ch = self.config.midi_channel if self.config is not None else None
+        ch = (
+            self.config.get("midi_channel")
+            if isinstance(self.config, dict)
+            else getattr(self.config, "midi_channel", None)
+        )
         if ch is None:
             return None
         for preset in self.presets:

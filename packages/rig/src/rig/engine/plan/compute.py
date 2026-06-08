@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Literal
 
-from rig.engine.plan.models import CbaSetupAction, DeviceAction, Plan, ScenePlan
+from rig.engine.plan.models import DeviceAction, Plan, ScenePlan
 from rig.engine.state import DeviceState, RigState, read_state
 from rig.models.graph import DeviceGraph
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
@@ -20,60 +20,6 @@ def _get_preset_number(rig: Rig, pedal_id: str, preset_id: str) -> int | None:
         if isinstance(p, DigitalPreset) and p.id == preset_id:
             return p.preset_number
     return None
-
-
-def detect_cba_setup(rig: Rig, state: RigState) -> list[CbaSetupAction]:
-    """Detect CBA setup actions needed based on current state."""
-    actions: list[CbaSetupAction] = []
-
-    from rig.models.device import ChaseBlissConfig
-
-    for pedal_id, pedal in rig.devices.items():
-        if not isinstance(pedal.config, ChaseBlissConfig):
-            continue
-
-        ch = pedal.config.midi_channel or 1
-        ds = state.devices.get(pedal_id, DeviceState())
-
-        # Phase 1: Channel establishment
-        if not ds.channel_established:
-            actions.append(
-                CbaSetupAction(
-                    device=pedal_id,
-                    midi_channel=ch,
-                    type="establish_channel",
-                )
-            )
-        # Phase 2: Preset building
-        presets_saved = ds.presets_saved
-        for preset in [p for p in pedal.presets if isinstance(p, DigitalPreset)]:
-            if not presets_saved.get(preset.id):
-                actions.append(
-                    CbaSetupAction(
-                        device=pedal_id,
-                        midi_channel=ch,
-                        type="build_preset",
-                        preset_id=preset.id,
-                        preset_name=preset.name,
-                        preset_number=preset.preset_number,
-                        cc_params=pedal.config.get_cc_params(preset.parameters),
-                    )
-                )
-
-        # Phase 3: Scene registration (only if channel + presets done, but not yet registered)
-        if not ds.registration_done:
-            scene_refs = [sn for sn, s in rig.scenes.items() if pedal_id in s.presets]
-            if scene_refs:
-                actions.append(
-                    CbaSetupAction(
-                        device=pedal_id,
-                        midi_channel=ch,
-                        type="register_scenes",
-                        scene_refs=scene_refs,
-                    )
-                )
-
-    return actions
 
 
 def _detect_missing_refs(rig: Rig) -> list[str]:
@@ -183,7 +129,9 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
                     status="configure" if needs_config else "verify",
                     preset_name=preset_id,
                     preset_number=preset_number,
-                    midi_channel=pedal.config.midi_channel,
+                    midi_channel=pedal.config.get("midi_channel")
+                    if isinstance(pedal.config, dict)
+                    else getattr(pedal.config, "midi_channel", None),
                     before=actual_preset,
                     after=preset_id,
                 )
@@ -211,23 +159,15 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
     missing_refs = _detect_missing_refs(rig)
     unused_presets = _detect_unused_presets(rig)
 
-    # TODO: 1.2 this is an example of something that should be in the cb plugin
-    cba_setup = detect_cba_setup(rig, actual)
-    if cba_setup:
-        any_changes = True
-        logger.debug("CBA setup actions: %d", len(cba_setup))
-
     plan_status = "changes_detected" if any_changes else "clean"
     logger.info(
-        "Plan computed: %s (%d scene(s) with changes, %d CBA action(s))",
+        "Plan computed: %s (%d scene(s) with changes)",
         plan_status,
         sum(1 for s in scenes_plan.values() if s.status != "unchanged"),
-        len(cba_setup),
     )
     return Plan(
         status=plan_status,
         scenes=scenes_plan,
-        cba_setup=cba_setup,
         missing_refs=missing_refs,
         unused_presets=unused_presets,
     )

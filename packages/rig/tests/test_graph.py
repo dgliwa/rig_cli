@@ -3,13 +3,7 @@ from __future__ import annotations
 import pytest
 
 from rig.config.errors import ConfigError
-from rig.models.device import (
-    ControllerConfig,
-    Device,
-    DeviceType,
-    ManualConfig,
-    MidiConfig,
-)
+from rig.models.device import Device, DeviceType
 from rig.models.graph import CycleError, DeviceGraph
 from rig.models.rig import Rig
 
@@ -17,11 +11,11 @@ from rig.models.rig import Rig
 def _make_device(id: str, type: DeviceType, config=None) -> Device:
     if config is None:
         if type in (DeviceType.ANALOG,):
-            config = ManualConfig()
+            config = {"type": "manual"}
         elif type == DeviceType.CONTROLLER:
-            config = ControllerConfig()
+            config = {"type": "controller", "banks": []}
         else:
-            config = MidiConfig(midi_channel=1)
+            config = {"type": "midi", "midi_channel": 1}
     return Device(id=id, manufacturer="Acme", model="Pedal", type=type, config=config)
 
 

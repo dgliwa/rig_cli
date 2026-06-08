@@ -38,6 +38,5 @@ class CbaSetupAction(BaseModel):
 class Plan(BaseModel):
     status: Literal["clean", "changes_detected"]
     scenes: dict[str, ScenePlan] = {}
-    cba_setup: list[CbaSetupAction] = []
     missing_refs: list[str] = []
     unused_presets: list[str] = []

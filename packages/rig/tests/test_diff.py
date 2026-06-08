@@ -1,10 +1,11 @@
 import json
 
 from rig.engine.diff import compute_diff, format_diff
-from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, DeviceType, MidiConfig
+from rig.models.device import Device, DeviceType
 from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
+from rig_chasebliss.device import ChaseBlissConfig
 
 
 def _make_rig() -> Rig:
@@ -13,7 +14,7 @@ def _make_rig() -> Rig:
         manufacturer="Line6",
         model="HX Stomp",
         type=DeviceType.MODELER,
-        config=MidiConfig(midi_channel=1),
+        config={"type": "midi", "midi_channel": 1},
         presets=[
             HXStompPreset(
                 id="clean-edge",
@@ -36,7 +37,7 @@ def _make_rig() -> Rig:
         manufacturer="Morningstar",
         model="MC6",
         type=DeviceType.CONTROLLER,
-        config=ControllerConfig(midi_channel=1),
+        config={"type": "controller", "midi_channel": 1, "banks": []},
     )
     scene = Scene(
         name="test-scene",

@@ -8,11 +8,11 @@ import pytest
 
 from rig.engine.apply import ApplyResult, apply_plan
 from rig.engine.plan import compute_plan
-from rig.models.device import ChaseBlissConfig, ControllerConfig, Device, DeviceType, MidiConfig
+from rig.models.device import Device, DeviceType
 from rig.models.preset import DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
-from rig_chasebliss.device import ChaseBlissDevice
+from rig_chasebliss.device import ChaseBlissConfig, ChaseBlissDevice
 from rig_hx.device import HXStompDevice
 from tests.fakes import InMemoryPromptAdapter, InMemoryStateAdapter
 
@@ -48,7 +48,7 @@ def _make_config() -> Rig:
     hx = HXStompDevice(
         id="hx-stomp",
         type=DeviceType.MODELER,
-        config=MidiConfig(midi_channel=1),
+        config={"type": "midi", "midi_channel": 1},
         presets=[
             HXStompPreset(
                 id="clean-edge",
@@ -69,7 +69,7 @@ def _make_config() -> Rig:
         manufacturer="Morningstar",
         model="MC6",
         type=DeviceType.CONTROLLER,
-        config=ControllerConfig(midi_channel=1),
+        config={"type": "controller", "midi_channel": 1, "banks": []},
     )
     scene = Scene(
         name="test-scene",
@@ -236,46 +236,40 @@ class TestMidiApply:
         assert fake_port.send.called
 
     def test_midi_auto_reconnect_from_state(self, tmp_path):
-        """Cached midi_port reconnects without prompting."""
-        rig = _make_config()
-        _write_state_file(
-            tmp_path,
-            {
-                "devices": {
-                    "hx-stomp": {"midi_port": "USB Interface", "last_preset": "clean-edge"},
-                    "brothers": {"midi_port": "USB Interface", "last_preset": "low-gain"},
-                },
-                "scenes": {"test-scene": {}},
-            },
-        )
-        plan = compute_plan(rig, root_path=str(tmp_path))
+        """Cached midi_port from state is used by HXStompDevice.setup()."""
+        from rig.engine.plugin import SetupContext
+        from rig.engine.state import DeviceState, RigState
+        from rig_hx.device import HXStompDevice
+
         fake_port = MagicMock()
-        state_adapter = InMemoryStateAdapter()
-        # Both devices already have midi_port cached, but setup() still calls prompt_midi_connect
-        # which reconnects silently via prompt_midi_connect cache path
-        prompt_io = InMemoryPromptAdapter(side_effect=["confirm", "confirm"])
+        state = RigState()
+        state.devices["hx-stomp"] = DeviceState(midi_port="USB Interface")
+
+        dev = HXStompDevice(
+            id="hx-stomp",
+            config={"type": "midi", "midi_channel": 1},
+        )
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=fake_port),
             patch("rig.interaction.midi.prompt_midi_connect", _fake_midi_connect),
-            _patch_cba_prompts(),
         ):
             from rig.midi.adapter import MidiManager
 
             midi = MidiManager()
-            apply_plan(
-                plan,
-                state_writer=state_adapter,
-                confirmation_io=prompt_io,
-                rig=rig,
-                config_path=str(tmp_path),
+            ctx = SetupContext(
+                state=state,
+                rig=None,
                 dry_run=False,
+                confirmation_io=InMemoryPromptAdapter(),
                 midi=midi,
+                config_path=str(tmp_path),
+                connected_devices=set(),
             )
+            dev.setup(ctx)
             midi.disconnect_all()
 
-        state = state_adapter.state
-        assert state.devices["brothers"].midi_port == "USB Interface"
+        assert state.devices["hx-stomp"].midi_port == "USB Interface"
 
     def test_midi_skip_falls_back_to_manual(self, tmp_path):
         """Skipping MIDI connect falls back to instructional prompts without PC send."""
@@ -554,7 +548,7 @@ class TestDevicePluginRouting:
 
         hx = HXStompDevice(
             id="hx-stomp",
-            config=MidiConfig(midi_channel=1),
+            config={"type": "midi", "midi_channel": 1},
             type=DeviceType.MODELER,
             presets=[
                 HXStompPreset(
@@ -578,7 +572,7 @@ class TestDevicePluginRouting:
             manufacturer="Morningstar",
             model="MC6",
             type=DeviceType.CONTROLLER,
-            config=ControllerConfig(midi_channel=1),
+            config={"type": "controller", "midi_channel": 1, "banks": []},
         )
         scene = Scene(
             name="test-scene",

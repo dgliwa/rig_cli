@@ -1,92 +1,7 @@
-import pytest
-from pydantic import ValidationError
-
-from rig.models.device import (
-    Control,
-    ControllerConfig,
-    ControlType,
-    Device,
-    DeviceType,
-    ManualConfig,
-)
-from rig.models.preset import (
-    AnalogPreset,
-    DigitalPreset,
-    HXStompPreset,
-)
+from rig.models.device import Device, DeviceType
+from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
-
-
-class TestControllerConfig:
-    def test_device_type_controller_value(self):
-        assert DeviceType.CONTROLLER == "controller"
-
-    def test_controller_config_defaults(self):
-        cfg = ControllerConfig()
-        assert cfg.type == "controller"
-        assert cfg.banks == []
-        assert cfg.scenes == {}
-
-    def test_device_with_controller_type_constructs(self):
-        device = Device(
-            id="mc6",
-            manufacturer="Morningstar",
-            model="MC6",
-            type=DeviceType.CONTROLLER,
-            config={"type": "controller", "midi_channel": 1, "banks": [], "scenes": {}},
-        )
-        assert device.type == DeviceType.CONTROLLER
-        assert isinstance(device.config, ControllerConfig)
-
-    def test_controller_config_round_trips_via_discriminated_union(self):
-        device = Device(
-            id="mc6",
-            manufacturer="Morningstar",
-            model="MC6",
-            type=DeviceType.CONTROLLER,
-            config=ControllerConfig(midi_channel=1, banks=[], scenes={}),
-        )
-        dumped = device.model_dump()
-        restored = Device(**dumped)
-        assert restored.type == DeviceType.CONTROLLER
-        assert isinstance(restored.config, ControllerConfig)
-
-
-class TestPedalModels:
-    def test_pedal_definition_round_trips(self):
-        device = Device(
-            id="tumnus",
-            manufacturer="Wampler",
-            model="Tumnus",
-            type=DeviceType.ANALOG,
-            config=ManualConfig(
-                controls=[Control(name="Gain", type=ControlType.KNOB, min=0, max=10)]
-            ),
-        )
-        assert device.id == "tumnus"
-        assert device.config.controls[0].name == "Gain"
-
-    def test_device_type_enum_values(self):
-        assert DeviceType.DIGITAL.value == "digital"
-        assert DeviceType.ANALOG.value == "analog"
-        assert DeviceType.MODELER.value == "modeler"
-
-    def test_invalid_control_rejected(self):
-        with pytest.raises(ValidationError):
-            Control(name="", type=ControlType.KNOB)
-
-    def test_control_with_positions(self):
-        ctrl = Control(name="BoostCut", type=ControlType.DIPSWITCH, positions=["Boost", "Cut"])
-        assert ctrl.positions == ["Boost", "Cut"]
-
-    def test_control_with_midi_cc(self):
-        ctrl = Control(name="Gain", type=ControlType.KNOB, midi_cc=14)
-        assert ctrl.midi_cc == 14
-
-    def test_control_expression_defaults_to_false(self):
-        ctrl = Control(name="Gain", type=ControlType.KNOB)
-        assert ctrl.expression_assignable is False
 
 
 class TestPresetModels:
@@ -161,13 +76,13 @@ class TestSceneModel:
 
 
 def _make_controller_device(scenes: dict | None = None) -> Device:
-    """Helper: build a Device with DeviceType.CONTROLLER and ControllerConfig."""
+    """Helper: build a Device with DeviceType.CONTROLLER."""
     return Device(
         id="mc6",
         manufacturer="Morningstar",
         model="MC6",
         type=DeviceType.CONTROLLER,
-        config=ControllerConfig(midi_channel=1, banks=[], scenes=scenes or {}),
+        config={"type": "controller", "midi_channel": 1, "banks": []},
     )
 
 
@@ -178,7 +93,7 @@ def _make_analog_device(device_id: str) -> Device:
         manufacturer="Wampler",
         model="Tumnus",
         type=DeviceType.ANALOG,
-        config=ManualConfig(controls=[]),
+        config=None,
     )
 
 

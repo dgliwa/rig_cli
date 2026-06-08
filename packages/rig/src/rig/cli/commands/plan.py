@@ -64,22 +64,6 @@ def plan(
             "[yellow]⚠ Cold start — no state file found. Treating all scenes as new.[/yellow]"
         )
 
-    # --- Setup Actions section (before scenes) ---
-    # TODO: 1.2 this shouldn't be here. Should be a generic "device setup" that the plugins hook into
-    if result.cba_setup:
-        console.print("\n[bold]Setup Actions:[/bold]")
-        for action in result.cba_setup:
-            if action.type == "establish_channel":
-                console.print(
-                    f"  [cyan]~[/cyan] {action.device}: establish MIDI channel {action.midi_channel}"
-                )
-            elif action.type == "build_preset":
-                console.print(
-                    f"  [cyan]~[/cyan] {action.device}: build preset #{action.preset_number} '{action.preset_name}'"
-                )
-            elif action.type == "register_scenes":
-                console.print(f"  [cyan]~[/cyan] {action.device}: register presets to scenes")
-
     # --- Scenes section ---
     scene_names = [scene] if scene else list(result.scenes.keys())
 
