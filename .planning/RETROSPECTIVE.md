@@ -92,12 +92,58 @@
 
 ---
 
+## Milestone: v1.2 — Cleaner Core
+
+**Shipped:** 2026-06-08
+**Phases:** 5 (9–13) | **Plans:** 8
+
+### What Was Built
+
+- Single `rig.yaml` replaces multi-file config repo — device list order defines signal chain; `SignalChainPosition` removed; presets inline per device
+- All plugin config types evicted from core — `Device.config: Any`; discriminated union gone; plugin device models own their config types
+- Loader rewritten — `load_rig()` parses one file; scenes extracted from controller device config; plugin dispatch by `config.type` entry point key
+- Dead code sweep — `rig generate mc6` command removed; `composes` validation removed; all `TODO: 1.2` markers cleared; multi-file compat paths deleted
+- `Rig.scenes` converted from stored field to `@property` over controller devices; `is_hx` branch removed from `compute.py`; all preset lookups unified through `_get_preset_number`
+
+### What Worked
+
+- **Atomic wave structure in Phase 9**: Breaking core model cleanup into 4 focused waves (Scene/Rig → signal chain → plugin configs → cleanup) let each wave be committed and verified independently — no big-bang refactor failure mode
+- **Loader rewrite as a single plan**: Phase 10's single plan approach worked well because the design was fully specified upfront (single-file schema documented in PLAN.md) before any code was touched
+- **Phase 12 as dedicated deferred-items cleanup**: Explicitly scoping a phase for removing deferred items rather than leaving them as tech debt ensures they get done
+
+### What Was Inefficient
+
+- Phase 11 and Phase 13 executed outside the standard gsd-execute-phase flow — no SUMMARY.md artifacts generated (same recurring gap as v1.1 Phases 7/8)
+- The v1.3 / v1.2 milestone boundary was blurry — Phase 13 was scoped as v1.3 in the ROADMAP but the REQUIREMENTS.md covered it as v1.2; resulted in closing everything as v1.2 at the end
+- Phase 9 Wave 3 had a cross-wave dependency surprise (generator.py needed to be updated in Wave 1 due to `rig.mc6` removal) — cross-wave dependencies are harder to catch in planning than cross-phase ones
+
+### Patterns Established
+
+- `Device.config: Any` with dict-aware access pattern — `config.get("key") if isinstance(config, dict) else getattr(config, "key", None)` handles both loader-constructed dicts and plugin-constructed models
+- Single `rig.yaml` as the canonical config schema — no multi-file layout support to maintain
+- `Rig.scenes` as a computed property over controller device configs — not a stored field
+
+### Key Lessons
+
+- **Scope creep at milestone boundaries costs audit overhead**: When a "v1.3" phase is really just the tail of v1.2 work, either fold it into v1.2 from the start or explicitly create a new REQUIREMENTS.md for the new milestone scope — half-measures create confusion at close time
+- **`Device.config: Any` is a sharp tool**: Removing the discriminated union simplified core but pushed isinstance checks into every plugin that accesses config. Worth documenting the dict/model dual-access pattern as an explicit convention
+- **Wave-based execution for model refactors**: Breaking a large model cleanup into 4 sequential waves (each with its own commit) worked much better than trying to do it all at once
+
+### Cost Observations
+
+- Sessions: 1 intensive day (2026-06-08)
+- Plans: 8 total across 5 phases
+- Notable: Phase 9 was the most complex (4 plans, 45 min for Wave 3 alone) because it required untangling the discriminated union from core while keeping all plugin consumers working
+
+---
+
 ## Cross-Milestone Trends
 
-| Metric | v1.0 | v1.1 |
-|--------|------|------|
-| Phases | 5 | 3 |
-| Plans | 17 | 8 |
-| LOC (Python) | 3,625 | ~20,658 |
-| Timeline | 7 days |
-| Replanning events | 1 (Phase 3) |
+| Metric | v1.0 | v1.1 | v1.2 |
+|--------|------|------|------|
+| Phases | 5 | 3 | 5 |
+| Plans | 17 | 8 | 8 |
+| LOC (Python) | 3,625 | ~20,658 | 7,349 |
+| Timeline | 7 days | 1 day | 1 day |
+| Replanning events | 1 (Phase 3) | 0 | 0 |
+| Missing SUMMARY.md | 0 | 2 | 2 |

@@ -31,7 +31,11 @@ A single command should bring the physical rig to the exact state described in t
 - ✓ **Device-level MIDI lifecycle** — `Device.setup()` is sole MIDI connection mechanism; Phase -1 engine loop removed; engine has no plugin-specific MIDI logic — v1.1
 - ✓ **Dead code elimination** — 7 core files deleted (mc6.py, chase_bliss.py, appliers/chase_bliss.py, catalog, controller model, interaction modules); plugins own their full implementations — v1.1
 
-- ✓ **Rig.scenes as computed property** — scenes aggregated from controller devices, not stored as a flat field on Rig; `compute.py` HX-specific branch removed, all preset lookups go through `_get_preset_number`; zero `TODO: 1.2` markers remain — v1.3
+- ✓ **Single-file `rig.yaml` schema** — device list order defines signal chain; `SignalChainPosition` removed; presets inline; plugin dispatch by `config.type` entry point key — v1.2
+- ✓ **Core model fully decoupled from plugins** — `Device.config: Any`; `ManualConfig`, `MidiConfig`, `ChaseBlissConfig`, `ControllerConfig`, `Control`, `ControlType` evicted from core — v1.2
+- ✓ **Loader rewritten for single-file layout** — `load_rig()` parses one `rig.yaml`; multi-file paths removed; scenes extracted from controller device config — v1.2
+- ✓ **Dead code sweep** — `rig generate mc6` command removed; `composes` validation removed; all `TODO: 1.2` markers cleared; multi-file compat paths deleted — v1.2
+- ✓ **`Rig.scenes` as computed property** — scenes aggregated from controller devices, not stored as a flat field; `compute.py` `is_hx` branch removed; all preset lookups unified through `_get_preset_number` — v1.2
 
 ### Active
 
@@ -51,25 +55,18 @@ A single command should bring the physical rig to the exact state described in t
 | UI (#18) | Speculative — not planned |
 | CI independent package publishing | Low-priority infra — local `uv` workflow sufficient for now |
 
-## Current Milestone: v1.2 Cleaner Core
+## Current State
 
-**Goal:** Collapse the multi-file config repo into a single flat `rig.yaml`, strip all plugin-specific code from core, and remove backwards-compat shims introduced in v1.0/v1.1.
+All 13 phases shipped. v1.2 is the last completed milestone.
 
-**Target features:**
-- Single `rig.yaml` with a flat ordered device list (list order = signal chain)
-- Type-only device identity — drop `manufacturer`/`model` from core `Device`
-- Controller as an optional device type that composes other devices by ID; scenes nested inside the controller device
-- `SignalChainPosition` model removed — device list order is the chain
-- All plugin-specific configs evicted from core (`ManualConfig`, `MidiConfig`, `ChaseBlissConfig`, `ControllerConfig`, `Control`, `ControlType`)
-- All v1.2 TODO compat shims removed from `Rig` model (`pedals` alias, `digital_presets`/`hx_presets`/`analog_presets`, `mc6` compat property, etc.)
-- Loader rewritten to parse single-file `rig.yaml`
-- No backwards compatibility — clean break
+**Next milestone:** Planning not started — run `/gsd-new-milestone` to define next cycle.
 
 ## Context
 
-- **v1.1 shipped 2026-06-07**: 3 phases (6–8), 8 plans, ~20,658 LOC Python across all packages
-- **v1.0 shipped 2026-06-07**: 5 phases, 17 plans, 3,625 LOC Python
-- Config repo layout: `rig.yaml`, `signal-chain.yaml`, `pedals/<id>.yaml`, `pedals/<id>/presets/<preset>.yaml`, `scenes/<name>.yaml`, `mc6.yaml`, `hlx/<name>.hlx`
+- **v1.2 shipped 2026-06-08**: 5 phases (9–13), 8 plans, 7,349 LOC Python across all packages
+- **v1.1 shipped 2026-06-07**: 3 phases (6–8), 8 plans
+- **v1.0 shipped 2026-06-07**: 5 phases, 17 plans
+- Config repo layout (current): single `rig.yaml` with inline devices, presets, and scenes
 - State persisted at `.rig/state.json` in the config repo — tracks what has been applied to physical devices
 - Plugin discovery: `importlib.metadata.entry_points('rig.devices')` — install a package, it appears; uninstall, it disappears
 - `rig plan` is the read-only preview step; `rig apply` is the commit step — clean separation enforced by no-MIDI-in-plan constraint
@@ -117,4 +114,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-08 after Phase 13 — v1.3 Design Cleanup*
+*Last updated: 2026-06-08 after v1.2 Cleaner Core milestone close*

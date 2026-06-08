@@ -37,3 +37,20 @@
 **Known deferred items at close:** 0 (see STATE.md Deferred Items)
 
 ---
+## v1.2 Cleaner Core (Shipped: 2026-06-08)
+
+**Phases completed:** 5 phases (9–13), 8 plans
+**Files changed:** 82, 5,588 insertions / 2,238 deletions
+**Total Python LOC:** 7,349
+
+**Key accomplishments:**
+
+- Single `rig.yaml` replaces multi-file config repo — device list order defines signal chain; `SignalChainPosition` and `signal_chain.py` deleted; presets inline per device
+- All plugin config types evicted from core (`ManualConfig`, `MidiConfig`, `ChaseBlissConfig`, `ControllerConfig`, `Control`, `ControlType`) — `Device.config: Any`
+- Loader rewritten for single-file schema — `load_rig()` parses one `rig.yaml`; plugin dispatch by `config.type` entry point key; scenes extracted from controller device config
+- Dead code sweep — `rig generate mc6` command removed; `composes` validation removed; all `TODO: 1.2` markers cleared; multi-file compat paths deleted
+- `Rig.scenes` converted from stored field to `@property` over controller devices; `is_hx` branch removed from `compute.py`
+
+**Known deferred items at close:** 0
+
+---
