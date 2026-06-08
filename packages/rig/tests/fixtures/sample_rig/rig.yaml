@@ -1,2 +1,181 @@
 name: sample-rig
 description: Reference fixture for Mood + HX Stomp + MC6 setup
+devices:
+  - id: mood
+    name: MOOD MKII
+    type: digital
+    config:
+      type: chase_bliss
+      midi_channel: 2
+      controls:
+        - name: time
+          type: knob
+          midi_cc: 14
+          min: 0
+          max: 127
+        - name: mix
+          type: knob
+          midi_cc: 15
+          min: 0
+          max: 127
+        - name: length
+          type: knob
+          midi_cc: 16
+          min: 0
+          max: 127
+        - name: wet_modify
+          type: knob
+          midi_cc: 17
+          min: 0
+          max: 127
+        - name: clock
+          type: knob
+          midi_cc: 18
+          min: 0
+          max: 127
+        - name: micro_looper_modify
+          type: knob
+          midi_cc: 19
+          min: 0
+          max: 127
+        - name: ramp_speed
+          type: knob
+          midi_cc: 20
+          min: 0
+          max: 127
+        - name: wet_bypass
+          type: switch
+          midi_cc: 103
+          min: 0
+          max: 127
+        - name: micro_bypass
+          type: switch
+          midi_cc: 102
+          min: 0
+          max: 127
+        - name: dip_l_1
+          type: dipswitch
+          midi_cc: 61
+          min: 0
+          max: 127
+        - name: dip_l_2
+          type: dipswitch
+          midi_cc: 62
+          min: 0
+          max: 127
+        - name: dip_l_3
+          type: dipswitch
+          midi_cc: 63
+          min: 0
+          max: 127
+        - name: dip_l_4
+          type: dipswitch
+          midi_cc: 64
+          min: 0
+          max: 127
+        - name: dip_l_5
+          type: dipswitch
+          midi_cc: 65
+          min: 0
+          max: 127
+        - name: dip_l_6
+          type: dipswitch
+          midi_cc: 66
+          min: 0
+          max: 127
+        - name: dip_l_7
+          type: dipswitch
+          midi_cc: 67
+          min: 0
+          max: 127
+        - name: dip_l_8
+          type: dipswitch
+          midi_cc: 68
+          min: 0
+          max: 127
+        - name: dip_r_1
+          type: dipswitch
+          midi_cc: 71
+          min: 0
+          max: 127
+        - name: dip_r_2
+          type: dipswitch
+          midi_cc: 72
+          min: 0
+          max: 127
+        - name: dip_r_3
+          type: dipswitch
+          midi_cc: 73
+          min: 0
+          max: 127
+        - name: dip_r_4
+          type: dipswitch
+          midi_cc: 74
+          min: 0
+          max: 127
+        - name: dip_r_5
+          type: dipswitch
+          midi_cc: 75
+          min: 0
+          max: 127
+        - name: dip_r_6
+          type: dipswitch
+          midi_cc: 76
+          min: 0
+          max: 127
+        - name: dip_r_7
+          type: dipswitch
+          midi_cc: 77
+          min: 0
+          max: 127
+        - name: dip_r_8
+          type: dipswitch
+          midi_cc: 78
+          min: 0
+          max: 127
+    presets:
+      - id: preset-1
+        name: Shimmer Delay
+        preset_number: 1
+        parameters:
+          time: 72
+          mix: 90
+          length: 64
+          wet_modify: 48
+          clock: 64
+          micro_looper_modify: 32
+          ramp_speed: 64
+          wet_bypass: 127
+          micro_bypass: 0
+
+  - id: hx-stomp
+    name: HX Stomp XL
+    type: modeler
+    config:
+      type: midi
+      midi_channel: 1
+    presets:
+      - id: lead
+        name: Lead Tone
+        preset_number: 5
+        hlx_file: hlx/lead.hlx
+
+  - id: mc6
+    name: MC6
+    type: controller
+    config:
+      type: controller
+      midi_channel: 1
+      scenes:
+        lead:
+          description: Lead tone with Mood shimmer delay
+          presets:
+            hx-stomp: lead
+            mood: preset-1
+          tags: [lead]
+      banks:
+        - bank: 1
+          name: Bank 1
+          switches:
+            A:
+              scene: lead

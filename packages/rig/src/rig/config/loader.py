@@ -1,3 +1,33 @@
+"""Rig config loader — reads a single rig.yaml and produces a Rig model.
+
+The new single-file schema (v1.2+):
+  name: sample-rig
+  description: ...
+  devices:
+    - id: mood
+      type: chase_bliss
+      config: {type: chase_bliss, ...}
+      presets:
+        - id: preset-1
+          name: Shimmer Delay
+          preset_number: 1
+          ...
+    - id: mc6
+      type: controller
+      config:
+        type: controller
+        scenes:
+          lead:
+            presets: {hx-stomp: lead, mood: preset-1}
+        banks: [...]
+
+Device list order defines the signal chain. Scenes live inside the controller
+device's config. Device construction is dispatched to plugins via entry points
+keyed on ``config.type``.
+"""
+
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 from typing import Any
@@ -6,12 +36,10 @@ import yaml
 
 from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
 from rig.engine.plugin_registry import get_registry
-from rig.models.device import Device, DeviceType
+from rig.models.device import DeviceType
 from rig.models.preset import AnalogPreset, DigitalPreset, HXStompPreset
 from rig.models.rig import Rig
 from rig.models.scene import Scene
-
-# SignalChainPosition removed in Wave 2 — signal chain is now list[str]
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +50,8 @@ def _resolve(root: Path, *parts: str) -> Path:
     return result
 
 
-# TODO: If we pass pydantic model
 def _read_yaml(path: Path):
+    """Read a YAML file and return its contents as a dict."""
     logger.debug("Reading YAML file: %s", path)
     if not path.exists():
         logger.error("Missing file: %s", path)
@@ -40,7 +68,26 @@ def _read_yaml(path: Path):
         raise ParseError(f"Invalid YAML in {path}: {e}")
 
 
-def _parse_device(data: dict):
+def _parse_presets(device_type: str, preset_list: list[dict]) -> list[Any]:
+    """Parse raw preset dicts into the correct preset model type."""
+    if not preset_list:
+        return []
+    if device_type == "analog":
+        return [AnalogPreset(**p) for p in preset_list]
+    if device_type == "modeler":
+        return [HXStompPreset(**p) for p in preset_list]
+    return [DigitalPreset(**p) for p in preset_list]
+
+
+def _parse_device(data: dict) -> Any:
+    """Parse a device entry dict into a concrete plugin device model.
+
+    Dispatches to the plugin model class registered for ``config.type``
+    via entry points. Presets are parsed into the correct model type
+    based on ``device_type`` (analog→AnalogPreset, modeler→HXStompPreset,
+    digital/other→DigitalPreset). Unknown config types raise
+    ``ValidationError``.
+    """
     config_data = data.get("config") or {}
     config_type = config_data.get("type") if isinstance(config_data, dict) else None
     model_class = get_registry().get_model(config_type)
@@ -48,75 +95,24 @@ def _parse_device(data: dict):
         raise ValidationError(
             f"Unknown device config type '{config_type}' — is the plugin registered?"
         )
-    # Parse the config using Device's discriminated union so the config field is a typed
-    # model (MidiConfig, ChaseBlissConfig, etc.) rather than a raw dict.
-    temp = Device(**data)
-    return model_class(**{**data, "config": temp.config, "presets": temp.presets})
-
-
-def _load_devices_dir(devices_dir: Path) -> dict[str, Any]:
-    """Load all device YAML files; registry-driven dispatch produces concrete plugin device types."""
-    devices: dict[str, Any] = {}
-    logger.debug("Loading device definitions from: %s", devices_dir)
-    for path in sorted(devices_dir.glob("*.yaml")):
-        data = _read_yaml(path)
-        device = _parse_device(data)
-        devices[device.id] = device
-        logger.debug(
-            "Loaded device '%s' (%s %s, type: %s)",
-            device.id,
-            getattr(device, "manufacturer", ""),
-            getattr(device, "model", ""),
-            device.type,
-        )
-    logger.info("Loaded %d devices", len(devices))
-    return devices
-
-
-# TODO: 1.2 if we require presets be inline this is not necessary?
-def _merge_presets(devices_dir: Path, devices: dict[str, Any]) -> dict[str, Any]:
-    """Merge filesystem presets onto device objects (inline presets take priority)."""
-    updated: dict[str, Any] = {}
-    for device_id, device in devices.items():
-        if device.presets:
-            updated[device_id] = device
-            logger.debug("Using %d inline presets for '%s'", len(device.presets), device_id)
-            continue
-
-        # TODO: Maybe everything underneath this is unnecessary? I think the inline presets is the way to go
-        if device.type == DeviceType.CONTROLLER:
-            # Controllers carry scenes in their config, not preset files.
-            updated[device_id] = device
-            continue
-
-        preset_dir = devices_dir / device_id / "presets"
-        if not preset_dir.is_dir():
-            updated[device_id] = device
-            continue
-
-        # TODO: 1.2 this shouldn't be here
-        presets: list[AnalogPreset | DigitalPreset | HXStompPreset] = []
-        # TODO: There's _gotta_ be a better way to parse this than big sets of conditionals
-        for path in sorted(preset_dir.glob("*.yaml")):
-            data = _read_yaml(path)
-            if device.type == DeviceType.ANALOG:
-                presets.append(AnalogPreset(**data))
-            elif device.type == DeviceType.MODELER:
-                presets.append(HXStompPreset(**data))
-            else:
-                presets.append(DigitalPreset(**data))
-        # TODO: assert_never
-
-        if presets:
-            # TODO: why this?
-            device = device.model_copy(update={"presets": presets})
-            logger.debug("Loaded %d directory presets for '%s'", len(presets), device_id)
-        updated[device_id] = device
-
-    return updated
+    # Parse presets into proper model types before passing to plugin model
+    device_type = data.get("type", "")
+    raw_presets = data.get("presets", []) or []
+    parsed_presets = _parse_presets(device_type, raw_presets)
+    device_data = {
+        **data,
+        "presets": parsed_presets,
+    }
+    return model_class(**device_data)
 
 
 def _load_scenes(scenes_dir: Path) -> dict[str, Scene]:
+    """Load scenes from a directory of YAML files.
+
+    Deprecated: scenes are now defined inside the controller device's config
+    in the single-file schema. This function is kept for backward compat with
+    existing tests and will be removed in Phase 11.
+    """
     scenes: dict[str, Scene] = {}
     if not scenes_dir.is_dir():
         logger.debug("Scenes directory not found: %s", scenes_dir)
@@ -131,11 +127,43 @@ def _load_scenes(scenes_dir: Path) -> dict[str, Scene]:
     return scenes
 
 
-# TODO: 1.2 This should in general leverage the abstractions to determine if the individual pieces are valid
+def _extract_controller_scenes(device_raw: dict, device: Any) -> dict[str, Scene]:
+    """Extract Scene objects from a controller device's config.
+
+    Scenes are defined under ``config.scenes`` in the raw YAML data. Each scene
+    has ``presets: {device_id: preset_id}`` and optional ``description``/``tags``.
+    Controller-specific fields like ``bank``/``switch`` stay in the device config
+    and are NOT put on the Scene model.
+    """
+    config_raw = device_raw.get("config", {})
+    controller_scenes = config_raw.get("scenes", {})
+    if not isinstance(controller_scenes, dict):
+        return {}
+
+    scenes: dict[str, Scene] = {}
+    for scene_name, scene_data in controller_scenes.items():
+        if not isinstance(scene_data, dict):
+            continue
+        scenes[scene_name] = Scene(
+            name=scene_name,
+            description=scene_data.get("description"),
+            presets=scene_data.get("presets", {}),
+            tags=scene_data.get("tags", []),
+        )
+    return scenes
+
+
+def _get_composes(device: Any) -> list[str]:
+    """Extract the list of composed device IDs from a controller device."""
+    if isinstance(device.config, dict):
+        return device.config.get("composes", [])
+    return getattr(device.config, "composes", [])
+
+
 def _validate_references(rig: Rig):
+    """Validate all cross-references in the rig configuration."""
     device_ids = set(rig.devices.keys())
     controller_id = rig.controller.id if rig.controller else None
-    # Signal chain may include the controller position
     valid_chain_ids = device_ids | ({controller_id} if controller_id else set())
 
     known_presets: dict[str, set[str]] = {
@@ -164,39 +192,65 @@ def _validate_references(rig: Rig):
                     f"Scene '{scene_name}': device '{device_id}' has no preset '{preset_id}'"
                 )
 
+    logger.debug("Validating controller composes references")
+    for device in rig.devices.values():
+        if device.type == DeviceType.CONTROLLER:
+            composed_ids = _get_composes(device)
+            for cid in composed_ids:
+                if cid not in device_ids:
+                    raise MissingReferenceError(
+                        f"Controller '{device.id}' composes unknown device '{cid}'"
+                    )
+
     logger.debug("All cross-references valid")
 
 
 def load_rig(root_path: str) -> Rig:
+    """Load a rig configuration from a single ``rig.yaml`` file.
+
+    ``root_path`` may be:
+    - A directory containing ``rig.yaml``
+    - A direct path to ``rig.yaml``
+
+    Returns a populated ``Rig`` model with plugin device instances.
+    """
     root = Path(root_path).resolve()
-    logger.info("Loading rig config from: %s", root)
 
-    rig_data = _read_yaml(_resolve(root, "rig.yaml"))
-    signal_data = _read_yaml(_resolve(root, "signal-chain.yaml"))
+    # Determine the YAML file path
+    if root.is_dir():
+        yaml_path = root / "rig.yaml"
+    else:
+        yaml_path = root
 
-    # Support both new (devices/) and legacy (pedals/) directory names
-    devices_dir = _resolve(root, "devices")
+    logger.info("Loading rig config from: %s", yaml_path)
+    data = _read_yaml(yaml_path)
 
-    # TODO: 1.2 Get rid of the pedal resolution no backwards compat
-    if not devices_dir.is_dir():
-        devices_dir = _resolve(root, "pedals")
-    scenes_dir = _resolve(root, "scenes")
+    # Extract top-level rig info
+    rig_name = data.get("name", "")
+    rig_description = data.get("description")
+    rig_midi_channel = data.get("midi_channel")
 
-    chain = [
-        pos.get("device") or pos.get("pedal") or pos.get("device_ref") or pos.get("pedal_ref")
-        for pos in signal_data.get("chain", [])
-        if pos.get("device") or pos.get("pedal") or pos.get("device_ref") or pos.get("pedal_ref")
-    ]
+    # Parse devices list — order defines signal chain
+    device_list: list[dict] = data.get("devices", [])
+    devices: dict[str, Any] = {}
+    signal_chain: list[str] = []
+    scenes: dict[str, Scene] = {}
 
-    devices = _load_devices_dir(devices_dir)
-    devices = _merge_presets(devices_dir, devices)
-    scenes = _load_scenes(scenes_dir)
+    for device_entry in device_list:
+        device = _parse_device(device_entry)
+        devices[device.id] = device
+        signal_chain.append(device.id)
+
+        # Extract scenes from controller devices
+        if device.type == DeviceType.CONTROLLER:
+            device_scenes = _extract_controller_scenes(device_entry, device)
+            scenes.update(device_scenes)
 
     rig = Rig(
-        name=rig_data.get("name", ""),
-        description=rig_data.get("description"),
-        midi_channel=rig_data.get("midi_channel"),
-        signal_chain=chain,
+        name=rig_name,
+        description=rig_description,
+        midi_channel=rig_midi_channel,
+        signal_chain=signal_chain,
         devices=devices,
         scenes=scenes,
     )

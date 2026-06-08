@@ -1,55 +1,69 @@
+"""Tests for the single-file rig.yaml loader (Phase 10 schema)."""
+
 from pathlib import Path
 
 import pytest
 
-from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError
+from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
 from rig.config.loader import load_rig
 
 
-def _write(base: Path, path: str, content: str):
-    full = base / path
+def _write(base: Path, filename: str, content: str):
+    """Write a file under *base*, creating parent dirs as needed."""
+    full = base / filename
     full.parent.mkdir(parents=True, exist_ok=True)
     full.write_text(content)
+
+
+BASE_RIG_YAML = """\
+name: test-rig
+description: A test rig
+midi_channel: 1
+devices:
+  - id: brothers
+    name: Brothers
+    type: digital
+    config:
+      type: midi
+      midi_channel: 3
+    presets:
+      - id: low-gain
+        name: Low Gain
+        preset_number: 4
+      - id: lead
+        name: Lead
+        preset_number: 7
+
+  - id: tumnus
+    name: Tumnus
+    type: analog
+    config:
+      type: manual
+    presets:
+      - id: edge
+        name: Edge of Breakup
+        values:
+          Gain: 3.5
+
+  - id: mc6
+    name: MC6
+    type: controller
+    config:
+      type: controller
+      midi_channel: 1
+      scenes:
+        billy-clean:
+          presets:
+            brothers: low-gain
+      banks: []
+"""
 
 
 @pytest.fixture
 def rig_dir(tmp_path):
     d = tmp_path / "rig"
     d.mkdir()
-    _write(d, "rig.yaml", "name: test-rig\nmidi_channel: 1\n")
-    _write(d, "signal-chain.yaml", "chain: []\n")
-    _write(
-        d,
-        "pedals/brothers.yaml",
-        "id: brothers\nmanufacturer: CBA\nmodel: Brothers\ntype: digital\nconfig: {type: midi, midi_channel: 3}\n",
-    )
-    _write(
-        d,
-        "pedals/brothers/presets/low-gain.yaml",
-        "id: low-gain\npedal: brothers\nname: Low Gain\npreset_number: 4\n",
-    )
-    _write(
-        d,
-        "pedals/brothers/presets/lead.yaml",
-        "id: lead\npedal: brothers\nname: Lead\npreset_number: 7\n",
-    )
-    _write(
-        d,
-        "pedals/tumnus.yaml",
-        "id: tumnus\nmanufacturer: Wampler\nmodel: Tumnus\ntype: analog\nconfig:\n  type: manual\n  controls:\n    - name: Gain\n      type: knob\n      min: 0\n      max: 10\n",
-    )
-    _write(
-        d,
-        "pedals/tumnus/presets/edge.yaml",
-        "id: edge\npedal: tumnus\nname: Edge of Breakup\nvalues:\n  Gain: 3.5\n",
-    )
-    # Controller device: scenes are passed directly to Rig
-    _write(
-        d,
-        "pedals/mc6.yaml",
-        "id: mc6\nmanufacturer: Morningstar\nmodel: MC6\ntype: controller\nconfig:\n  type: controller\n  midi_channel: 1\n  banks: []\n",
-    )
-    _write(d, "scenes/billy-clean.yaml", "name: billy-clean\npresets:\n  brothers: low-gain\n")
+    _write(d, "rig.yaml", BASE_RIG_YAML)
     return d
 
 
@@ -61,27 +75,20 @@ class TestLoadRig:
         assert "brothers" in config.devices
         assert "tumnus" in config.devices
 
-    def test_loads_signal_chain(self, rig_dir):
-        _write(
-            rig_dir,
-            "signal-chain.yaml",
-            "chain:\n  - pedal: brothers\n    position: 1\n  - pedal: tumnus\n    position: 2\n",
-        )
+    def test_loads_signal_chain_from_device_order(self, rig_dir):
         config = load_rig(str(rig_dir))
-        assert len(config.signal_chain) == 2
-        assert config.signal_chain[0] == "brothers"
+        expected = ["brothers", "tumnus", "mc6"]
+        assert config.signal_chain == expected
 
-    def test_loads_presets(self, rig_dir):
+    def test_loads_presets_inline(self, rig_dir):
         config = load_rig(str(rig_dir))
         brothers = config.devices["brothers"]
         tumnus = config.devices["tumnus"]
-        digital_presets = [p for p in brothers.presets]
-        analog_presets = [p for p in tumnus.presets]
-        assert len(digital_presets) == 2
-        assert len(analog_presets) == 1
-        assert analog_presets[0].values["Gain"] == 3.5
+        assert len(brothers.presets) == 2
+        assert len(tumnus.presets) == 1
+        assert tumnus.presets[0].values["Gain"] == 3.5
 
-    def test_loads_scenes(self, rig_dir):
+    def test_loads_scenes_from_controller(self, rig_dir):
         config = load_rig(str(rig_dir))
         assert "billy-clean" in config.scenes
         assert config.scenes["billy-clean"].presets["brothers"] == "low-gain"
@@ -91,10 +98,11 @@ class TestLoadRig:
         with pytest.raises(FileNotFoundError_):
             load_rig(str(rig_dir))
 
-    def test_missing_signal_chain(self, rig_dir):
-        (rig_dir / "signal-chain.yaml").unlink()
-        with pytest.raises(FileNotFoundError_):
-            load_rig(str(rig_dir))
+    def test_no_signal_chain_file_needed(self, rig_dir):
+        """Loader reads only rig.yaml — no signal-chain.yaml needed."""
+        config = load_rig(str(rig_dir))
+        assert len(config.signal_chain) == 3
+        assert config.signal_chain == ["brothers", "tumnus", "mc6"]
 
     def test_invalid_yaml(self, rig_dir):
         _write(rig_dir, "rig.yaml", "name: test\nbroken: [\n")
@@ -102,61 +110,54 @@ class TestLoadRig:
             load_rig(str(rig_dir))
 
     def test_broken_preset_reference(self, rig_dir):
-        _write(
-            rig_dir,
-            "scenes/billy-clean.yaml",
-            "name: billy-clean\npresets:\n  brothers: nonexistent-preset\n",
+        """Scene references a non-existent preset on a valid device."""
+        bad_yaml = BASE_RIG_YAML.replace(
+            "brothers: low-gain",
+            "brothers: nonexistent-preset",
         )
+        _write(rig_dir, "rig.yaml", bad_yaml)
         with pytest.raises(MissingReferenceError):
             load_rig(str(rig_dir))
 
     def test_broken_pedal_reference(self, rig_dir):
-        _write(
-            rig_dir,
-            "scenes/billy-clean.yaml",
-            "name: billy-clean\npresets:\n  unknown-pedal: low-gain\n",
+        """Scene references an unknown device."""
+        bad_yaml = BASE_RIG_YAML.replace(
+            "brothers: low-gain",
+            "unknown-pedal: low-gain",
         )
+        _write(rig_dir, "rig.yaml", bad_yaml)
         with pytest.raises(MissingReferenceError):
             load_rig(str(rig_dir))
-
-    def test_broken_signal_chain_ref(self, rig_dir):
-        _write(
-            rig_dir,
-            "signal-chain.yaml",
-            "chain:\n  - pedal: unknown-device\n    position: 1\n",
-        )
-        with pytest.raises(MissingReferenceError):
-            load_rig(str(rig_dir))
-
-    def test_scenes_dir_missing(self, rig_dir):
-        import shutil
-
-        shutil.rmtree(str(rig_dir / "scenes"))
-        config = load_rig(str(rig_dir))
-        assert config.scenes == {}
 
     def test_non_cba_pedal_without_midi_channel_accepted(self, rig_dir):
-        _write(
-            rig_dir,
-            "pedals/brothers.yaml",
-            "id: brothers\nmanufacturer: Some Brand\nmodel: Thing\ntype: digital\nconfig: {type: midi, midi_channel: 1}\n",
+        """Digital device with midi config and midi_channel works."""
+        yaml = BASE_RIG_YAML.replace(
+            "type: midi\n      midi_channel: 3",
+            "type: midi\n      midi_channel: 1",
         )
+        _write(rig_dir, "rig.yaml", yaml)
         config = load_rig(str(rig_dir))
         assert "brothers" in config.devices
 
     def test_hx_preset_loaded_as_hx_type(self, rig_dir):
         from rig.models.preset import HXStompPreset
 
-        _write(
-            rig_dir,
-            "pedals/hx-stomp.yaml",
-            "id: hx-stomp\nmanufacturer: Line6\nmodel: HX Stomp\ntype: modeler\nconfig: {type: midi, midi_channel: 1}\n",
-        )
-        _write(
-            rig_dir,
-            "pedals/hx-stomp/presets/clean.yaml",
-            "id: clean\nname: Clean Edge\npreset_number: 12\nhlx_file: hlx/clean-edge.hlx\n",
-        )
+        yaml = """\
+name: test-rig
+devices:
+  - id: hx-stomp
+    name: HX Stomp
+    type: modeler
+    config:
+      type: midi
+      midi_channel: 1
+    presets:
+      - id: clean
+        name: Clean Edge
+        preset_number: 12
+        hlx_file: hlx/clean-edge.hlx
+"""
+        _write(rig_dir, "rig.yaml", yaml)
         config = load_rig(str(rig_dir))
         hx_presets = [p for p in config.devices["hx-stomp"].presets if isinstance(p, HXStompPreset)]
         assert len(hx_presets) == 1
@@ -175,6 +176,22 @@ class TestLoadRig:
     def test_scenes_accessible_via_controller(self, rig_dir):
         config = load_rig(str(rig_dir))
         assert "billy-clean" in config.scenes
+
+    def test_empty_devices_list(self, rig_dir):
+        yaml = """\
+name: empty-rig
+devices: []
+"""
+        _write(rig_dir, "rig.yaml", yaml)
+        config = load_rig(str(rig_dir))
+        assert len(config.devices) == 0
+        assert len(config.signal_chain) == 0
+
+    def test_direct_path_to_rig_yaml(self, rig_dir):
+        """load_rig accepts a direct path to rig.yaml (not just directory)."""
+        config = load_rig(str(rig_dir / "rig.yaml"))
+        assert config.name == "test-rig"
+        assert "brothers" in config.devices
 
 
 class TestRegistryDispatch:
@@ -198,25 +215,40 @@ class TestRegistryDispatch:
         config = load_rig(str(rig_dir))
         assert isinstance(config.devices["mc6"], MC6Device)
 
-    def test_chase_bliss_config_produces_cba_device(self, rig_dir, tmp_path):
+    def test_chase_bliss_config_produces_cba_device(self, rig_dir):
         from rig_chasebliss.device import ChaseBlissDevice
 
-        _write(
-            rig_dir,
-            "pedals/mood.yaml",
-            "id: mood\nmanufacturer: Chase Bliss\nmodel: Mood\ntype: digital\nconfig:\n  type: chase_bliss\n  midi_channel: 4\n  controls: []\n",
+        yaml = (
+            BASE_RIG_YAML
+            + """
+  - id: mood
+    name: Mood
+    type: digital
+    config:
+      type: chase_bliss
+      midi_channel: 4
+      controls: []
+    presets: []
+"""
         )
+        _write(rig_dir, "rig.yaml", yaml)
         config = load_rig(str(rig_dir))
         assert isinstance(config.devices["mood"], ChaseBlissDevice)
 
     def test_unknown_config_type_raises_validation_error(self, rig_dir):
-        from rig.config.errors import ValidationError
 
-        _write(
-            rig_dir,
-            "pedals/mystery.yaml",
-            "id: mystery\nmanufacturer: X\nmodel: Y\ntype: digital\nconfig:\n  type: unknown_plugin\n  midi_channel: 1\n",
-        )
+        yaml = """\
+name: bad-rig
+devices:
+  - id: mystery
+    name: Mystery
+    type: digital
+    config:
+      type: unknown_plugin
+      midi_channel: 1
+    presets: []
+"""
+        _write(rig_dir, "rig.yaml", yaml)
         with pytest.raises(ValidationError, match="Unknown device config type"):
             load_rig(str(rig_dir))
 
@@ -227,9 +259,23 @@ class TestRegistryDispatch:
                 f"device {device_id!r} missing apply() method"
             )
 
+    def test_controller_composes_validation(self, rig_dir):
+        """Controller with composes referencing a valid device works."""
+        yaml = BASE_RIG_YAML.replace("banks: []", "banks: []\n      composes: [brothers, tumnus]")
+        _write(rig_dir, "rig.yaml", yaml)
+        config = load_rig(str(rig_dir))
+        assert config.controller is not None
+
+    def test_controller_composes_unknown_device(self, rig_dir):
+        """Controller with composes referencing invalid device raises error."""
+        yaml = BASE_RIG_YAML.replace("banks: []", "banks: []\n      composes: [nonexistent-device]")
+        _write(rig_dir, "rig.yaml", yaml)
+        with pytest.raises(MissingReferenceError, match="Controller.*composes unknown device"):
+            load_rig(str(rig_dir))
+
 
 # ---------------------------------------------------------------------------
-# Nyquist gap fill — _load_scenes direct unit test (Phase 4 validation)
+# _load_scenes backward-compat unit test (deprecated, Phase 11 removal)
 # ---------------------------------------------------------------------------
 
 

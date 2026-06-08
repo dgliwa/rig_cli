@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from rig.config.loader import load_rig
 from rig.models.device import Device, DeviceType
 from rig.models.preset import DigitalPreset, HXStompPreset
@@ -6,7 +8,7 @@ from rig_chasebliss.catalog import MOOD_MKII_CONTROLS, Control, ControlType
 from rig_chasebliss.device import ChaseBlissConfig
 from rig_morningstar.generator import generate_mc6
 
-FIXTURE_PATH = "tests/fixtures/sample_rig"
+FIXTURE_PATH = str(Path(__file__).parent / "fixtures" / "sample_rig")
 
 
 class TestMoodMkiiCatalog:

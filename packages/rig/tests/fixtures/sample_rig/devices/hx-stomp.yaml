@@ -1,9 +1,0 @@
-id: hx-stomp
-manufacturer: Line 6
-model: HX Stomp XL
-type: modeler
-config:
-  type: midi
-  # Set in Global Settings → MIDI/Tempo → MIDI Channel on the HX Stomp XL.
-  # Default is 1; change here to match your device.
-  midi_channel: 1

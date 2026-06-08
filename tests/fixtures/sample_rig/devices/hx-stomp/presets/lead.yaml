@@ -1,6 +1,0 @@
-id: lead
-name: Lead Tone
-preset_number: 5
-# Path is relative to the rig config root (this fixtures/ directory).
-# Replace with the actual exported .hlx file from HX Edit.
-hlx_file: hlx/lead.hlx

@@ -18,74 +18,35 @@ runner = CliRunner()
 
 
 def _write_minimal_digital_rig(root: Path) -> None:
-    """Write a minimal rig with one digital device, one controller, and one scene under *root*.
+    """Write a minimal rig with one digital device, one controller, and one scene.
 
-    Scenes are passed to Rig as a direct field.
+    Uses the new single-file rig.yaml schema (Phase 10).
     """
-    devices = root / "devices"
-    devices.mkdir(parents=True)
-
-    # HX Stomp (modeler) device
-    (devices / "hx-stomp.yaml").write_text(
-        """\
-id: hx-stomp
-name: HX Stomp XL
-manufacturer: Line 6
-model: HX Stomp XL
-type: modeler
-config:
-  type: midi
-  midi_channel: 1
-"""
-    )
-
-    presets_dir = devices / "hx-stomp" / "presets"
-    presets_dir.mkdir(parents=True)
-    (presets_dir / "clean.yaml").write_text(
-        """\
-id: clean
-name: Clean
-preset_number: 1
-hlx_file: hlx/clean.hlx
-"""
-    )
-
-    # MC6 controller device — scenes are wired through it
-    (devices / "mc6.yaml").write_text(
-        """\
-id: mc6
-name: MC6
-manufacturer: Morningstar
-model: MC6
-type: controller
-config:
-  type: controller
-  midi_channel: 1
-"""
-    )
-
-    scenes_dir = root / "scenes"
-    scenes_dir.mkdir(parents=True)
-    (scenes_dir / "main.yaml").write_text(
-        """\
-name: main
-presets:
-  hx-stomp: clean
-"""
-    )
-
     (root / "rig.yaml").write_text(
         """\
 name: test-rig
-"""
-    )
-    (root / "signal-chain.yaml").write_text(
-        """\
-chain:
-  - device: hx-stomp
-    position: 1
-    loop: front
-    stereo: false
+devices:
+  - id: hx-stomp
+    name: HX Stomp XL
+    type: modeler
+    config:
+      type: midi
+      midi_channel: 1
+    presets:
+      - id: clean
+        name: Clean
+        preset_number: 1
+        hlx_file: hlx/clean.hlx
+  - id: mc6
+    name: MC6
+    type: controller
+    config:
+      type: controller
+      midi_channel: 1
+      scenes:
+        main:
+          presets:
+            hx-stomp: clean
 """
     )
 
@@ -134,60 +95,37 @@ class TestPlanSummaryLine:
         assert "No changes" in result.output
 
 
-def _write_analog_rig(root: Path) -> None:
-    """Write a minimal rig with one Chase Bliss device (no prior state) under *root*."""
-    devices = root / "devices"
-    devices.mkdir(parents=True)
+def _write_cba_rig(root: Path) -> None:
+    """Write a minimal rig with one Chase Bliss device (no prior state).
 
-    (devices / "brothers.yaml").write_text(
+    Uses the new single-file rig.yaml schema (Phase 10).
+    """
+    (root / "rig.yaml").write_text(
         """\
-id: brothers
-name: Brothers
-manufacturer: Chase Bliss Audio
-model: Brothers
-type: digital
-config:
-  type: chase_bliss
-  midi_channel: 3
+name: cba-test-rig
+devices:
+  - id: brothers
+    name: Brothers
+    type: digital
+    config:
+      type: chase_bliss
+      midi_channel: 3
+    presets:
+      - id: low-gain
+        name: Low Gain
+        preset_number: 4
+  - id: mc6
+    name: MC6
+    type: controller
+    config:
+      type: controller
+      midi_channel: 1
+      scenes:
+        main:
+          presets:
+            brothers: low-gain
 """
     )
-
-    presets_dir = devices / "brothers" / "presets"
-    presets_dir.mkdir(parents=True)
-    (presets_dir / "low-gain.yaml").write_text(
-        """\
-id: low-gain
-name: Low Gain
-pedal: brothers
-preset_number: 4
-"""
-    )
-
-    (devices / "mc6.yaml").write_text(
-        """\
-id: mc6
-name: MC6
-manufacturer: Morningstar
-model: MC6
-type: controller
-config:
-  type: controller
-  midi_channel: 1
-"""
-    )
-
-    scenes_dir = root / "scenes"
-    scenes_dir.mkdir(parents=True)
-    (scenes_dir / "main.yaml").write_text(
-        """\
-name: main
-presets:
-  brothers: low-gain
-"""
-    )
-
-    (root / "rig.yaml").write_text("name: cba-test-rig\n")
-    (root / "signal-chain.yaml").write_text("chain: []\n")
 
 
 class TestPlanVisualMarkers:
@@ -215,59 +153,36 @@ class TestPlanVisualMarkers:
 
 
 def _write_analog_rig(root: Path) -> None:
-    """Write a minimal rig with one analog (manual) device under *root*."""
-    devices = root / "devices"
-    devices.mkdir(parents=True)
+    """Write a minimal rig with one analog (manual) device.
 
-    (devices / "tumnus.yaml").write_text(
+    Uses the new single-file rig.yaml schema (Phase 10).
+    """
+    (root / "rig.yaml").write_text(
         """\
-id: tumnus
-name: Tumnus
-manufacturer: Wampler
-model: Tumnus
-type: analog
-config:
-  type: manual
+name: analog-test-rig
+devices:
+  - id: tumnus
+    name: Tumnus
+    type: analog
+    config:
+      type: manual
+    presets:
+      - id: edge
+        name: Edge of Breakup
+        values:
+          gain: 5.0
+  - id: mc6
+    name: MC6
+    type: controller
+    config:
+      type: controller
+      midi_channel: 1
+      scenes:
+        main:
+          presets:
+            tumnus: edge
 """
     )
-
-    presets_dir = devices / "tumnus" / "presets"
-    presets_dir.mkdir(parents=True)
-    (presets_dir / "edge.yaml").write_text(
-        """\
-id: edge
-name: Edge of Breakup
-pedal: tumnus
-values:
-  gain: 5.0
-"""
-    )
-
-    (devices / "mc6.yaml").write_text(
-        """\
-id: mc6
-name: MC6
-manufacturer: Morningstar
-model: MC6
-type: controller
-config:
-  type: controller
-  midi_channel: 1
-"""
-    )
-
-    scenes_dir = root / "scenes"
-    scenes_dir.mkdir(parents=True)
-    (scenes_dir / "main.yaml").write_text(
-        """\
-name: main
-presets:
-  tumnus: edge
-"""
-    )
-
-    (root / "rig.yaml").write_text("name: analog-test-rig\n")
-    (root / "signal-chain.yaml").write_text("chain: []\n")
 
 
 class TestShowUnchanged:
@@ -279,7 +194,6 @@ class TestShowUnchanged:
         _write_state_matching_rig(tmp_path)
         result = runner.invoke(app, ["plan", "--config", str(tmp_path)])
         # The "main" scene should NOT appear since it is unchanged and flag is absent
-        # The scene section header may appear, but the scene name should not
         assert "main (unchanged)" not in result.output
 
     def test_unchanged_scene_visible_with_flag(self, tmp_path: Path) -> None:
@@ -295,80 +209,42 @@ class TestSceneFilter:
     """PLAN-09: --scene <name> filter shows only that scene."""
 
     def _write_two_scene_rig(self, root: Path) -> None:
-        """Write a rig with two scenes: main and alt."""
-        devices = root / "devices"
-        devices.mkdir(parents=True)
+        """Write a rig with two scenes: main and alt.
 
-        (devices / "hx-stomp.yaml").write_text(
+        Uses the new single-file rig.yaml schema (Phase 10).
+        """
+        (root / "rig.yaml").write_text(
             """\
-id: hx-stomp
-name: HX Stomp XL
-manufacturer: Line 6
-model: HX Stomp XL
-type: modeler
-config:
-  type: midi
-  midi_channel: 1
-"""
-        )
-
-        presets_dir = devices / "hx-stomp" / "presets"
-        presets_dir.mkdir(parents=True)
-        (presets_dir / "clean.yaml").write_text(
-            """\
-id: clean
-name: Clean
-preset_number: 1
-hlx_file: hlx/clean.hlx
-"""
-        )
-        (presets_dir / "drive.yaml").write_text(
-            """\
-id: drive
-name: Drive
-preset_number: 2
-hlx_file: hlx/drive.hlx
-"""
-        )
-
-        (devices / "mc6.yaml").write_text(
-            """\
-id: mc6
-name: MC6
-manufacturer: Morningstar
-model: MC6
-type: controller
-config:
-  type: controller
-  midi_channel: 1
-"""
-        )
-
-        scenes_dir = root / "scenes"
-        scenes_dir.mkdir(parents=True)
-        (scenes_dir / "main.yaml").write_text(
-            """\
-name: main
-presets:
-  hx-stomp: clean
-"""
-        )
-        (scenes_dir / "alt.yaml").write_text(
-            """\
-name: alt
-presets:
-  hx-stomp: drive
-"""
-        )
-
-        (root / "rig.yaml").write_text("name: two-scene-rig\n")
-        (root / "signal-chain.yaml").write_text(
-            """\
-chain:
-  - device: hx-stomp
-    position: 1
-    loop: front
-    stereo: false
+name: two-scene-rig
+devices:
+  - id: hx-stomp
+    name: HX Stomp XL
+    type: modeler
+    config:
+      type: midi
+      midi_channel: 1
+    presets:
+      - id: clean
+        name: Clean
+        preset_number: 1
+        hlx_file: hlx/clean.hlx
+      - id: drive
+        name: Drive
+        preset_number: 2
+        hlx_file: hlx/drive.hlx
+  - id: mc6
+    name: MC6
+    type: controller
+    config:
+      type: controller
+      midi_channel: 1
+      scenes:
+        main:
+          presets:
+            hx-stomp: clean
+        alt:
+          presets:
+            hx-stomp: drive
 """
         )
 

@@ -59,8 +59,8 @@
 
 ### v1.2 Cleaner Core (Phases 9-11)
 
-- [ ] **Phase 9: Core Model Cleanup** - Strip all plugin-specific types and compat shims from core models
-- [ ] **Phase 10: Schema & Loader Rewrite** - Implement single-file rig.yaml schema and rewrite the loader
+- [x] **Phase 9: Core Model Cleanup** - Strip all plugin-specific types and compat shims from core models
+- [x] **Phase 10: Schema & Loader Rewrite** - Implement single-file rig.yaml schema and rewrite the loader
 - [ ] **Phase 11: Dead Code & Compat Removal** - Sweep all TODO:1.2 markers and remove multi-file config support
 
 ## Phase Details
@@ -112,6 +112,6 @@
 | 6. Core Package & Entry Point Discovery | v1.1 | 2/2 | Complete | 2026-06-07 |
 | 7. Plugin Package Wiring & Device-Level MIDI | v1.1 | 3/3 | Complete | 2026-06-07 |
 | 8. Core Cleanup — Dead Code & Plugin Isolation | v1.1 | 3/3 | Complete | 2026-06-07 |
-| 9. Core Model Cleanup | v1.2 | 0/? | Not started | - |
-| 10. Schema & Loader Rewrite | v1.2 | 0/? | Not started | - |
+| 9. Core Model Cleanup | v1.2 | 4/4 | Complete | 2026-06-08 |
+| 10. Schema & Loader Rewrite | v1.2 | 1/1 | Complete | 2026-06-08 |
 | 11. Dead Code & Compat Removal | v1.2 | 0/? | Not started | - |

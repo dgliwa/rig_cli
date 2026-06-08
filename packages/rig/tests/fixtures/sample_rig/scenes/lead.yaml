@@ -1,7 +1,0 @@
-name: lead
-description: Lead tone with Mood shimmer delay
-presets:
-  hx-stomp: lead
-  mood: preset-1
-mc6_bank: 1
-mc6_switch: A

@@ -20,32 +20,18 @@ runner = CliRunner()
 
 def _write_minimal_rig(root: Path) -> None:
     """Create a minimal valid rig config under *root*."""
-    pedals = root / "pedals"
-    pedals.mkdir(parents=True)
-    (pedals / "tumnus.yaml").write_text(
-        """\
-id: tumnus
-name: Tumnus
-manufacturer: Wampler
-model: Tumnus Overdrive
-type: analog
-config:
-  type: manual
-image: tumnus.jpg
-"""
-    )
     (root / "rig.yaml").write_text(
         """\
 name: test-rig
 description: A minimal test rig
 midi_channel: 1
-"""
-    )
-    (root / "signal-chain.yaml").write_text(
-        """\
-chain:
-  - pedal: tumnus
-    position: 1
+devices:
+  - id: tumnus
+    name: Tumnus
+    type: analog
+    config:
+      type: manual
+    presets: []
 """
     )
 
