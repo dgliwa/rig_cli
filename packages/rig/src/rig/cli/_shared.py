@@ -6,7 +6,6 @@ import typer
 from rich.console import Console
 
 app = typer.Typer(name="rig")
-gen_app = typer.Typer(help="Generate artifacts from config")
 console = Console()
 
 _CONFIG_OPTION = typer.Option(

@@ -136,17 +136,6 @@ class TestDiff:
         assert "scenes" in data
 
 
-# ── Generate MC6 ─────────────────────────────────────────────────────────
-
-
-class TestGenerateMC6:
-    def test_generate_mc6_no_config(self, tmp_path: Path):
-        _write_minimal_rig(tmp_path)
-        result = runner.invoke(app, ["generate", "mc6", "--config", str(tmp_path)])
-        assert result.exit_code == 0
-        assert "no mc6 configuration found" in result.stdout.lower()
-
-
 # ── Output format option ────────────────────────────────────────────────
 
 

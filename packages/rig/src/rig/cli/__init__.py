@@ -1,8 +1,6 @@
-from rig.cli._shared import app, gen_app
+from rig.cli._shared import app
 
-# Import command modules to trigger @app.command() / @gen_app.command() registration
-from rig.cli.commands import apply, diff, generate, plan, status, validate  # noqa: F401
-
-app.add_typer(gen_app, name="generate")
+# Import command modules to trigger @app.command() registration
+from rig.cli.commands import apply, diff, plan, status, validate  # noqa: F401
 
 __all__ = ["app"]

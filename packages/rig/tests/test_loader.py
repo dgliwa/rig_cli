@@ -259,19 +259,5 @@ devices:
                 f"device {device_id!r} missing apply() method"
             )
 
-    def test_controller_composes_validation(self, rig_dir):
-        """Controller with composes referencing a valid device works."""
-        yaml = BASE_RIG_YAML.replace("banks: []", "banks: []\n      composes: [brothers, tumnus]")
-        _write(rig_dir, "rig.yaml", yaml)
-        config = load_rig(str(rig_dir))
-        assert config.controller is not None
-
-    def test_controller_composes_unknown_device(self, rig_dir):
-        """Controller with composes referencing invalid device raises error."""
-        yaml = BASE_RIG_YAML.replace("banks: []", "banks: []\n      composes: [nonexistent-device]")
-        _write(rig_dir, "rig.yaml", yaml)
-        with pytest.raises(MissingReferenceError, match="Controller.*composes unknown device"):
-            load_rig(str(rig_dir))
-
 
 # ---------------------------------------------------------------------------

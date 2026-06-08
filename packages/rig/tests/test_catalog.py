@@ -7,7 +7,6 @@ from rig_chasebliss.catalog import MOOD_MKII_CONTROLS, Control, ControlType
 from rig_chasebliss.device import ChaseBlissConfig
 from rig_chasebliss.preset import DigitalPreset
 from rig_hx.preset import HXStompPreset
-from rig_morningstar.generator import generate_mc6
 
 FIXTURE_PATH = str(Path(__file__).parent / "fixtures" / "sample_rig")
 
@@ -127,25 +126,3 @@ class TestLoaderValidation:
         hx = rig.devices.get("hx-stomp")
         assert hx is not None
         assert any(isinstance(p, HXStompPreset) for p in hx.presets)
-
-
-class TestMc6GeneratorDigitalPedals:
-    def test_generates_pc_for_hx_and_mood(self):
-        rig = load_rig(FIXTURE_PATH)
-        out = generate_mc6(rig)
-        commands = out["bank1"]["presets"]["A"]["commands"]
-        channels = {cmd["channel"] for cmd in commands}
-        assert 1 in channels  # HX Stomp on ch1
-        assert 2 in channels  # Mood on ch2
-
-    def test_hx_correct_preset_number(self):
-        rig = load_rig(FIXTURE_PATH)
-        out = generate_mc6(rig)
-        hx_cmd = next(c for c in out["bank1"]["presets"]["A"]["commands"] if c["channel"] == 1)
-        assert hx_cmd["value"] == 5
-
-    def test_mood_correct_preset_number(self):
-        rig = load_rig(FIXTURE_PATH)
-        out = generate_mc6(rig)
-        mood_cmd = next(c for c in out["bank1"]["presets"]["A"]["commands"] if c["channel"] == 2)
-        assert mood_cmd["value"] == 1

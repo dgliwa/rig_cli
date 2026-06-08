@@ -4,7 +4,7 @@
 
 - ✅ **v1.0 I/O Decoupling & Plugin Architecture** — Phases 1-5 (shipped 2026-06-07)
 - ✅ **v1.1 Package Extraction & Plugin Isolation** — Phases 6-8 (shipped 2026-06-07)
-- 🔲 **v1.2 Cleaner Core** — Phases 9-11 (in progress)
+- ✅ **v1.2 Cleaner Core** — Phases 9-12 (shipped 2026-06-08)
 
 ## Phases
 
@@ -57,11 +57,11 @@
 
 </details>
 
-### v1.2 Cleaner Core (Phases 9-11)
+### v1.2 Cleaner Core (Phases 9-12)
 
 - [x] **Phase 9: Core Model Cleanup** - Strip all plugin-specific types and compat shims from core models
 - [x] **Phase 10: Schema & Loader Rewrite** - Implement single-file rig.yaml schema and rewrite the loader
-- [ ] **Phase 11: Dead Code & Compat Removal** - Sweep all TODO:1.2 markers and remove multi-file config support
+- [x] **Phase 11: Dead Code & Compat Removal** - Sweep all TODO:1.2 markers and remove multi-file config support
 
 ## Phase Details
 
@@ -98,7 +98,12 @@
   1. `grep -r "TODO.*1\.2" packages/rig/src/` returns zero results
   2. `load_rig()` has no code paths that read `signal-chain.yaml`, `scenes/*.yaml`, `pedals/*.yaml`, or `mc6.yaml` — the function accepts only a single `rig.yaml` path
   3. All tests pass after removal — no test fixture depends on multi-file layout
-**Plans**: TBD
+
+### Phase 12: Clean Up Deferred Items
+**Goal**: Remove vestigial `generate_mc6` command and resolve the two deferred items from Phase 10 — either by removal (if unused) or by refactoring scene data sourcing and `composes` integration
+**Depends on**: Phase 11
+**Requirements**: DEFER-01, DEFER-02
+**Result**: `rig generate mc6` removed, `composes` validation removed, 262 tests pass
 
 ## Progress
 
@@ -114,4 +119,5 @@
 | 8. Core Cleanup — Dead Code & Plugin Isolation | v1.1 | 3/3 | Complete | 2026-06-07 |
 | 9. Core Model Cleanup | v1.2 | 4/4 | Complete | 2026-06-08 |
 | 10. Schema & Loader Rewrite | v1.2 | 1/1 | Complete | 2026-06-08 |
-| 11. Dead Code & Compat Removal | v1.2 | 0/? | Not started | - |
+| 11. Dead Code & Compat Removal | v1.2 | 1/1 | Complete | 2026-06-08 |
+| 12. Clean Up Deferred Items | v1.2 | 1/1 | Complete | 2026-06-08 |

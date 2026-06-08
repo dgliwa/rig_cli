@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cleaner Core
-status: executing
-last_updated: "2026-06-08T09:30:00.000Z"
-last_activity: 2026-06-08 -- Phase 11 executed
+status: complete
+last_updated: "2026-06-08T10:10:00.000Z"
+last_activity: 2026-06-08 -- Phase 12 complete
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 6
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 7
   percent: 100
 ---
 
@@ -20,26 +20,26 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-07)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** Phase 11 — dead-code-compat-removal
+**Current focus:** All phases complete
 
 ## Current Position
 
-Phase: 11 (dead-code-compat-removal) — COMPLETE ✅
+Phase: 12 (clean-up-deferred-items) — COMPLETE ✅
 Plan: 1 of 1
-Status: v1.2 Cleaner Core milestone complete
-Last activity: 2026-06-08 -- Phase 11 executed
+Status: v1.2 Cleaner Core shipped
+Last activity: 2026-06-08 -- Phase 12 complete
 
-Progress: [████████████████████] 100% (3/3 phases)
+Progress: [████████████████████] 100% (4/4 phases)
 
 ```
-[████████████████████] 100% (3/3 phases)
+[████████████████████] 100% (4/4 phases)
 ```
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 25
+- Total plans completed: 26
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -57,6 +57,8 @@ Progress: [████████████████████] 100% (3
 | 08 | 3 | - | - |
 | 09 | 4 | - | - |
 | 10 | 1 | - | - |
+| 11 | 1 | - | - |
+| 12 | 1 | - | - |
 
 ## Decisions
 
@@ -72,11 +74,5 @@ Progress: [████████████████████] 100% (3
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| Plugin | `generate_mc6` should read scenes from MC6 config instead of `Rig.scenes` | deferred | Phase 10 |
-| Plugin | MC6 apply could leverage `composes` data | deferred | Phase 10 |
-
-## Operator Next Steps
-
-- v1.2 Cleaner Core milestone is now complete
-- Next: begin v1.3 (next milestone)
-- Deferred items from Phase 10 remain for future milestone
+| Plugin | `generate_mc6` should read scenes from MC6 config instead of `Rig.scenes` | resolved — removed in Phase 12 | Phase 10 |
+| Plugin | MC6 apply could leverage `composes` data | resolved — removed in Phase 12 | Phase 10 |

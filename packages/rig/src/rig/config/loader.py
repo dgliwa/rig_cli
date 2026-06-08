@@ -141,13 +141,6 @@ def _extract_controller_scenes(device_raw: dict, device: Any) -> dict[str, Scene
     return scenes
 
 
-def _get_composes(device: Any) -> list[str]:
-    """Extract the list of composed device IDs from a controller device."""
-    if isinstance(device.config, dict):
-        return device.config.get("composes", [])
-    return getattr(device.config, "composes", [])
-
-
 def _validate_references(rig: Rig):
     """Validate all cross-references in the rig configuration."""
     device_ids = set(rig.devices.keys())
@@ -179,16 +172,6 @@ def _validate_references(rig: Rig):
                 raise MissingReferenceError(
                     f"Scene '{scene_name}': device '{device_id}' has no preset '{preset_id}'"
                 )
-
-    logger.debug("Validating controller composes references")
-    for device in rig.devices.values():
-        if device.type == DeviceType.CONTROLLER:
-            composed_ids = _get_composes(device)
-            for cid in composed_ids:
-                if cid not in device_ids:
-                    raise MissingReferenceError(
-                        f"Controller '{device.id}' composes unknown device '{cid}'"
-                    )
 
     logger.debug("All cross-references valid")
 
