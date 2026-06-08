@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cleaner Core
-status: planning
-last_updated: "2026-06-08T03:59:49.588Z"
+status: in_progress
+last_updated: "2026-06-08T04:00:00.000Z"
 last_activity: 2026-06-08
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,20 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-07)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** Planning next milestone (v1.2)
+**Current focus:** Phase 9 — Core Model Cleanup
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 9 — Core Model Cleanup
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-08 — Milestone v1.2 started
+Status: Not started
+Last activity: 2026-06-08 — Roadmap created for v1.2
+
+Progress: [Phase 9 of 11] 0% complete
+
+```
+[░░░░░░░░░░░░░░░░░░░░] 0% (0/3 phases)
+```
 
 ## Performance Metrics
 
@@ -66,6 +72,7 @@ Recent decisions affecting current work:
 - Plan command is read-only (no MIDI) — apply is the explicit commit step
 - Three narrow Protocols preferred over one fat Protocol wrapping ApplyContext
 - Phase 3 replanned (2026-06-04): graph-based domain model + plugin registry replaces the original Plan Command phase; Plan Command moved to Phase 5
+- v1.2 clean break: no backwards compatibility — single rig.yaml only, all plugin-specific types evicted from core
 
 ### Pending Todos
 
@@ -83,12 +90,11 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-07T20:56:59.881Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-plugin-package-wiring/07-CONTEXT.md
+Last session: 2026-06-08
+Stopped at: Roadmap created — Phase 9 ready to plan
+Resume file: .planning/ROADMAP.md
 
 ## Operator Next Steps
 
-- Discuss phase 6 with /gsd-discuss-phase 6
-- Plan phase 6 with /gsd-plan-phase 6
-- Execute phase 6 with /gsd-execute-phase 6
+- Plan phase 9 with /gsd-plan-phase 9
+- Execute phase 9 with /gsd-execute-phase 9

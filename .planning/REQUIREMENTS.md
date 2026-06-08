@@ -59,17 +59,17 @@ Collapse the multi-file config repo into a single flat `rig.yaml`, strip all plu
 
 | REQ-ID | Phase | Plan |
 |--------|-------|------|
-| SCHEMA-01 | — | — |
-| SCHEMA-02 | — | — |
-| SCHEMA-03 | — | — |
-| SCHEMA-04 | — | — |
-| SCHEMA-05 | — | — |
-| SCHEMA-06 | — | — |
-| MODEL-01 | — | — |
-| MODEL-02 | — | — |
-| MODEL-03 | — | — |
-| MODEL-04 | — | — |
-| LOADER-01 | — | — |
-| LOADER-02 | — | — |
-| CLEANUP-01 | — | — |
-| CLEANUP-02 | — | — |
+| SCHEMA-01 | Phase 10 | — |
+| SCHEMA-02 | Phase 10 | — |
+| SCHEMA-03 | Phase 9 | — |
+| SCHEMA-04 | Phase 10 | — |
+| SCHEMA-05 | Phase 10 | — |
+| SCHEMA-06 | Phase 9 | — |
+| MODEL-01 | Phase 9 | — |
+| MODEL-02 | Phase 9 | — |
+| MODEL-03 | Phase 9 | — |
+| MODEL-04 | Phase 9 | — |
+| LOADER-01 | Phase 10 | — |
+| LOADER-02 | Phase 10 | — |
+| CLEANUP-01 | Phase 11 | — |
+| CLEANUP-02 | Phase 11 | — |

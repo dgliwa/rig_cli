@@ -4,6 +4,7 @@
 
 - ✅ **v1.0 I/O Decoupling & Plugin Architecture** — Phases 1-5 (shipped 2026-06-07)
 - ✅ **v1.1 Package Extraction & Plugin Isolation** — Phases 6-8 (shipped 2026-06-07)
+- 🔲 **v1.2 Cleaner Core** — Phases 9-11 (in progress)
 
 ## Phases
 
@@ -56,6 +57,49 @@
 
 </details>
 
+### v1.2 Cleaner Core (Phases 9-11)
+
+- [ ] **Phase 9: Core Model Cleanup** - Strip all plugin-specific types and compat shims from core models
+- [ ] **Phase 10: Schema & Loader Rewrite** - Implement single-file rig.yaml schema and rewrite the loader
+- [ ] **Phase 11: Dead Code & Compat Removal** - Sweep all TODO:1.2 markers and remove multi-file config support
+
+## Phase Details
+
+### Phase 9: Core Model Cleanup
+**Goal**: Core models contain no plugin-specific types, no compat shims, and no deprecated fields — the domain is expressed purely through `type`-keyed device identity and the new schema primitives
+**Depends on**: Phase 8 (v1.1 dead code eliminated)
+**Requirements**: MODEL-01, MODEL-02, MODEL-03, MODEL-04, SCHEMA-03, SCHEMA-06
+**Success Criteria** (what must be TRUE):
+  1. `device.py` imports contain no `ManualConfig`, `MidiConfig`, `ChaseBlissConfig`, or `ControllerConfig` — grep returns zero hits
+  2. `Control` and `ControlType` classes are absent from `packages/rig/src/rig/models/`
+  3. `Rig` model has no `pedals`, `digital_presets`, `hx_presets`, `analog_presets`, `mc6`, or `_controller_device` attributes
+  4. `Scene` model has no `mc6_bank` or `mc6_switch` fields
+  5. `SignalChainPosition` class is absent from `packages/rig/src/rig/models/signal_chain.py` (file may be deleted or emptied)
+**Plans**: TBD
+
+### Phase 10: Schema & Loader Rewrite
+**Goal**: Users can run `rig validate` against a single `rig.yaml` where device list order defines the signal chain, controller devices compose other devices by ID, and scenes live inside the controller
+**Depends on**: Phase 9
+**Requirements**: SCHEMA-01, SCHEMA-02, SCHEMA-04, SCHEMA-05, LOADER-01, LOADER-02
+**Success Criteria** (what must be TRUE):
+  1. `rig validate path/to/rig.yaml` succeeds when `rig.yaml` is a single file with a flat `devices` list
+  2. Device list order in `rig.yaml` is treated as the signal chain — no `signal-chain.yaml` file is read or required
+  3. A controller device with `composes: [device_id_1, device_id_2]` correctly references the devices it controls
+  4. Scenes defined inside a controller device with `bank`, `switch`, and `presets: {device_id: preset_id}` are loaded and accessible via `Rig.scenes`
+  5. Device construction is dispatched to the matching plugin using the `type` field as the entry point lookup key — unknown `type` values produce a clear error
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 11: Dead Code & Compat Removal
+**Goal**: The codebase contains no `TODO: 1.2` markers, no multi-file config parsing paths, and no code that was retained solely for backwards compatibility with the pre-v1.2 config layout
+**Depends on**: Phase 10
+**Requirements**: CLEANUP-01, CLEANUP-02
+**Success Criteria** (what must be TRUE):
+  1. `grep -r "TODO.*1\.2" packages/rig/src/` returns zero results
+  2. `load_rig()` has no code paths that read `signal-chain.yaml`, `scenes/*.yaml`, `pedals/*.yaml`, or `mc6.yaml` — the function accepts only a single `rig.yaml` path
+  3. All tests pass after removal — no test fixture depends on multi-file layout
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -68,3 +112,6 @@
 | 6. Core Package & Entry Point Discovery | v1.1 | 2/2 | Complete | 2026-06-07 |
 | 7. Plugin Package Wiring & Device-Level MIDI | v1.1 | 3/3 | Complete | 2026-06-07 |
 | 8. Core Cleanup — Dead Code & Plugin Isolation | v1.1 | 3/3 | Complete | 2026-06-07 |
+| 9. Core Model Cleanup | v1.2 | 0/? | Not started | - |
+| 10. Schema & Loader Rewrite | v1.2 | 0/? | Not started | - |
+| 11. Dead Code & Compat Removal | v1.2 | 0/? | Not started | - |
