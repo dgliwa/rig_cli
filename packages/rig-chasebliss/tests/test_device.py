@@ -1,5 +1,5 @@
 from rig_chasebliss.catalog import Control, ControlType
-from rig_chasebliss.device import validate_cc_params
+from rig_chasebliss.device import ChaseBlissDevice, validate_cc_params
 
 
 def test_validate_valid_params():
@@ -106,3 +106,42 @@ def test_validate_min_max_not_applicable():
     ]
     # min and max are None — should not crash
     assert validate_cc_params({"volume": 64, "switch": 0}, controls) == []
+
+
+def test_from_raw_yaml_known_model_populates_controls():
+    device = ChaseBlissDevice.from_raw_yaml(
+        {"id": "mood", "name": "Mood MkII", "config": {"type": "chase_bliss", "model": "Mood MkII"}}
+    )
+    assert len(device.config.controls) > 0
+    assert any(c.name == "time" for c in device.config.controls)
+
+
+def test_from_raw_yaml_unknown_model_leaves_controls_empty():
+    device = ChaseBlissDevice.from_raw_yaml(
+        {
+            "id": "x",
+            "name": "Unknown",
+            "config": {"type": "chase_bliss", "model": "Nonexistent Model"},
+        }
+    )
+    assert device.config.controls == []
+
+
+def test_from_raw_yaml_explicit_controls_not_overwritten():
+    explicit = [{"name": "volume", "type": "knob", "midi_cc": 15}]
+    device = ChaseBlissDevice.from_raw_yaml(
+        {
+            "id": "mood",
+            "name": "Mood MkII",
+            "config": {"type": "chase_bliss", "model": "Mood MkII", "controls": explicit},
+        }
+    )
+    assert len(device.config.controls) == 1
+    assert device.config.controls[0].name == "volume"
+
+
+def test_from_raw_yaml_no_model_leaves_controls_empty():
+    device = ChaseBlissDevice.from_raw_yaml(
+        {"id": "x", "name": "Mystery", "config": {"type": "chase_bliss"}}
+    )
+    assert device.config.controls == []

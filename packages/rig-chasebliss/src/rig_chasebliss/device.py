@@ -24,12 +24,13 @@ from rig.engine.appliers.base import (
 from rig.engine.plugin import DeviceApplyContext, PluginContext, SetupContext, SetupResult
 from rig.engine.state import DeviceState
 from rig.models.device import DeviceType
-from rig_chasebliss.catalog import Control
+from rig_chasebliss.catalog import Control, get_controls
 
 
 class ChaseBlissConfig(PydanticBaseModel):
     type: Literal["chase_bliss"] = "chase_bliss"
     midi_channel: int | None = None
+    model: str | None = None
     controls: list[Control] = []
 
     def get_cc_params(self, parameters: dict[str, Any]) -> list[dict[str, int]]:
@@ -171,6 +172,10 @@ class ChaseBlissDevice(BaseModel):
         from rig_chasebliss.preset import DigitalPreset
 
         config = ChaseBlissConfig(**(data.get("config") or {}))
+        if not config.controls and config.model:
+            catalog_controls = get_controls("Chase Bliss Audio", config.model)
+            if catalog_controls:
+                config = config.model_copy(update={"controls": catalog_controls})
         presets = [DigitalPreset(**p) for p in (data.get("presets") or [])]
         return cls(
             id=data["id"],
