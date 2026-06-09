@@ -21,6 +21,13 @@ logger = logging.getLogger(__name__)
 console = Console()
 
 
+def _find_device(rig, device_id: str):
+    """Find a device by ID in the rig, or return None."""
+    if rig is None:
+        return None
+    return next((d for d in rig.devices.values() if d.id == device_id), None)
+
+
 class ChaseBlissApplier:
     def apply_setup(
         self,
@@ -132,14 +139,59 @@ class ChaseBlissApplier:
         """Phase 2: send CC params, prompt user to save preset."""
         if ctx.dry_run:
             cc_count = len(action.cc_params)
-            logger.debug("Dry-run: CB build preset '%s' on %s", action.preset_name, action.device)
+            device = _find_device(ctx.rig, action.device)
+            reset_count = 0
+            if device is not None and hasattr(device.config, "controls"):
+                reset_count = len(
+                    [
+                        c
+                        for c in device.config.controls
+                        if c.default is not None and c.midi_cc is not None
+                    ]
+                )
+            logger.debug(
+                "Dry-run: CB build preset '%s' on %s (%d resettable controls)",
+                action.preset_name,
+                action.device,
+                reset_count,
+            )
             console.print(
                 f"  [cyan]→[/cyan] {action.device}: build preset #{action.preset_number} "
                 f"'{action.preset_name}' ({cc_count} CC params)[dim] (dry-run)[/dim]"
             )
+            if reset_count:
+                console.print(
+                    f"  [dim]→ reset {reset_count} defaults before {cc_count} CC params[/dim]"
+                )
             return DeviceApplyResult(
                 device=action.device, status="skipped", preset=action.preset_name
             )
+
+        def _send_reset_ccs() -> int:
+            """Send CC messages for all resettable controls to their catalog defaults."""
+            sent = 0
+            device = _find_device(ctx.rig, action.device)
+            if device is None or not hasattr(device.config, "controls"):
+                return sent
+            resettable = [
+                c for c in device.config.controls if c.default is not None and c.midi_cc is not None
+            ]
+            if not resettable:
+                return sent
+            if ctx.midi is None:
+                return sent
+            for control in resettable:
+                try:
+                    ctx.midi.send_control_change(
+                        action.device, control.midi_cc, int(control.default), action.midi_channel
+                    )
+                    sent += 1
+                except Exception as e:
+                    logger.error("Reset CC %d failed on %s: %s", control.midi_cc, action.device, e)
+                    console.print(
+                        f"  [red]✗[/red] Reset CC send failed (CC {control.midi_cc}): {e}"
+                    )
+            return sent
 
         def _send_ccs() -> int:
             sent = 0
@@ -154,6 +206,11 @@ class ChaseBlissApplier:
                         logger.error("Failed CC %d on %s: %s", param["cc"], action.device, e)
                         console.print(f"  [red]✗[/red] CC send failed (CC {param['cc']}): {e}")
             return sent
+
+        reset_sent = _send_reset_ccs()
+        if reset_sent:
+            logger.info("Sent %d reset CCs to %s", reset_sent, action.device)
+            console.print(f"  [dim]→ {reset_sent} defaults reset[/dim]")
 
         cc_sent = _send_ccs()
         if cc_sent:
