@@ -1,100 +1,53 @@
-# Project Research Summary
+# Research Summary — v1.3 Chase Bliss Pedal Support
 
-**Project:** rig-cli — I/O Decoupling & Plan Command Milestone
-**Domain:** IaC CLI for physical MIDI device configuration
-**Researched:** 2026-06-04
+**Project:** rig-cli — v1.3 Chase Bliss Pedal Support
+**Sources:** Official Chase Bliss MIDI manuals (Mood MkII MD2, Billy Strings Wombtone WT03, Brothers AM BAM01)
+**Date:** 2026-06-08
 **Confidence:** HIGH
 
 ## Executive Summary
 
-Three-phase milestone: clean up CBA tech-debt (PR 1), introduce three narrow Protocol ports to decouple the apply engine from I/O (PR 2), then fix plan command correctness bugs and expose `rig plan` as a trustworthy read-only preview command (PR 3). No new dependencies. All patterns derive from existing codebase patterns and stdlib `typing.Protocol`.
+Three-phase milestone: add `default` field to Control model + write Wombtone MkII and Brothers AM catalogs (also fix Mood MkII gaps), then add imperative preset parameter validation in the ChaseBlissDevice apply flow, then implement reset-to-defaults (send all parameter CCs to neutral before applying a preset). No new dependencies.
 
-The apply engine is currently untestable without physical hardware because `apply.py` calls `input()`, writes files, and sends MIDI inline. The fix is a ports-and-adapters pattern: define three narrow Protocol interfaces (`ConfirmationIO`, `StateWriter`, `MidiConnectionIO`), thread them into `ApplyContext` and `apply_plan`, then wire production adapters at the CLI boundary.
-
-Two CBA tech-debt items must be cleaned up first as a prerequisite: `_build_preset` bypasses the `update_device_state` helper with raw dict construction (#11), and `ChaseBlissApplier` imports a private symbol `_detect_cba_setup` from `plan.py` (#12). These are self-contained and ship in a separate PR before protocol work begins.
-
-The `plan` command (#13) is already scaffolded. The milestone's job is to fix three correctness bugs that make it trustworthy: `compute_diff` unconditionally marks existing scenes as "changed", scene state is written as `{}` making `no_change` detection impossible, and `_detect_cba_setup` is re-called during apply causing plan/apply divergence.
+The existing Mood MkII catalog is partially complete — 10 controls from the manual are missing (CC24-29, CC31-33, CC52) and CC102/CC103 names are swapped vs the manual. These must be fixed in Phase 14 when the `default` field is added.
 
 ## Key Findings
 
 ### Stack
 
-No stack changes. Three Protocol ports use `typing.Protocol` (stdlib). Plan output stays as Pydantic `BaseModel` (crosses serialization boundary via `model_dump_json()`). `ApplyContext` stays as `@dataclass` (holds mutable `connected_devices: set`).
-
-**Port interfaces:**
-- `ConfirmationIO` — wraps `interaction.py` prompt functions; lives in `ApplyContext`
-- `StateWriter` — wraps `read_state`/`write_state`; parameter to `apply_plan`
-- `MidiConnectionIO` — wraps MIDI port selection in Phase -1; parameter to `apply_plan`
+No new dependencies. One additive model change: `default: float | None = None` on `Control`. Backward compatible — all existing `Control(...)` calls continue to work. `None` means "excluded from reset" (footswitches, utility CCs).
 
 ### Features
 
-**Must have (table stakes):**
-- Correct `no_change` detection — fix `compute_diff` always-changed bug and empty scene state storage
-- `--format json` stable output contract (Pydantic `model_dump_json()`)
-- Human-readable text output with visual hierarchy (`~`, `+`, `→`, `✓`, `⚠`)
-- Plan is read-only — zero side effects; no MIDI, no state writes
-- `--scene <name>` filter
-- Summary line: `Plan: N to configure, M manual, K already set` or `No changes.`
-- Exit codes: `0` = clean, non-zero = changes detected or error
-- Cold-start warning when no state file exists
+**Wombtone MkII:** 7 knobs (CC14-20, default=64) + 1 toggle/note-divisions (CC21, default=3/quarter note). Very simple. No dip switches. 3 utility controls excluded from reset.
 
-**Should have:**
-- Hide `no_change` scenes by default; `--show-unchanged` flag
+**Brothers AM:** 8 knobs (CC14-19, CC27, CC29, default=64) + 3 toggles (CC21-23, defaults=0/0/2) + 15 dip switches (CC61-68, CC71-77, default=0 each). Richest control surface of the three pedals.
 
-**Anti-features (do not build):**
-- Plan file output / pipe workflow / `--auto-approve` — Terraform features without value for single-user rig
+**Mood MkII gaps to fix:** Add CC24-29 (hidden options), CC31-33 (sync/spread/buffer_length), CC52 (stop_ramping). Fix name swap: CC102 = wet_bypass, CC103 = loop_bypass (currently reversed in code).
 
 ### Architecture
 
-Two-PR structure within the milestone:
+**Reset-to-defaults** fires in Phase 2 ("build presets") immediately before preset CC messages. `_build_reset_messages(controls)` returns `[(cc, int(default)) for c in controls if c.midi_cc and c.default is not None]`.
 
-**PR 1 (cleanup, no protocol work):** `mark_preset_saved` helper in `base.py` (#11) + rename `_detect_cba_setup` → `detect_cba_setup` in `plan.py` (#12). Standalone, low-risk.
+**Validation** fires at the start of Phase 2 before prompting the user to navigate to the preset slot — fail fast, before any physical interaction.
 
-**PR 2 (protocol introduction):** Define protocols in dependency order — `ConfirmationIO` → thread into `ApplyContext` and appliers; `StateWriter` → replace `write_state` call in `apply_plan`; `MidiConnectionIO` → replace Phase -1 prompt block. New file: `src/rig/engine/ports.py`. New adapters in `src/rig/interaction.py`. Test fakes in `tests/fakes.py`.
+**Build order:** Phase 14 (catalog data + Control.default) → Phase 15 (validation) → Phase 16 (reset)
 
-**PR 3 (plan command):** Fix `compute_diff` always-changed bug, fix empty scene state, add `before`/`after` to `DeviceAction`, add summary line, exit codes, cold-start warning, `--show-unchanged`.
+### Watch Out For
 
-### Critical Pitfalls
+1. **CC102/103 name swap** — existing catalog has `micro_bypass` at CC102 and `wet_bypass` at CC103, but the manual says CC102=WET_BYPASS and CC103=LOOP_BYPASS. Sending the wrong CC is a silent physical bug.
 
-1. **Fat Protocol wrapping `ApplyContext`** — define three narrow protocols; a method that takes `ApplyContext` as parameter means the concern isn't isolated
-2. **Scene state written unconditionally** — `state.scenes[name] = {}` must be guarded: only write when at least one device returned `status == "confirmed"`
-3. **Plan/apply divergence via `_detect_cba_setup` re-call** — after #12 is fixed, `apply` must NOT re-run plan-time detection mid-apply
-4. **`compute_diff` always-changed bug** — fix before plan command ships; conflicting diff/plan output destroys trust
-5. **Protocol signature drift invisible at runtime** — enforce `mypy`/`pyright` in CI; add integration test with real production adapter
+2. **Brothers AM toggle range semantics** — "BOOST = 0, 1 / OD = 2 / DIST = 3 OR >" means value ranges, not exact integers. Validate against `min`/`max` (0-127); the `positions` list is metadata only.
 
-## Roadmap Implications
+3. **Footswitch default=None is load-bearing** — if any footswitch accidentally gets a numeric default, the reset flow will bypass the pedal during preset creation. Assert `SWITCH` type controls always have `default=None`.
 
-### Phase 1: CBA Tech-Debt Cleanup
-Addresses: #11, #12
-Delivers: `mark_preset_saved` helper; `detect_cba_setup` public symbol
-Avoids: Pitfall 3 setup, Pitfall double-dict overwrite
+## Phase Recommendation
 
-### Phase 2: Engine I/O Decoupling
-Addresses: #1
-Delivers: Apply engine fully testable without hardware; three Protocol ports
-Avoids: Pitfall 1 (fat protocol), Pitfall 2 (unconditional scene write)
-
-### Phase 3: Plan Command Correctness
-Addresses: #13
-Delivers: Trustworthy `rig plan`; correct `no_change` detection; summary line; exit codes; `--show-unchanged`; stable JSON schema
-Avoids: Pitfall 3 (re-detection divergence), Pitfall 4 (silent cold-start), Pitfall 5 (always-changed diff)
-
-## Confidence Assessment
-
-| Area | Confidence | Notes |
-|------|------------|-------|
-| Stack | HIGH | Verified against Python 3.13 docs; existing codebase patterns confirmed |
-| Features | HIGH | Direct codebase read; IaC patterns from Terraform/Pulumi docs |
-| Architecture | HIGH | Derived from direct code reading of all affected files |
-| Pitfalls | HIGH | Each pitfall identified from direct codebase inspection with file/line references |
-
-**Overall:** HIGH
-
-## Open Questions
-
-- `before`/`after` fields on `DeviceAction` — add in Phase 3 or defer?
-- `CbaSetupAction` placement in plan output — flat list vs. integrated into `ScenePlan`?
-- Exit code values — `1` = changes, `2` = error? Confirm before implementing.
+| Phase | Focus | Key Deliverable |
+|-------|-------|-----------------|
+| 14 | Catalog data | `WOMBTONE_MKII_CONTROLS`, `BROTHERS_AM_CONTROLS`, `default=` on all controls, Mood MkII gap/name fixes |
+| 15 | Preset validation | Imperative validation in apply() Phase 2; `ValidationError` on bad param names/values |
+| 16 | Reset-to-defaults | `_build_reset_messages()` helper; wired into apply() Phase 2 before preset CCs |
 
 ---
-*Research completed: 2026-06-04 | Ready for roadmap: yes*
+*Research completed: 2026-06-08 | Ready for roadmap: yes*

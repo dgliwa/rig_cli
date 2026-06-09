@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from pydantic import BaseModel as PydanticBaseModel
 from rich.console import Console
 
+from rig.config.errors import ValidationError
 from rig.engine.appliers.base import (
     ApplyContext,
     DeviceApplyResult,
@@ -39,6 +40,57 @@ class ChaseBlissConfig(PydanticBaseModel):
         return result
 
 
+def validate_cc_params(
+    parameters: dict[str, Any],
+    controls: list[Control],
+) -> list[str]:
+    """Validate preset parameters against a device's catalog controls.
+
+    Returns a list of error strings. Empty list means valid.
+    """
+    errors: list[str] = []
+    for param_name, param_value in parameters.items():
+        control = None
+        for c in controls:
+            if c.name == param_name:
+                control = c
+                break
+
+        if control is None:
+            errors.append(f"'{param_name}' is not a valid parameter for this device")
+            continue
+
+        if control.positions and isinstance(param_value, str):
+            if param_value not in control.positions:
+                errors.append(
+                    f"'{param_name}': '{param_value}' is not a valid position; allowed: {control.positions}"
+                )
+        elif control.positions:
+            try:
+                idx = int(param_value)
+                if idx < 0 or idx >= len(control.positions):
+                    errors.append(
+                        f"'{param_name}': {param_value} is out of range (0-{len(control.positions) - 1}, as position index)"
+                    )
+            except (ValueError, TypeError):
+                errors.append(f"'{param_name}': '{param_value}' is not a valid numeric value")
+        else:
+            try:
+                val = int(param_value)
+                if control.min is not None and val < control.min:
+                    errors.append(
+                        f"'{param_name}': {param_value} is out of range ({control.min}-{control.max})"
+                    )
+                if control.max is not None and val > control.max:
+                    errors.append(
+                        f"'{param_name}': {param_value} is out of range ({control.min}-{control.max})"
+                    )
+            except (ValueError, TypeError):
+                errors.append(f"'{param_name}': '{param_value}' is not a valid numeric value")
+
+    return errors
+
+
 logger = logging.getLogger(__name__)
 console = Console()
 
@@ -60,8 +112,13 @@ def _detect_cba_setup_for_device(device: Any, state: Any, rig: Any) -> list[Any]
     if not ds.channel_established:
         actions.append(CbaSetupAction(device=device.id, midi_channel=ch, type="establish_channel"))
 
+    errors: list[str] = []
+
     for preset in [p for p in device.presets if hasattr(p, "preset_number")]:
         if not ds.presets_saved.get(preset.id):
+            param_errors = validate_cc_params(preset.parameters, device.config.controls)
+            for err in param_errors:
+                errors.append(f"  {device.id}: preset '{preset.name}' ({preset.id}) — {err}")
             actions.append(
                 CbaSetupAction(
                     device=device.id,
@@ -73,6 +130,10 @@ def _detect_cba_setup_for_device(device: Any, state: Any, rig: Any) -> list[Any]
                     cc_params=device.config.get_cc_params(preset.parameters),
                 )
             )
+
+    if errors:
+        msg = f"CBA preset validation failed for device '{device.id}':\n" + "\n".join(errors)
+        raise ValidationError(msg)
 
     if not ds.registration_done:
         scene_refs = [sn for sn, s in rig.scenes.items() if device.id in s.presets]
