@@ -120,7 +120,7 @@
 
 Plans:
 
-- [ ] 17-01: Fix stale TestMoodMkiiCatalog assertions and verify full suite green
+- [x] 17-01: Fix stale TestMoodMkiiCatalog assertions and verify full suite green
 
 ### Phase 18: Close gap: CBA-01/CBA-02 — auto-populate controls from catalog in device loading
 

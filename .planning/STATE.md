@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Chase Bliss Pedal Support
-status: planning
-last_updated: "2026-06-09T04:00:00.000Z"
-last_activity: 2026-06-08 — Phase 16 complete; v1.3 milestone complete
+status: completed
+last_updated: "2026-06-09"
+last_activity: 2026-06-09 — Phase 17 complete; stale Mood MkII catalog tests fixed; 296 tests passing
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 4
   percent: 100
 ---
 
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-08)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** v1.3 Chase Bliss Pedal Support — **all phases complete**
+**Current focus:** v1.3 Chase Bliss Pedal Support — Phase 17 added for catalog fix
 
 ## Current Position
 
-Phase: 16 — Reset-to-Defaults
-Plan: 01
-Status: Complete ✅
-Last activity: 2026-06-08 — Phase 14, 15, and 16 complete; v1.3 milestone complete
+Phase: 18 — Close gap: CBA-01/CBA-02 auto-populate controls from catalog
+Plan: None
+Status: Not started
+Last activity: 2026-06-09 — Phase 17 complete; all 4 phases in v1.3 done
 
 ```
-Progress: ██████████ 100% (3/3 phases)
+Progress: ██████████ 100% (4/4 phases)
 ```
 
 ## Performance Metrics
@@ -61,6 +61,7 @@ Progress: ██████████ 100% (3/3 phases)
 | 14 | 1 | - | - |
 | 15 | 1 | - | - |
 | 16 | 1 | - | - |
+| 17 | 1 | - | - |
 
 ## Decisions
 
@@ -78,6 +79,13 @@ Progress: ██████████ 100% (3/3 phases)
 - **Validation (Phase 15) before reset (Phase 16)** — both phases consume catalog controls; validation naturally precedes any action that touches the device; convention from research
 - **All three phases live in rig-chasebliss package** — no core changes; `Control` model change is additive and backward-compatible
 - **Imperative validation in apply(), not Pydantic model_validator** — catalog lookup at model construction time would couple the model layer to the plugin; validation at apply time is correct
+
+## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 17 added: Fix stale Mood MkII catalog tests
+- Phase 18 added: Close gap: CBA-01/CBA-02 — auto-populate controls from catalog in device loading
 
 ## Deferred Items
 
