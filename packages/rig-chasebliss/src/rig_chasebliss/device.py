@@ -166,6 +166,20 @@ class ChaseBlissDevice(BaseModel):
     type: DeviceType = DeviceType.DIGITAL
     presets: list[Any] = Field(default_factory=list)
 
+    @classmethod
+    def from_raw_yaml(cls, data: dict[str, Any]) -> ChaseBlissDevice:
+        from rig_chasebliss.preset import DigitalPreset
+
+        config = ChaseBlissConfig(**(data.get("config") or {}))
+        presets = [DigitalPreset(**p) for p in (data.get("presets") or [])]
+        return cls(
+            id=data["id"],
+            name=data.get("name", ""),
+            type=DeviceType.DIGITAL,
+            config=config,
+            presets=presets,
+        )
+
     def plan(self, ctx: PluginContext) -> object:
         raise NotImplementedError
 

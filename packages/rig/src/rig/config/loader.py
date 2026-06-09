@@ -36,7 +36,6 @@ import yaml
 
 from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
 from rig.engine.plugin_registry import get_registry
-from rig.models.preset import Preset
 from rig.models.rig import Rig
 
 logger = logging.getLogger(__name__)
@@ -66,34 +65,12 @@ def _read_yaml(path: Path):
         raise ParseError(f"Invalid YAML in {path}: {e}")
 
 
-def _parse_presets(device_type: str, preset_list: list[dict]) -> list[Preset]:
-    """Parse raw preset dicts into the correct preset model type.
-
-    Dispatches to the correct plugin's preset model based on device_type.
-    """
-    if not preset_list:
-        return []
-    if device_type == "analog":
-        from rig_analog.preset import AnalogPreset
-
-        return [AnalogPreset(**p) for p in preset_list]
-    if device_type == "modeler":
-        from rig_hx.preset import HXStompPreset
-
-        return [HXStompPreset(**p) for p in preset_list]
-    from rig_chasebliss.preset import DigitalPreset
-
-    return [DigitalPreset(**p) for p in preset_list]
-
-
 def _parse_device(data: dict) -> Any:
-    """Parse a device entry dict into a concrete plugin device model.
+    """Parse a raw device YAML dict into a plugin device instance.
 
-    Dispatches to the plugin model class registered for ``config.type``
-    via entry points. Presets are parsed into the correct model type
-    based on ``device_type`` (analog→AnalogPreset, modeler→HXStompPreset,
-    digital/other→DigitalPreset). Unknown config types raise
-    ``ValidationError``.
+    Dispatches to the model class registered for the config type, then
+    delegates all parsing (config coercion, preset construction, etc.)
+    to the plugin's own ``from_raw_yaml`` classmethod.
     """
     config_data = data.get("config") or {}
     config_type = config_data.get("type") if isinstance(config_data, dict) else None
@@ -102,15 +79,7 @@ def _parse_device(data: dict) -> Any:
         raise ValidationError(
             f"Unknown device config type '{config_type}' — is the plugin registered?"
         )
-    # Parse presets into proper model types before passing to plugin model
-    device_type = data.get("type", "")
-    raw_presets = data.get("presets", []) or []
-    parsed_presets = _parse_presets(device_type, raw_presets)
-    device_data = {
-        **data,
-        "presets": parsed_presets,
-    }
-    return model_class(**device_data)
+    return model_class.from_raw_yaml(data)
 
 
 def _validate_references(rig: Rig):

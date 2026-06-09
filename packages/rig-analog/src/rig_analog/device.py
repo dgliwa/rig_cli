@@ -26,6 +26,19 @@ class AnalogDevice(BaseModel):
     type: DeviceType = DeviceType.ANALOG
     presets: list[Any] = Field(default_factory=list)
 
+    @classmethod
+    def from_raw_yaml(cls, data: dict[str, Any]) -> AnalogDevice:
+        from rig_analog.preset import AnalogPreset
+
+        presets = [AnalogPreset(**p) for p in (data.get("presets") or [])]
+        return cls(
+            id=data["id"],
+            name=data.get("name", ""),
+            type=DeviceType.ANALOG,
+            config=data.get("config") or {},
+            presets=presets,
+        )
+
     def plan(self, ctx: PluginContext) -> object:
         raise NotImplementedError
 

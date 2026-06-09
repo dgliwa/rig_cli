@@ -33,7 +33,7 @@ Required methods:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, Self
 
 from rig.engine.state import RigState
 
@@ -135,6 +135,9 @@ class Device(Protocol):
 
     @property
     def presets(self) -> list[Any]: ...
+
+    @classmethod
+    def from_raw_yaml(cls, data: dict[str, Any]) -> Self: ...
 
     def plan(self, ctx: PluginContext) -> object: ...
 

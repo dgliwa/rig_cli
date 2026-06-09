@@ -8,3 +8,9 @@ class Preset(BaseModel):
     name: str = ""
     notes: str | None = None
     tags: list[str] = []
+
+
+class MidiPreset(Preset):
+    """Generic MIDI device preset — a preset number sent as a PC message."""
+
+    preset_number: int

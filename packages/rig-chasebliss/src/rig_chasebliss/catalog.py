@@ -16,7 +16,7 @@ class Control(BaseModel):
     midi_cc: int | None = None
     min: float | str | bool | None = None
     max: float | str | bool | None = None
-    positions: list[str] = []
+    positions: list[int | str] = []
     expression_assignable: bool = False
     default: float | None = None
 

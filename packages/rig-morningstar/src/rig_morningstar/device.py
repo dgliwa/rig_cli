@@ -26,6 +26,16 @@ class MC6Device(BaseModel):
     type: DeviceType = DeviceType.CONTROLLER
     presets: list[Any] = Field(default_factory=list)
 
+    @classmethod
+    def from_raw_yaml(cls, data: dict[str, Any]) -> MC6Device:
+        return cls(
+            id=data["id"],
+            name=data.get("name", ""),
+            type=DeviceType.CONTROLLER,
+            config=data.get("config") or {},
+            presets=[],
+        )
+
     def plan(self, ctx: PluginContext) -> object:
         raise NotImplementedError
 
@@ -109,7 +119,7 @@ class MC6Device(BaseModel):
                         msg_slot = 0
                         for pedal_id, preset_id in scene_obj.presets.items():
                             pedal = rig.devices.get(pedal_id)
-                            if pedal is None or pedal.config.midi_channel is None:
+                            if pedal is None:
                                 continue
                             pc = pedal.get_scene_pc_command(preset_id)
                             if pc:

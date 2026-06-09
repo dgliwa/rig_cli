@@ -34,6 +34,27 @@ class HXStompDevice(BaseModel):
     type: DeviceType = DeviceType.MODELER
     presets: list[Any] = Field(default_factory=list)
 
+    @classmethod
+    def from_raw_yaml(cls, data: dict[str, Any]) -> HXStompDevice:
+        raw_presets = data.get("presets") or []
+        if data.get("type") == "modeler":
+            from rig_hx.preset import HXStompPreset
+
+            presets = [HXStompPreset(**p) for p in raw_presets]
+            device_type = DeviceType.MODELER
+        else:
+            from rig.models.preset import MidiPreset
+
+            presets = [MidiPreset(**p) for p in raw_presets]
+            device_type = DeviceType.DIGITAL
+        return cls(
+            id=data["id"],
+            name=data.get("name", ""),
+            type=device_type,
+            config=data.get("config") or {},
+            presets=presets,
+        )
+
     def plan(self, ctx: PluginContext) -> object:
         raise NotImplementedError
 
