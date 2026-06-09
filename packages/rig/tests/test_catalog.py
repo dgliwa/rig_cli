@@ -14,14 +14,14 @@ FIXTURE_PATH = str(Path(__file__).parent / "fixtures" / "sample_rig")
 class TestMoodMkiiCatalog:
     def test_has_expected_knob_count(self):
         knobs = [c for c in MOOD_MKII_CONTROLS if c.type == ControlType.KNOB]
-        assert len(knobs) == 7
+        assert len(knobs) == 13
 
     def test_knobs_have_correct_cc_numbers(self):
         by_name = {c.name: c for c in MOOD_MKII_CONTROLS}
         assert by_name["time"].midi_cc == 14
         assert by_name["mix"].midi_cc == 15
-        assert by_name["wet_bypass"].midi_cc == 103
-        assert by_name["micro_bypass"].midi_cc == 102
+        assert by_name["wet_bypass"].midi_cc == 102
+        assert by_name["loop_bypass"].midi_cc == 103
 
     def test_dip_banks_complete(self):
         l_bank = [c for c in MOOD_MKII_CONTROLS if c.name.startswith("dip_l_")]
