@@ -131,4 +131,4 @@ Plans:
 
 Plans:
 
-- [ ] 18-01: Add `model` field to ChaseBlissConfig and wire get_controls() into from_raw_yaml()
+- [x] 18-01: Add `model` field to ChaseBlissConfig and wire get_controls() into from_raw_yaml()

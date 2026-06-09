@@ -4,7 +4,7 @@ milestone: v1.3
 milestone_name: Chase Bliss Pedal Support
 status: completed
 last_updated: "2026-06-09"
-last_activity: 2026-06-09 — Phase 17 complete; stale Mood MkII catalog tests fixed; 296 tests passing
+last_activity: 2026-06-09 — Phase 18 complete; CBA-01/CBA-02 auto-populate controls from catalog wired; 40 rig-chasebliss tests passing
 progress:
   total_phases: 4
   completed_phases: 4
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-06-08)
 ## Current Position
 
 Phase: 18 — Close gap: CBA-01/CBA-02 auto-populate controls from catalog
-Plan: None
-Status: Not started
-Last activity: 2026-06-09 — Phase 17 complete; all 4 phases in v1.3 done
+Plan: 18-01
+Status: Completed
+Last activity: 2026-06-09 — Phase 18 complete; CBA-01/CBA-02 controls auto-populate from catalog
 
 ```
 Progress: ██████████ 100% (4/4 phases)
