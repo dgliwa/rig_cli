@@ -2,7 +2,7 @@
 phase: 15-preset-parameter-validation
 plan: 01
 status: complete
-commit: (to be filled after commit)
+commit: 12bcd9a
 ---
 
 ## What was done
