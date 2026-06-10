@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 
 Phase: Complete — v1.3 shipped
 Status: Shipped 2026-06-10
-Last activity: 2026-06-10 — Milestone v1.3 Chase Bliss Pedal Support complete
+Last activity: 2026-06-10 — Completed quick task 260610-vae: Remove controls from ChaseBlissConfig, resolve from catalog at call sites
 
 ```
 Progress: ████████████ 100% (6/6 phases)
@@ -88,6 +88,12 @@ Progress: ████████████ 100% (6/6 phases)
 - **v1.1** (Phases 6-8): Package Extraction & Plugin Isolation — shipped 2026-06-07
 - **v1.2** (Phases 9-13): Cleaner Core — shipped 2026-06-08
 - **v1.3** (Phases 14-19): Chase Bliss Pedal Support — shipped 2026-06-10 — CBA catalog expansion (Mood MkII, Wombtone MkII, Brothers AM), preset parameter validation, reset-to-defaults flow, catalog auto-population from device model name
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260610-vae | Remove controls from ChaseBlissConfig, resolve from catalog at call sites | 2026-06-10 | 63ddd9d | [260610-vae-remove-controls-from-chaseblissconfig](.planning/quick/260610-vae-remove-controls-from-chaseblissconfig/) |
 
 ## Deferred Items
 
