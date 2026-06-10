@@ -137,7 +137,63 @@
 
 ---
 
+## Milestone: v1.3 — Chase Bliss Pedal Support
+
+**Shipped:** 2026-06-10
+**Phases:** 6 (14–19) | **Plans:** 6
+
+### What Was Built
+
+- CBA Catalog Expansion — `Control.default` field, complete Wombtone MkII (12 controls, CC14-21), Brothers AM (28 controls, 8 knobs + 3 toggles + 15 dipswitches + 2 footswitches), Mood MkII (47 controls, backfilled CC24-29, CC31-33, CC52; CC102/103 name fix)
+- Preset Parameter Validation — `validate_cc_params()` rejects unknown names and out-of-range values with grouped `ValidationError` before any pedal interaction
+- Reset-to-Defaults — `_send_reset_ccs()` per-preset CC reset of all resettable controls (non-None defaults) before preset CC sends, excluding footswitches/utilities
+- Catalog Auto-Population — `ChaseBlissConfig.model` field + `get_controls()` wired into `from_raw_yaml()` so device YAML with a model name auto-populates controls
+- Verification & Validation Docs — Created VERIFICATION.md and VALIDATION.md for phases 14-18 (10 files), closing all audit procedural gaps
+
+### What Worked
+
+- **Phase 18 as a targeted gap-closure phase**: The single-purpose phase (add model field + wire get_controls) was exactly right — narrow scope, fast execution, clear success criteria
+- **Milestone audit caught real gaps**: The audit identified that `get_controls()` was defined but had zero production callers — a genuine wiring gap that would have made CBA-01/CBA-02 catalogs inert. The audit also caught all 5 missing VERIFICATION.md/VALIDATION.md files
+- **Phase 19 documentation phase**: Creating all 11 missing documentation files in a single documentation-only phase was efficient — no code changes needed, just thorough verification evidence
+- **All 6 CBA requirements satisfied**: Despite the milestone expanding from 3 to 6 phases, all requirements shipped with full test coverage
+
+### What Was Inefficient
+
+- **Catalog tests left stale after Phase 14**: Phase 14 expanded Mood MkII from 7 to 47 controls but the existing test assertions weren't updated until Phase 17 — a 3-phase gap that required a dedicated fix phase. A post-phase cross-phase test sweep would have caught this immediately
+- **`get_controls()` defined but unwired in Phase 14**: The catalog function was written and tested in Phase 14 but had no production callers until Phase 18 — a 4-phase gap between definition and wiring. The plan assumed `get_controls()` would be wired at the entry point, but that wiring path wasn't plumbed until the loader schema rewrite (v1.2) was deployed
+- **No VERIFICATION.md/VALIDATION.md created during execution**: All 5 phases were implemented without formal verification documentation — a recurring GSD workflow gap across all milestones. Phase 19 closed this retroactively
+- **STATS.md never completed**: Performance metrics columns remain empty across all phases — missed opportunity for velocity tracking
+
+### Patterns Established
+
+- `ChaseBlissConfig.model` + `from_raw_yaml()` catalog auto-population pattern — explicit YAML controls take precedence; catalog is the fallback
+- Retroactive documentation phases for closing audit gaps — Phase 19 served as the canonical example of a docs-only gap-closure phase with measurable success criteria
+- `_send_reset_ccs()` as a distinct inner function in `_build_preset()` — separated the reset concern from the preset CC send concern within the same method
+
+### Key Lessons
+
+- **Test every new function immediately**: `get_controls()` was tested in isolation in Phase 14 but its wiring should have been verified right away — the 3-phase gap between function definition and integration test was too long. Either wire in the same phase or add an integration-level test with mocked entry point discovery
+- **Documentation phases are cheap insurance**: Adding VERIFICATION.md and VALIDATION.md during execution takes < 30 seconds per phase — the retroactive docs phase took 5 minutes for 11 files because all the evidence was already in the code. Doing it inline during execution would have been faster
+- **Audit gaps reveal blind spots**: The milestone audit found all the procedural gaps that every previous milestone also had — the workflow was systematically not creating validation artifacts. Fixing the workflow (creating VERIFICATION.md/VALIDATION.md during execution) would prevent this for future milestones
+- **Narrow gap-closure phases work**: Phases 17 (test fix), 18 (wiring), and 19 (docs) had single responsibilities — each was < 5 minutes of execution time. This granularity made them easy to reason about, commit, and verify
+
+### Cost Observations
+
+- Sessions: 2 sessions across 3 days (2026-06-08 to 2026-06-10)
+- Plans: 6 total across 6 phases
+- Notable: Phase 14 catalog expansion was the highest value (3 complete catalogs in one commit); Phase 19 docs closure was the fastest (11 files in < 5 min)
+
 ## Cross-Milestone Trends
+
+| Metric | v1.0 | v1.1 | v1.2 | v1.3 |
+|--------|------|------|------|------|
+| Phases | 5 | 3 | 5 | 6 |
+| Plans | 17 | 8 | 8 | 6 |
+| LOC (Python) | 3,625 | ~20,658 | 7,349 | 1,023 |
+| Timeline | 7 days | 1 day | 1 day | 3 days |
+| Replanning events | 1 (Phase 3) | 0 | 0 | 0 |
+| Missing SUMMARY.md | 0 | 2 | 2 | 0 |
+| Missing VERIFICATION.md | N/A | N/A | N/A | 0 (closed in Phase 19) |
 
 | Metric | v1.0 | v1.1 | v1.2 |
 |--------|------|------|------|
