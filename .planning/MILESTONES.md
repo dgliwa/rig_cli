@@ -54,3 +54,21 @@
 **Known deferred items at close:** 0
 
 ---
+## v1.3 Chase Bliss Pedal Support (Shipped: 2026-06-10)
+
+**Phases completed:** 6 phases (14–19), 6 plans
+**Files changed:** 83, 5,919 insertions / 1,304 deletions
+**Python LOC in rig-chasebliss package:** 1,023
+
+**Key accomplishments:**
+
+- **CBA Catalog Expansion** — Added `Control.default` field, complete Wombtone MkII (CC14-21), Brothers AM (24 controls), and Mood MkII (47 controls) catalogs
+- **Preset Parameter Validation** — `validate_cc_params()` rejects unknown names and out-of-range values with `ValidationError` before pedal interaction
+- **Reset-to-Defaults** — `_send_reset_ccs()` per-preset reset of all resettable controls before preset CC sends, excluding footswitches/utilities
+- **Catalog Auto-Population** — `ChaseBlissConfig.model` field + `get_controls()` wired into `from_raw_yaml()` — device YAML with a model name auto-populates controls
+- **Verification & Validation Docs** — Created VERIFICATION.md and VALIDATION.md for phases 14-18 (10 files), closing all audit gaps
+- **Full test suite:** 300 passed, 0 failures across all v1.3 changes
+
+**Known deferred items at close:** 2 (see STATE.md Deferred Items — validation state-gating, reset CC connected_devices gate)
+
+---

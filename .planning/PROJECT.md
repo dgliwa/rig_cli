@@ -36,16 +36,16 @@ A single command should bring the physical rig to the exact state described in t
 - ✓ **Loader rewritten for single-file layout** — `load_rig()` parses one `rig.yaml`; multi-file paths removed; scenes extracted from controller device config — v1.2
 - ✓ **Dead code sweep** — `rig generate mc6` command removed; `composes` validation removed; all `TODO: 1.2` markers cleared; multi-file compat paths deleted — v1.2
 - ✓ **`Rig.scenes` as computed property** — scenes aggregated from controller devices, not stored as a flat field; `compute.py` `is_hx` branch removed; all preset lookups unified through `_get_preset_number` — v1.2
+- ✓ **CBA-04: Control model default field** — `Control.default: float | None = None` added; footswitches/utilities get `None`, knobs get numeric defaults — v1.3
+- ✓ **CBA-01: Wombtone MkII catalog** — 12 controls (CC14-21) with ranges and defaults — v1.3
+- ✓ **CBA-02: Brothers AM catalog** — 28 controls (8 knobs, 3 toggles, 15 dipswitches, 2 footswitches) with ranges and defaults — v1.3
+- ✓ **CBA-03: Mood MkII catalog backfill** — 47 controls; CC24-29, CC31-33, CC52 added; CC102=wet_bypass, CC103=loop_bypass — v1.3
+- ✓ **CBA-05: Preset parameter validation** — unknown names and out-of-range values raise `ValidationError` before pedal interaction — v1.3
+- ✓ **CBA-06: Reset-to-defaults** — per-preset CC reset of all resettable controls before preset CC sends — v1.3
 
 ### Active
 
 - [ ] **PKG-07**: Plugin authoring docs — how to write a new plugin package
-- [ ] **CBA-01**: MIDI CC catalog for Mood MkII (knob/switch → CC number map)
-- [ ] **CBA-02**: MIDI CC catalog for Wombtone MkII (knob/switch → CC number map)
-- [ ] **CBA-03**: MIDI CC catalog for Brothers (knob/switch → CC number map)
-- [ ] **CBA-04**: Preset validation against CC ranges for each new CBA pedal
-- [ ] **CBA-05**: Apply integration — wire new catalogs into rig-chasebliss apply flow
-- [ ] **CBA-06**: Reset-to-defaults operation in apply flow (send all controls to CC defaults before applying preset)
 
 ### Out of Scope
 
@@ -60,22 +60,15 @@ A single command should bring the physical rig to the exact state described in t
 | UI (#18) | Speculative — not planned |
 | CI independent package publishing | Low-priority infra — local `uv` workflow sufficient for now |
 
-## Current Milestone: v1.3 Chase Bliss Pedal Support
-
-**Goal:** Add full MIDI CC catalog, preset validation, and apply integration for Mood MkII, Wombtone MkII, and Brothers Chase Bliss pedals, including a reset-to-defaults step in the apply flow.
-
-**Target features:**
-- MIDI CC catalogs for Mood MkII, Wombtone MkII, and Brothers
-- Preset validation against CC ranges for each new pedal
-- Apply integration: wire new catalogs into rig-chasebliss apply flow
-- Reset-to-defaults operation in apply flow (send all controls to CC defaults before applying a preset)
-
 ## Current State
 
-Phases 1–13 shipped across v1.0–v1.2. v1.3 Chase Bliss Pedal Support milestone in progress.
+Phases 1–19 shipped across v1.0–v1.3 (4 milestones). v1.3 Chase Bliss Pedal Support milestone complete.
+
+**Milestone v1.3 shipped 2026-06-10:** 6 phases (14-19), 6 plans, 1,023 LOC in `rig_chasebliss/` package. Full CBA catalog support (Mood MkII, Wombtone MkII, Brothers AM), preset parameter validation, reset-to-defaults flow, and catalog auto-population from device model name. All 6 CBA requirements satisfied.
 
 ## Context
 
+- **v1.3 shipped 2026-06-10**: 6 phases (14–19), 6 plans, 1,023 LOC in `rig_chasebliss/` package
 - **v1.2 shipped 2026-06-08**: 5 phases (9–13), 8 plans, 7,349 LOC Python across all packages
 - **v1.1 shipped 2026-06-07**: 3 phases (6–8), 8 plans
 - **v1.0 shipped 2026-06-07**: 5 phases, 17 plans
@@ -84,6 +77,7 @@ Phases 1–13 shipped across v1.0–v1.2. v1.3 Chase Bliss Pedal Support milesto
 - Plugin discovery: `importlib.metadata.entry_points('rig.devices')` — install a package, it appears; uninstall, it disappears
 - `rig plan` is the read-only preview step; `rig apply` is the commit step — clean separation enforced by no-MIDI-in-plan constraint
 - Known tech debt: `Device.plan()` / `Device.diff()` stubs raise NotImplementedError — dead code from Phase 4 forward stubs; plan is computed via `compute_plan`, not device methods
+- CBA catalog auto-population: device YAML with `config.model: <Model Name>` (e.g., "Wombtone MkII", "Brothers AM", "Mood MkII") auto-populates controls from the catalog; explicit YAML controls take precedence
 
 ## Constraints
 
@@ -108,6 +102,11 @@ Phases 1–13 shipped across v1.0–v1.2. v1.3 Chase Bliss Pedal Support milesto
 | Entry points as sole discovery path (no code-level fallback) | Eliminates import-time coupling; enables third-party plugins without core changes | ✓ Good — v1.1 |
 | Device-level MIDI lifecycle (`Device.setup()` owns connection) | Cleaner separation; engine doesn't need to know which devices need MIDI setup | ✓ Good — v1.1 |
 | `MidiConnectionIO` Protocol removed entirely | Once devices own MIDI setup, the Protocol has no remaining purpose — remove rather than leave empty | ✓ Good — v1.1 |
+| CBA-04 + CBA-01 + CBA-02 + CBA-03 grouped in Phase 14 | Single phase avoids partial state — `Control.default` field is prerequisite for complete catalogs | ✓ Good — v1.3 |
+| Validation (Phase 15) before reset (Phase 16) | Both consume catalog controls; validation precedes any action that touches the device | ✓ Good — v1.3 |
+| Imperative validation in apply(), not Pydantic model_validator | Catalog lookup at construction time would couple model layer to plugin | ✓ Good — v1.3 |
+| Auto-populate only when controls list is empty | Explicit YAML controls always take precedence over catalog lookup | ✓ Good — v1.3 |
+| Manufacturer hardcoded as "Chase Bliss Audio" in from_raw_yaml() | This is the CBA plugin — model is the only variable discriminator needed | ✓ Good — v1.3 |
 
 ## Evolution
 
@@ -127,4 +126,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-08 — v1.3 Chase Bliss Pedal Support milestone started*
+*Last updated: 2026-06-10 — v1.3 Chase Bliss Pedal Support milestone shipped*

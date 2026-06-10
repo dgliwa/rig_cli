@@ -2,42 +2,41 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Chase Bliss Pedal Support
-status: active
-last_updated: "2026-06-09T22:20:00Z"
-last_activity: 2026-06-09 — Phase 19 added: close verification gaps
+status: shipped
+last_updated: "2026-06-10T12:00:00Z"
+last_activity: 2026-06-10 — Milestone v1.3 shipped
 progress:
-  total_phases: 7
-  completed_phases: 4
-  total_plans: 5
-  completed_plans: 4
-  percent: 57
+  total_phases: 6
+  completed_phases: 6
+  total_plans: 6
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-08)
+See: .planning/PROJECT.md (updated 2026-06-10)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** v1.3 Chase Bliss Pedal Support — Phase 17 added for catalog fix
+**Current focus:** Milestone v1.3 complete — planning next milestone
 
 ## Current Position
 
-Phase: 19 — Close v1.3 verification gaps — add VERIFICATION.md and VALIDATION.md for phases 14-18
-Plan: (none yet)
-Status: Not planned
-Last activity: 2026-06-09 — Phase 19 added
+Phase: Complete — v1.3 shipped
+Status: Shipped 2026-06-10
+Last activity: 2026-06-10 — Milestone v1.3 Chase Bliss Pedal Support complete
 
 ```
-Progress: ████████░░ 57% (4/7 phases)
+Progress: ████████████ 100% (6/6 phases)
 ```
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 26
+- Total plans completed: 32
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -57,11 +56,12 @@ Progress: ████████░░ 57% (4/7 phases)
 | 10 | 1 | - | - |
 | 11 | 1 | - | - |
 | 12 | 1 | - | - |
-| 13 | 0 | - | - |
 | 14 | 1 | - | - |
 | 15 | 1 | - | - |
 | 16 | 1 | - | - |
 | 17 | 1 | - | - |
+| 18 | 1 | - | - |
+| 19 | 1 | - | - |
 
 ## Decisions
 
@@ -82,11 +82,12 @@ Progress: ████████░░ 57% (4/7 phases)
 
 ## Accumulated Context
 
-### Roadmap Evolution
+### Milestones
 
-- Phase 17 added: Fix stale Mood MkII catalog tests
-- Phase 18 added: Close gap: CBA-01/CBA-02 — auto-populate controls from catalog in device loading
-- Phase 19 added: Close v1.3 verification gaps — add VERIFICATION.md and VALIDATION.md for phases 14-18
+- **v1.0** (Phases 1-5): I/O Decoupling & Plugin Architecture — shipped 2026-06-07
+- **v1.1** (Phases 6-8): Package Extraction & Plugin Isolation — shipped 2026-06-07
+- **v1.2** (Phases 9-13): Cleaner Core — shipped 2026-06-08
+- **v1.3** (Phases 14-19): Chase Bliss Pedal Support — shipped 2026-06-10 — CBA catalog expansion (Mood MkII, Wombtone MkII, Brothers AM), preset parameter validation, reset-to-defaults flow, catalog auto-population from device model name
 
 ## Deferred Items
 
@@ -94,3 +95,5 @@ Progress: ████████░░ 57% (4/7 phases)
 |----------|------|--------|-------------|
 | Plugin | `generate_mc6` should read scenes from MC6 config instead of `Rig.scenes` | resolved — removed in Phase 12 | Phase 10 |
 | Plugin | MC6 apply could leverage `composes` data | resolved — removed in Phase 12 | Phase 10 |
+| Validation | CBA validation skips already-saved presets (state-gating) — edited YAML params not re-validated until state reset | 🟡 Acknowledged | v1.3 |
+| Reset | `_send_reset_ccs()` lacks `connected_devices` gate — asymmetric with `_send_ccs()` (non-blocking, exceptions caught) | 🟡 Acknowledged | v1.3 |
