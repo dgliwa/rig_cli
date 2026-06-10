@@ -4,7 +4,7 @@ from rig.config.loader import load_rig
 from rig.models.device import Device, DeviceType
 from rig.models.rig import Rig
 from rig_chasebliss.catalog import MOOD_MKII_CONTROLS, Control, ControlType
-from rig_chasebliss.device import ChaseBlissConfig
+from rig_chasebliss.device import ChaseBlissConfig, _get_cc_params
 from rig_chasebliss.preset import DigitalPreset
 from rig_hx.preset import HXStompPreset
 
@@ -33,37 +33,28 @@ class TestMoodMkiiCatalog:
 
 
 class TestGetCcParams:
-    def _midi_config_with_controls(self):
-        return ChaseBlissConfig(
-            midi_channel=2,
-            controls=[
-                Control(name="time", type=ControlType.KNOB, midi_cc=14, min=0, max=127),
-                Control(name="mix", type=ControlType.KNOB, midi_cc=15, min=0, max=127),
-            ],
-        )
+    def _controls(self):
+        return [
+            Control(name="time", type=ControlType.KNOB, midi_cc=14, min=0, max=127),
+            Control(name="mix", type=ControlType.KNOB, midi_cc=15, min=0, max=127),
+        ]
 
     def test_returns_cc_value_pairs(self):
-        cfg = self._midi_config_with_controls()
-        result = cfg.get_cc_params({"time": 64, "mix": 90})
+        result = _get_cc_params({"time": 64, "mix": 90}, self._controls())
         assert {"cc": 14, "value": 64} in result
         assert {"cc": 15, "value": 90} in result
 
     def test_unknown_params_excluded(self):
-        cfg = self._midi_config_with_controls()
-        result = cfg.get_cc_params({"time": 64, "unknown_param": 99})
+        result = _get_cc_params({"time": 64, "unknown_param": 99}, self._controls())
         assert len(result) == 1
         assert result[0]["cc"] == 14
 
     def test_empty_params_returns_empty(self):
-        cfg = self._midi_config_with_controls()
-        assert cfg.get_cc_params({}) == []
+        assert _get_cc_params({}, self._controls()) == []
 
-    def test_chase_bliss_config_inherits_midi_config(self):
-        cfg = ChaseBlissConfig(
-            midi_channel=2,
-            controls=[Control(name="time", type=ControlType.KNOB, midi_cc=14, min=0, max=127)],
-        )
-        result = cfg.get_cc_params({"time": 50})
+    def test_single_control_maps_correctly(self):
+        controls = [Control(name="time", type=ControlType.KNOB, midi_cc=14, min=0, max=127)]
+        result = _get_cc_params({"time": 50}, controls)
         assert result == [{"cc": 14, "value": 50}]
 
 

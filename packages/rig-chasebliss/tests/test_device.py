@@ -108,15 +108,15 @@ def test_validate_min_max_not_applicable():
     assert validate_cc_params({"volume": 64, "switch": 0}, controls) == []
 
 
-def test_from_raw_yaml_known_model_populates_controls():
+def test_from_raw_yaml_known_model_stores_model_name():
     device = ChaseBlissDevice.from_raw_yaml(
         {"id": "mood", "name": "Mood MkII", "config": {"type": "chase_bliss", "model": "Mood MkII"}}
     )
-    assert len(device.config.controls) > 0
-    assert any(c.name == "time" for c in device.config.controls)
+    assert device.config.model == "Mood MkII"
+    assert not hasattr(device.config, "controls")
 
 
-def test_from_raw_yaml_unknown_model_leaves_controls_empty():
+def test_from_raw_yaml_unknown_model_stores_model_name():
     device = ChaseBlissDevice.from_raw_yaml(
         {
             "id": "x",
@@ -124,10 +124,11 @@ def test_from_raw_yaml_unknown_model_leaves_controls_empty():
             "config": {"type": "chase_bliss", "model": "Nonexistent Model"},
         }
     )
-    assert device.config.controls == []
+    assert device.config.model == "Nonexistent Model"
 
 
-def test_from_raw_yaml_explicit_controls_not_overwritten():
+def test_from_raw_yaml_controls_in_yaml_are_ignored():
+    # ChaseBlissConfig has extra="ignore" — controls key is silently dropped
     explicit = [{"name": "volume", "type": "knob", "midi_cc": 15}]
     device = ChaseBlissDevice.from_raw_yaml(
         {
@@ -136,12 +137,11 @@ def test_from_raw_yaml_explicit_controls_not_overwritten():
             "config": {"type": "chase_bliss", "model": "Mood MkII", "controls": explicit},
         }
     )
-    assert len(device.config.controls) == 1
-    assert device.config.controls[0].name == "volume"
+    assert not hasattr(device.config, "controls")
 
 
-def test_from_raw_yaml_no_model_leaves_controls_empty():
+def test_from_raw_yaml_no_model_is_none():
     device = ChaseBlissDevice.from_raw_yaml(
         {"id": "x", "name": "Mystery", "config": {"type": "chase_bliss"}}
     )
-    assert device.config.controls == []
+    assert device.config.model is None

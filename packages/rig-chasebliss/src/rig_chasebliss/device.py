@@ -28,17 +28,11 @@ from rig_chasebliss.catalog import Control, get_controls
 
 
 class ChaseBlissConfig(PydanticBaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     type: Literal["chase_bliss"] = "chase_bliss"
     midi_channel: int | None = None
     model: str | None = None
-    controls: list[Control] = []
-
-    def get_cc_params(self, parameters: dict[str, Any]) -> list[dict[str, int]]:
-        result = []
-        for ctrl in self.controls:
-            if ctrl.midi_cc is not None and ctrl.name in parameters:
-                result.append({"cc": ctrl.midi_cc, "value": int(parameters[ctrl.name])})
-        return result
 
 
 def validate_cc_params(
@@ -92,6 +86,15 @@ def validate_cc_params(
     return errors
 
 
+def _get_cc_params(parameters: dict[str, Any], controls: list[Control]) -> list[dict[str, int]]:
+    """Build CC param list from preset parameters and resolved controls."""
+    result = []
+    for ctrl in controls:
+        if ctrl.midi_cc is not None and ctrl.name in parameters:
+            result.append({"cc": ctrl.midi_cc, "value": int(parameters[ctrl.name])})
+    return result
+
+
 logger = logging.getLogger(__name__)
 console = Console()
 
@@ -113,11 +116,12 @@ def _detect_cba_setup_for_device(device: Any, state: Any, rig: Any) -> list[Any]
     if not ds.channel_established:
         actions.append(CbaSetupAction(device=device.id, midi_channel=ch, type="establish_channel"))
 
+    controls = get_controls("Chase Bliss Audio", getattr(device.config, "model", None) or "") or []
     errors: list[str] = []
 
     for preset in [p for p in device.presets if hasattr(p, "preset_number")]:
         if not ds.presets_saved.get(preset.id):
-            param_errors = validate_cc_params(preset.parameters, device.config.controls)
+            param_errors = validate_cc_params(preset.parameters, controls)
             for err in param_errors:
                 errors.append(f"  {device.id}: preset '{preset.name}' ({preset.id}) — {err}")
             actions.append(
@@ -128,7 +132,7 @@ def _detect_cba_setup_for_device(device: Any, state: Any, rig: Any) -> list[Any]
                     preset_id=preset.id,
                     preset_name=preset.name,
                     preset_number=preset.preset_number,
-                    cc_params=device.config.get_cc_params(preset.parameters),
+                    cc_params=_get_cc_params(preset.parameters, controls),
                 )
             )
 
@@ -172,10 +176,6 @@ class ChaseBlissDevice(BaseModel):
         from rig_chasebliss.preset import DigitalPreset
 
         config = ChaseBlissConfig(**(data.get("config") or {}))
-        if not config.controls and config.model:
-            catalog_controls = get_controls("Chase Bliss Audio", config.model)
-            if catalog_controls:
-                config = config.model_copy(update={"controls": catalog_controls})
         presets = [DigitalPreset(**p) for p in (data.get("presets") or [])]
         return cls(
             id=data["id"],

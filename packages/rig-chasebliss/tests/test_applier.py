@@ -10,6 +10,8 @@ from rig_chasebliss.catalog import Control, ControlType
 from rig_chasebliss.device import ChaseBlissConfig
 from rig_chasebliss.models import CbaSetupAction
 
+_TEST_MODEL = "Test Model"
+
 
 class _FakeDevice:
     """Minimal device object for test rig construction."""
@@ -22,8 +24,8 @@ class _FakeDevice:
         self.presets = []
 
 
-def _make_rig(controls: list[Control]) -> Rig:
-    config = ChaseBlissConfig(controls=controls)
+def _make_rig() -> Rig:
+    config = ChaseBlissConfig(model=_TEST_MODEL)
     device = _FakeDevice("test_cba", config)
     return Rig(
         name="test",
@@ -31,6 +33,11 @@ def _make_rig(controls: list[Control]) -> Rig:
         scenes={},
         midi_channel=1,
     )
+
+
+def _patch_get_controls(controls: list[Control]):
+    """Patch get_controls so the applier resolves to specified controls."""
+    return patch("rig_chasebliss.applier.get_controls", return_value=controls)
 
 
 def _make_ctx(rig: Rig, dry_run: bool = False) -> ApplyContext:
@@ -66,7 +73,7 @@ def _make_applier() -> ChaseBlissApplier:
 
 
 def test_find_device_returns_none_for_unknown_id():
-    rig = _make_rig([])
+    rig = _make_rig()
     assert _find_device(rig, "nonexistent") is None
 
 
@@ -75,7 +82,7 @@ def test_find_device_returns_none_for_none_rig():
 
 
 def test_find_device_finds_existing_device():
-    rig = _make_rig([Control(name="vol", type=ControlType.KNOB)])
+    rig = _make_rig()
     assert _find_device(rig, "test_cba") is not None
     assert _find_device(rig, "test_cba").id == "test_cba"
 
@@ -93,12 +100,12 @@ def test_reset_sent_before_cc_params():
     controls = [
         Control(name="vol", type=ControlType.KNOB, midi_cc=14, min=0, max=127, default=64),
     ]
-    rig = _make_rig(controls)
+    rig = _make_rig()
     ctx = _make_ctx(rig)
     action = _make_action([{"cc": 14, "value": 100}])
 
     applier = _make_applier()
-    with _patch_prompt():
+    with _patch_get_controls(controls), _patch_prompt():
         result = applier._build_preset(action, ctx)
 
     assert result.status == "confirmed"
@@ -115,12 +122,12 @@ def test_reset_excludes_default_none_controls():
         Control(name="vol", type=ControlType.KNOB, midi_cc=14, min=0, max=127, default=64),
         Control(name="sw", type=ControlType.SWITCH, midi_cc=55, default=None),
     ]
-    rig = _make_rig(controls)
+    rig = _make_rig()
     ctx = _make_ctx(rig)
     action = _make_action([{"cc": 14, "value": 100}])
 
     applier = _make_applier()
-    with _patch_prompt():
+    with _patch_get_controls(controls), _patch_prompt():
         result = applier._build_preset(action, ctx)
 
     assert result.status == "confirmed"
@@ -137,12 +144,13 @@ def test_dry_run_shows_reset_count():
         Control(name="mix", type=ControlType.KNOB, midi_cc=15, min=0, max=127, default=100),
         Control(name="sw", type=ControlType.SWITCH, midi_cc=55, default=None),
     ]
-    rig = _make_rig(controls)
+    rig = _make_rig()
     ctx = _make_ctx(rig, dry_run=True)
     action = _make_action()
 
     applier = _make_applier()
-    result = applier._build_preset(action, ctx)
+    with _patch_get_controls(controls):
+        result = applier._build_preset(action, ctx)
 
     assert result.status == "skipped"
 
@@ -153,12 +161,12 @@ def test_no_resettable_controls_no_reset():
         Control(name="sw1", type=ControlType.SWITCH, midi_cc=55, default=None),
         Control(name="sw2", type=ControlType.SWITCH, midi_cc=56, default=None),
     ]
-    rig = _make_rig(controls)
+    rig = _make_rig()
     ctx = _make_ctx(rig)
     action = _make_action([{"cc": 14, "value": 100}])
 
     applier = _make_applier()
-    with _patch_prompt():
+    with _patch_get_controls(controls), _patch_prompt():
         result = applier._build_preset(action, ctx)
 
     assert result.status == "confirmed"
@@ -172,7 +180,7 @@ def test_reset_failure_non_blocking():
     controls = [
         Control(name="vol", type=ControlType.KNOB, midi_cc=14, min=0, max=127, default=64),
     ]
-    rig = _make_rig(controls)
+    rig = _make_rig()
     ctx = _make_ctx(rig)
     action = _make_action([{"cc": 14, "value": 100}])
 
@@ -180,7 +188,7 @@ def test_reset_failure_non_blocking():
     ctx.midi.send_control_change.side_effect = [Exception("MIDI error"), None]
 
     applier = _make_applier()
-    with _patch_prompt():
+    with _patch_get_controls(controls), _patch_prompt():
         result = applier._build_preset(action, ctx)
 
     assert result.status == "confirmed"
@@ -193,7 +201,7 @@ def test_reset_per_preset_frequency():
     controls = [
         Control(name="vol", type=ControlType.KNOB, midi_cc=14, min=0, max=127, default=64),
     ]
-    rig = _make_rig(controls)
+    rig = _make_rig()
     ctx = _make_ctx(rig)
 
     action1 = _make_action([{"cc": 14, "value": 100}])
@@ -211,7 +219,7 @@ def test_reset_per_preset_frequency():
 
     # First preset
     ctx.midi.reset_mock()
-    with _patch_prompt():
+    with _patch_get_controls(controls), _patch_prompt():
         r1 = applier._build_preset(action1, ctx)
     assert r1.status == "confirmed"
     calls_before = ctx.midi.send_control_change.call_count
@@ -220,7 +228,7 @@ def test_reset_per_preset_frequency():
 
     # Second preset — reset should fire again
     ctx.midi.reset_mock()
-    with _patch_prompt():
+    with _patch_get_controls(controls), _patch_prompt():
         r2 = applier._build_preset(action2, ctx)
     assert r2.status == "confirmed"
     # Reset + preset CCs again
@@ -229,12 +237,12 @@ def test_reset_per_preset_frequency():
 
 def test_reset_with_empty_controls():
     """Empty controls list doesn't cause errors; preset CCs still sent."""
-    rig = _make_rig([])
+    rig = _make_rig()
     ctx = _make_ctx(rig)
     action = _make_action([{"cc": 14, "value": 100}])
 
     applier = _make_applier()
-    with _patch_prompt():
+    with _patch_get_controls([]), _patch_prompt():
         result = applier._build_preset(action, ctx)
 
     assert result.status == "confirmed"
@@ -244,7 +252,6 @@ def test_reset_with_empty_controls():
 
 def test_reset_with_rig_none():
     """When ctx.rig is None, _build_preset still handles gracefully."""
-    # Only testing the non-dry-run path — dry-run also uses _find_device
     action = _make_action([{"cc": 14, "value": 100}])
     midi = MagicMock()
     ctx = ApplyContext(
@@ -272,12 +279,12 @@ def test_reset_sends_multiple_reset_ccs():
         Control(name="mix", type=ControlType.KNOB, midi_cc=15, min=0, max=127, default=100),
         Control(name="time", type=ControlType.KNOB, midi_cc=16, min=0, max=127, default=32),
     ]
-    rig = _make_rig(controls)
+    rig = _make_rig()
     ctx = _make_ctx(rig)
     action = _make_action([{"cc": 14, "value": 90}])
 
     applier = _make_applier()
-    with _patch_prompt():
+    with _patch_get_controls(controls), _patch_prompt():
         result = applier._build_preset(action, ctx)
 
     assert result.status == "confirmed"

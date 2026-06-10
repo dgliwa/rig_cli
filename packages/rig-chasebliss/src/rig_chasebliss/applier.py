@@ -10,6 +10,7 @@ from rig.engine.appliers.base import (
     mark_preset_saved,
     update_device_state,
 )
+from rig_chasebliss.catalog import get_controls
 from rig_chasebliss.interaction import (
     prompt_cba_build_preset,
     prompt_cba_channel,
@@ -141,13 +142,11 @@ class ChaseBlissApplier:
             cc_count = len(action.cc_params)
             device = _find_device(ctx.rig, action.device)
             reset_count = 0
-            if device is not None and hasattr(device.config, "controls"):
+            if device is not None:
+                model = getattr(device.config, "model", None) or ""
+                controls = get_controls("Chase Bliss Audio", model) or []
                 reset_count = len(
-                    [
-                        c
-                        for c in device.config.controls
-                        if c.default is not None and c.midi_cc is not None
-                    ]
+                    [c for c in controls if c.default is not None and c.midi_cc is not None]
                 )
             logger.debug(
                 "Dry-run: CB build preset '%s' on %s (%d resettable controls)",
@@ -171,10 +170,12 @@ class ChaseBlissApplier:
             """Send CC messages for all resettable controls to their catalog defaults."""
             sent = 0
             device = _find_device(ctx.rig, action.device)
-            if device is None or not hasattr(device.config, "controls"):
+            if device is None:
                 return sent
+            model = getattr(device.config, "model", None) or ""
+            all_controls = get_controls("Chase Bliss Audio", model) or []
             resettable = [
-                c for c in device.config.controls if c.default is not None and c.midi_cc is not None
+                c for c in all_controls if c.default is not None and c.midi_cc is not None
             ]
             if not resettable:
                 return sent
