@@ -132,3 +132,14 @@ Plans:
 Plans:
 
 - [x] 18-01: Add `model` field to ChaseBlissConfig and wire get_controls() into from_raw_yaml()
+
+### Phase 19: Close v1.3 verification gaps — add VERIFICATION.md and VALIDATION.md for phases 14-18
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 18
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 19 to break down)
