@@ -17,6 +17,7 @@ class Control(BaseModel):
     min: float | str | bool | None = None
     max: float | str | bool | None = None
     positions: list[int | str] = []
+    position_cc_values: list[int] = []
     expression_assignable: bool = False
     default: float | None = None
 
@@ -36,6 +37,7 @@ MOOD_MKII_CONTROLS: list[Control] = [
         min=0,
         max=127,
         positions=["reverb", "delay", "slip"],
+        position_cc_values=[0, 2, 3],
         default=0,
     ),
     Control(
@@ -45,6 +47,7 @@ MOOD_MKII_CONTROLS: list[Control] = [
         min=0,
         max=127,
         positions=["in", "wet_and_in", "wet"],
+        position_cc_values=[0, 2, 3],
         default=0,
     ),
     Control(
@@ -54,34 +57,35 @@ MOOD_MKII_CONTROLS: list[Control] = [
         min=0,
         max=127,
         positions=["env", "tape", "stretch"],
+        position_cc_values=[0, 2, 3],
         default=0,
     ),
-    Control(name="stereo_width", type=ControlType.KNOB, midi_cc=24, min=0, max=127, default=64),
-    Control(name="ramping_waveform", type=ControlType.KNOB, midi_cc=25, min=0, max=127, default=64),
-    Control(name="fade", type=ControlType.KNOB, midi_cc=26, min=0, max=127, default=64),
-    Control(name="tone", type=ControlType.KNOB, midi_cc=27, min=0, max=127, default=64),
-    Control(name="level_balance", type=ControlType.KNOB, midi_cc=28, min=0, max=127, default=64),
-    Control(
-        name="direct_micro_loop", type=ControlType.KNOB, midi_cc=29, min=0, max=127, default=64
-    ),
-    Control(
-        name="sync",
-        type=ControlType.TOGGLE,
-        midi_cc=31,
-        min=0,
-        max=2,
-        positions=["no_sync", "wet_only", "loop_only"],
-        default=0,
-    ),
-    Control(
-        name="spread",
-        type=ControlType.TOGGLE,
-        midi_cc=32,
-        min=0,
-        max=1,
-        positions=["half", "full"],
-        default=0,
-    ),
+    # Control(name="stereo_width", type=ControlType.KNOB, midi_cc=24, min=0, max=127, default=64),
+    # Control(name="ramping_waveform", type=ControlType.KNOB, midi_cc=25, min=0, max=127, default=64),
+    # Control(name="fade", type=ControlType.KNOB, midi_cc=26, min=0, max=127, default=64),
+    # Control(name="tone", type=ControlType.KNOB, midi_cc=27, min=0, max=127, default=64),
+    # Control(name="level_balance", type=ControlType.KNOB, midi_cc=28, min=0, max=127, default=64),
+    # Control(
+    # name="direct_micro_loop", type=ControlType.KNOB, midi_cc=29, min=0, max=127, default=64
+    # ),
+    # Control(
+    #     name="sync",
+    #     type=ControlType.TOGGLE,
+    #     midi_cc=31,
+    #     min=0,
+    #     max=2,
+    #     positions=["no_sync", "wet_only", "loop_only"],
+    #     default=0,
+    # ),
+    # Control(
+    #     name="spread",
+    #     type=ControlType.TOGGLE,
+    #     midi_cc=32,
+    #     min=0,
+    #     max=1,
+    #     positions=["half", "full"],
+    #     default=0,
+    # ),
     Control(
         name="buffer_length",
         type=ControlType.TOGGLE,
@@ -89,6 +93,7 @@ MOOD_MKII_CONTROLS: list[Control] = [
         min=0,
         max=1,
         positions=["half", "full"],
+        position_cc_values=[0, 2],
         default=0,
     ),
     Control(
@@ -224,7 +229,7 @@ BROTHERS_AM_CONTROLS: list[Control] = [
         min=0,
         max=3,
         positions=["full_sun", "off", "half_sun"],
-        default=0,
+        default=1,
     ),
     Control(
         name="gain_1_type",

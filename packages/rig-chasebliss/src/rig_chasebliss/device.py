@@ -86,12 +86,26 @@ def validate_cc_params(
     return errors
 
 
+def _resolve_toggle_cc_value(raw: Any, ctrl: Control) -> int:
+    """Resolve a toggle parameter to its CC value.
+
+    When position_cc_values is set, the pedal uses threshold-based encoding
+    (e.g. ENV=0-1, TAPE=2, STRETCH=>2) rather than bare indices.
+    """
+    idx = ctrl.positions.index(raw) if isinstance(raw, str) else int(raw)
+    if ctrl.position_cc_values:
+        return ctrl.position_cc_values[idx]
+    return idx
+
+
 def _get_cc_params(parameters: dict[str, Any], controls: list[Control]) -> list[dict[str, int]]:
     """Build CC param list from preset parameters and resolved controls."""
     result = []
     for ctrl in controls:
         if ctrl.midi_cc is not None and ctrl.name in parameters:
-            result.append({"cc": ctrl.midi_cc, "value": int(parameters[ctrl.name])})
+            raw = parameters[ctrl.name]
+            value = _resolve_toggle_cc_value(raw, ctrl) if ctrl.positions else int(raw)
+            result.append({"cc": ctrl.midi_cc, "value": value})
     return result
 
 

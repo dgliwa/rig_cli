@@ -14,7 +14,7 @@ FIXTURE_PATH = str(Path(__file__).parent / "fixtures" / "sample_rig")
 class TestMoodMkiiCatalog:
     def test_has_expected_knob_count(self):
         knobs = [c for c in MOOD_MKII_CONTROLS if c.type == ControlType.KNOB]
-        assert len(knobs) == 13
+        assert len(knobs) == 7
 
     def test_knobs_have_correct_cc_numbers(self):
         by_name = {c.name: c for c in MOOD_MKII_CONTROLS}

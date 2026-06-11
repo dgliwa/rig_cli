@@ -1,5 +1,5 @@
 from rig_chasebliss.catalog import Control, ControlType
-from rig_chasebliss.device import ChaseBlissDevice, validate_cc_params
+from rig_chasebliss.device import ChaseBlissDevice, _get_cc_params, validate_cc_params
 
 
 def test_validate_valid_params():
@@ -106,6 +106,57 @@ def test_validate_min_max_not_applicable():
     ]
     # min and max are None — should not crash
     assert validate_cc_params({"volume": 64, "switch": 0}, controls) == []
+
+
+def test_get_cc_params_threshold_toggle_by_index():
+    # Mood MkII-style: ENV=0-1, TAPE=2, STRETCH=>2 — index 1 must send 2, not 1
+    controls = [
+        Control(
+            name="loop",
+            type=ControlType.TOGGLE,
+            midi_cc=23,
+            positions=["env", "tape", "stretch"],
+            position_cc_values=[0, 2, 3],
+        ),
+    ]
+    assert _get_cc_params({"loop": 0}, controls) == [{"cc": 23, "value": 0}]
+    assert _get_cc_params({"loop": 1}, controls) == [{"cc": 23, "value": 2}]
+    assert _get_cc_params({"loop": 2}, controls) == [{"cc": 23, "value": 3}]
+
+
+def test_get_cc_params_threshold_toggle_by_name():
+    controls = [
+        Control(
+            name="loop",
+            type=ControlType.TOGGLE,
+            midi_cc=23,
+            positions=["env", "tape", "stretch"],
+            position_cc_values=[0, 2, 3],
+        ),
+    ]
+    assert _get_cc_params({"loop": "env"}, controls) == [{"cc": 23, "value": 0}]
+    assert _get_cc_params({"loop": "tape"}, controls) == [{"cc": 23, "value": 2}]
+    assert _get_cc_params({"loop": "stretch"}, controls) == [{"cc": 23, "value": 3}]
+
+
+def test_get_cc_params_indexed_toggle_no_cc_values():
+    # Clock divisions are 1:1 indexed — no position_cc_values, falls back to index
+    controls = [
+        Control(
+            name="wet_clock",
+            type=ControlType.TOGGLE,
+            midi_cc=53,
+            positions=["32nd", "16th", "eighth", "quarter"],
+        ),
+    ]
+    assert _get_cc_params({"wet_clock": 3}, controls) == [{"cc": 53, "value": 3}]
+
+
+def test_get_cc_params_knob_passthrough():
+    controls = [
+        Control(name="time", type=ControlType.KNOB, midi_cc=14, min=0, max=127),
+    ]
+    assert _get_cc_params({"time": 95}, controls) == [{"cc": 14, "value": 95}]
 
 
 def test_from_raw_yaml_known_model_stores_model_name():
