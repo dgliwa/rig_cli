@@ -279,6 +279,36 @@ def test_reset_with_rig_none():
     assert result is not None
 
 
+def test_retry_sends_reset_before_cc_params():
+    """On retry, reset CCs are sent before preset CC params (same as initial send)."""
+    controls = [
+        Control(name="vol", type=ControlType.KNOB, midi_cc=14, min=0, max=127, default=64),
+    ]
+    rig = _make_rig()
+    ctx = _make_ctx(rig)
+    action = _make_action([{"cc": 14, "value": 100}])
+
+    # First call returns "retry", second returns "confirm"
+    prompt_returns = iter(["retry", "confirm"])
+    applier = _make_applier()
+    with (
+        _patch_get_controls(controls),
+        patch("rig_chasebliss.applier.prompt_cba_build_preset", side_effect=prompt_returns),
+        patch("rig_chasebliss.applier.prompt_cba_after_pc", return_value="confirm"),
+    ):
+        result = applier._build_preset(action, ctx)
+
+    assert result.status == "confirmed"
+    # Initial: reset(64) + preset(100); retry: reset(64) + preset(100)
+    calls = ctx.midi.send_control_change.call_args_list
+    assert calls == [
+        call("test_cba", 14, 64, 1),
+        call("test_cba", 14, 100, 1),
+        call("test_cba", 14, 64, 1),
+        call("test_cba", 14, 100, 1),
+    ]
+
+
 def test_reset_sends_multiple_reset_ccs():
     """Multiple resettable controls each get their reset CC sent."""
     controls = [

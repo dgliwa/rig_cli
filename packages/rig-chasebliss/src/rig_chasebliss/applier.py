@@ -224,6 +224,10 @@ class ChaseBlissApplier:
                 action.device, action.preset_name, action.preset_number, action.midi_channel
             )
             if res == "retry":
+                reset_sent = _send_reset_ccs()
+                if reset_sent:
+                    logger.info("Sent %d reset CCs to %s (retry)", reset_sent, action.device)
+                    console.print(f"  [dim]→ {reset_sent} defaults reset[/dim]")
                 cc_sent = _send_ccs()
                 if cc_sent:
                     console.print(f"  [green]✓[/green] Resent {cc_sent} CC params")
