@@ -91,8 +91,15 @@ def test_find_device_finds_existing_device():
 
 
 def _patch_prompt(return_value: str = "confirm"):
-    """Context manager that mocks prompt_cba_build_preset to return a fixed value."""
-    return patch("rig_chasebliss.applier.prompt_cba_build_preset", return_value=return_value)
+    """Context manager that mocks prompt_cba_build_preset and prompt_cba_after_pc."""
+    from contextlib import ExitStack
+
+    stack = ExitStack()
+    stack.enter_context(
+        patch("rig_chasebliss.applier.prompt_cba_build_preset", return_value=return_value)
+    )
+    stack.enter_context(patch("rig_chasebliss.applier.prompt_cba_after_pc", return_value="confirm"))
+    return stack
 
 
 def test_reset_sent_before_cc_params():

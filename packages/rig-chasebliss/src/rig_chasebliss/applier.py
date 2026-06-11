@@ -12,6 +12,7 @@ from rig.engine.appliers.base import (
 )
 from rig_chasebliss.catalog import get_controls
 from rig_chasebliss.interaction import (
+    prompt_cba_after_pc,
     prompt_cba_build_preset,
     prompt_cba_channel,
     prompt_cba_register,
@@ -238,19 +239,30 @@ class ChaseBlissApplier:
                 and action.preset_number is not None
                 and ctx.midi is not None
             ):
-                try:
-                    ctx.midi.send_program_change(
-                        action.device, action.preset_number, action.midi_channel
+                while True:
+                    try:
+                        ctx.midi.send_program_change(
+                            action.device, action.preset_number, action.midi_channel
+                        )
+                        logger.info(
+                            "Sent PC#%d on ch %d to %s to save preset",
+                            action.preset_number,
+                            action.midi_channel,
+                            action.device,
+                        )
+                    except Exception as e:
+                        logger.error("Failed PC send to %s: %s", action.device, e)
+                        console.print(f"  [red]✗[/red] PC send failed: {e}")
+                        break
+                    after = prompt_cba_after_pc(
+                        action.device, action.preset_name, action.preset_number
                     )
-                    logger.info(
-                        "Sent PC#%d on ch %d to %s to save preset",
-                        action.preset_number,
-                        action.midi_channel,
-                        action.device,
-                    )
-                except Exception as e:
-                    logger.error("Failed PC send to %s: %s", action.device, e)
-                    console.print(f"  [red]✗[/red] PC send failed: {e}")
+                    if after == "retry":
+                        continue
+                    if after == "quit":
+                        console.print("[red]Apply cancelled by user[/red]")
+                        return None
+                    break
             update_device_state(ctx.state, action.device, last_preset=action.preset_name)
             mark_preset_saved(ctx.state, action.device, action.preset_id)
         return DeviceApplyResult(

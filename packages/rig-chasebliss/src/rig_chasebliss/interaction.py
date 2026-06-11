@@ -66,6 +66,28 @@ def prompt_cba_build_preset(
         console.print("[yellow]Invalid choice. Enter c, r, s, or q[/yellow]")
 
 
+def prompt_cba_after_pc(device: str, preset_name: str, preset_number: int) -> _ConfirmResult:
+    """Confirm the pedal accepted the preset after PC send."""
+    console.print(
+        f"  [green]✓[/green] PC#{preset_number} sent — verify '{preset_name}' "
+        f"is in slot {preset_number} on the pedal"
+    )
+    console.print()
+    while True:
+        response = (
+            input("  [c] confirmed — preset looks good  [r] retry (resend PC)  [q] quit: ")
+            .strip()
+            .lower()
+        )
+        if response in ("c", "confirm", "done"):
+            return "confirm"
+        if response in ("r", "retry"):
+            return "retry"
+        if response in ("q", "quit"):
+            return "quit"
+        console.print("[yellow]Invalid choice. Enter c, r, or q[/yellow]")
+
+
 def prompt_cba_register(device: str, scene_refs: list[str]) -> _ConfirmResult:
     """Confirm that CBA presets have been built for all referencing scenes."""
     console.print(f"\n[bold]Chase Bliss Scene Registration — {device}[/bold]")
