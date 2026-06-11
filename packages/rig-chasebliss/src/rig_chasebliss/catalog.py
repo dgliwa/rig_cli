@@ -46,7 +46,7 @@ MOOD_MKII_CONTROLS: list[Control] = [
         midi_cc=22,
         min=0,
         max=127,
-        positions=["in", "wet_and_in", "wet"],
+        positions=["in", "loop_and_in", "loop"],
         position_cc_values=[0, 2, 3],
         default=0,
     ),
