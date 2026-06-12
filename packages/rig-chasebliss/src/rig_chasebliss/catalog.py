@@ -94,7 +94,7 @@ MOOD_MKII_CONTROLS: list[Control] = [
         max=1,
         positions=["half", "full"],
         position_cc_values=[0, 2],
-        default=0,
+        default=1,
     ),
     Control(
         name="midi_clock_ignore", type=ControlType.SWITCH, midi_cc=51, min=0, max=127, default=None
