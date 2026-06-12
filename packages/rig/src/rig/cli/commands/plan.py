@@ -18,6 +18,7 @@ from rig.config.errors import ConfigError
 from rig.config.loader import load_rig
 from rig.engine.plan import compute_plan
 from rig.log_setup import setup_logging
+from rig.models.device import DeviceType
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ def plan(
         console.print(f"\n  {status_icon} [bold]{sp.scene_name}[/bold] ({sp.status})")
 
         for action in sp.device_actions:
-            if action.device_type == "analog":
+            if action.device_type == DeviceType.ANALOG:
                 manual_count += 1
                 console.print(
                     f"    [yellow]⚠[/yellow] {action.device}: set to '{action.preset_name}' (manual)"

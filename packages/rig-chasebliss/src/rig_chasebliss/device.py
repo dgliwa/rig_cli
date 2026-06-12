@@ -21,7 +21,7 @@ from rig.engine.appliers.base import (
     DeviceApplyResult,
     update_device_state,
 )
-from rig.engine.plugin import DeviceApplyContext, PluginContext, SetupContext, SetupResult
+from rig.engine.plugin import DeviceApplyContext, SetupContext, SetupResult
 from rig.engine.state import DeviceState
 from rig.models.device import DeviceType
 from rig_chasebliss.catalog import Control, get_controls
@@ -198,12 +198,6 @@ class ChaseBlissDevice(BaseModel):
             config=config,
             presets=presets,
         )
-
-    def plan(self, ctx: PluginContext) -> object:
-        raise NotImplementedError
-
-    def diff(self, ctx: PluginContext) -> object:
-        raise NotImplementedError
 
     def setup(self, ctx: SetupContext) -> SetupResult:
         """Connect MIDI and run 3-phase CBA setup.

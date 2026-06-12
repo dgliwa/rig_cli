@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from rich.console import Console
 
 from rig.engine.appliers.base import DeviceApplyResult, update_device_state
-from rig.engine.plugin import DeviceApplyContext, PluginContext, SetupContext, SetupResult
+from rig.engine.plugin import DeviceApplyContext, SetupContext, SetupResult
 from rig.models.device import DeviceType
 from rig_analog.interaction import prompt_analog
 
@@ -38,12 +38,6 @@ class AnalogDevice(BaseModel):
             config=data.get("config") or {},
             presets=presets,
         )
-
-    def plan(self, ctx: PluginContext) -> object:
-        raise NotImplementedError
-
-    def diff(self, ctx: PluginContext) -> object:
-        raise NotImplementedError
 
     def setup(self, ctx: SetupContext) -> SetupResult:
         return SetupResult()

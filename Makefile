@@ -19,19 +19,19 @@ lock:              ## Re-lock dependencies
 # ─── Quality ─────────────────────────────────────────────────────────────────
 
 test:              ## Run all tests
-	uv run pytest tests/ -v
+	uv run pytest -v
 
 lint:              ## Lint source with ruff
-	uv run ruff check src/
+	uv run ruff check packages/
 
 lint-all:          ## Lint src + tests with ruff
-	uv run ruff check src/ tests/
+	uv run ruff check packages/
 
 format:            ## Format source with ruff
-	uv run ruff format src/
+	uv run ruff format packages/
 
 format-all:        ## Format src + tests with ruff
-	uv run ruff format src/ tests/
+	uv run ruff format packages/
 
 pre-commit-install: ## Install pre-commit hooks
 	uv run pre-commit install

@@ -18,9 +18,6 @@ A plugin must provide:
 
 Required methods:
 
-- **plan** / **diff** — currently raise ``NotImplementedError``; the plan
-  command routes through ``rig.engine.plan.compute.compute_plan()`` and does
-  not call these directly.
 - **setup(ctx)** — one-time initialization. Connect MIDI ports, run device-
   specific setup phases (e.g. CBA 3-phase init). Return a ``SetupResult``.
   Called by the engine before scene apply.
@@ -94,7 +91,7 @@ class Device(Protocol):
 
         from pydantic import BaseModel, ConfigDict, Field
         from rig.engine.plugin import (
-            Device, DeviceApplyContext, DeviceApplyResult, PluginContext,
+            Device, DeviceApplyContext, DeviceApplyResult,
             SetupContext, SetupResult,
         )
 
@@ -105,12 +102,6 @@ class Device(Protocol):
             name: str = ""
             config: Any
             presets: list[Any] = Field(default_factory=list)
-
-            def plan(self, ctx: PluginContext) -> object:
-                raise NotImplementedError
-
-            def diff(self, ctx: PluginContext) -> object:
-                raise NotImplementedError
 
             def setup(self, ctx: SetupContext) -> SetupResult:
                 return SetupResult()
@@ -138,10 +129,6 @@ class Device(Protocol):
 
     @classmethod
     def from_raw_yaml(cls, data: dict[str, Any]) -> Self: ...
-
-    def plan(self, ctx: PluginContext) -> object: ...
-
-    def diff(self, ctx: PluginContext) -> object: ...
 
     def setup(self, ctx: SetupContext) -> SetupResult: ...
 

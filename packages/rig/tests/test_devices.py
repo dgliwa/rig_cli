@@ -13,10 +13,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
-
 from rig.engine.plan.models import DeviceAction
-from rig.engine.plugin import DeviceApplyContext, PluginContext
+from rig.engine.plugin import DeviceApplyContext
 from rig.engine.state import RigState
 from tests.fakes import InMemoryPromptAdapter
 
@@ -113,24 +111,6 @@ def test_analog_device_has_config_property() -> None:
     assert dev.config is cfg
 
 
-def test_analog_device_plan_raises_not_implemented() -> None:
-    from rig_analog.device import AnalogDevice
-
-    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=object())
-    ctx = PluginContext(state=RigState(), rig=object(), dry_run=False)
-    with pytest.raises(NotImplementedError):
-        dev.plan(ctx)
-
-
-def test_analog_device_diff_raises_not_implemented() -> None:
-    from rig_analog.device import AnalogDevice
-
-    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=object())
-    ctx = PluginContext(state=RigState(), rig=object(), dry_run=False)
-    with pytest.raises(NotImplementedError):
-        dev.diff(ctx)
-
-
 # ---------------------------------------------------------------------------
 # AnalogDevice — apply behavior
 # ---------------------------------------------------------------------------
@@ -184,24 +164,6 @@ def test_midi_device_has_id_property() -> None:
     assert dev.id == "hx-stomp"
 
 
-def test_midi_device_plan_raises_not_implemented() -> None:
-    from rig_hx.device import HXStompDevice
-
-    dev = HXStompDevice(id="hx-stomp", name="HX Stomp", config=object())
-    ctx = PluginContext(state=RigState(), rig=object(), dry_run=False)
-    with pytest.raises(NotImplementedError):
-        dev.plan(ctx)
-
-
-def test_midi_device_diff_raises_not_implemented() -> None:
-    from rig_hx.device import HXStompDevice
-
-    dev = HXStompDevice(id="hx-stomp", name="HX Stomp", config=object())
-    ctx = PluginContext(state=RigState(), rig=object(), dry_run=False)
-    with pytest.raises(NotImplementedError):
-        dev.diff(ctx)
-
-
 def test_midi_device_apply_dry_run_returns_skipped() -> None:
     from rig_hx.device import HXStompDevice
 
@@ -237,24 +199,6 @@ def test_chase_bliss_device_has_id_property() -> None:
     assert dev.id == "mood"
 
 
-def test_chase_bliss_device_plan_raises_not_implemented() -> None:
-    from rig_chasebliss.device import ChaseBlissDevice
-
-    dev = ChaseBlissDevice(id="mood", name="Mood Mk II", config=object())
-    ctx = PluginContext(state=RigState(), rig=object(), dry_run=False)
-    with pytest.raises(NotImplementedError):
-        dev.plan(ctx)
-
-
-def test_chase_bliss_device_diff_raises_not_implemented() -> None:
-    from rig_chasebliss.device import ChaseBlissDevice
-
-    dev = ChaseBlissDevice(id="mood", name="Mood Mk II", config=object())
-    ctx = PluginContext(state=RigState(), rig=object(), dry_run=False)
-    with pytest.raises(NotImplementedError):
-        dev.diff(ctx)
-
-
 def test_chase_bliss_device_apply_dry_run_returns_skipped() -> None:
     from rig_chasebliss.device import ChaseBlissDevice
 
@@ -288,24 +232,6 @@ def test_mc6_device_has_id_property() -> None:
 
     dev = MC6Device(id="mc6", name="MC6 MkII", config=object())
     assert dev.id == "mc6"
-
-
-def test_mc6_device_plan_raises_not_implemented() -> None:
-    from rig_morningstar.device import MC6Device
-
-    dev = MC6Device(id="mc6", name="MC6 MkII", config=object())
-    ctx = PluginContext(state=RigState(), rig=object(), dry_run=False)
-    with pytest.raises(NotImplementedError):
-        dev.plan(ctx)
-
-
-def test_mc6_device_diff_raises_not_implemented() -> None:
-    from rig_morningstar.device import MC6Device
-
-    dev = MC6Device(id="mc6", name="MC6 MkII", config=object())
-    ctx = PluginContext(state=RigState(), rig=object(), dry_run=False)
-    with pytest.raises(NotImplementedError):
-        dev.diff(ctx)
 
 
 def test_mc6_device_apply_no_banks_is_noop() -> None:
@@ -379,14 +305,14 @@ def test_get_registry_returns_all_four_types_via_entry_points() -> None:
 
 
 def test_all_device_types_satisfy_device_protocol_structurally() -> None:
-    """All concrete device types must have id, name, config, plan, diff, apply."""
+    """All concrete device types must have id, name, config, apply."""
     from rig_analog.device import AnalogDevice
     from rig_chasebliss.device import ChaseBlissDevice
     from rig_hx.device import HXStompDevice
     from rig_morningstar.device import MC6Device
 
     for cls in (AnalogDevice, HXStompDevice, ChaseBlissDevice, MC6Device):
-        for attr in ("id", "name", "config", "plan", "diff", "apply"):
+        for attr in ("id", "name", "config", "apply"):
             assert hasattr(cls(id="x", name="X", config=object()), attr), (
                 f"{cls.__name__} missing '{attr}'"
             )

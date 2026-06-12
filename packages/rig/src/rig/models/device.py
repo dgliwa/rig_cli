@@ -8,7 +8,10 @@ from pydantic import BaseModel, Field
 from rig.models.preset import Preset
 
 
-# TODO: we inconsistently use Enums and Literals. Pick one (whichever is the better python convention)
+# DeviceType StrEnum is for runtime comparisons (engine, CLI, plan output).
+# Config submodels use Literal type fields (e.g. Literal["chase_bliss"]) — Pydantic
+# requires Literal for discriminated union dispatch. The two are orthogonal: StrEnum
+# describes device kind; Literal identifies config schema. Both must coexist.
 class DeviceType(StrEnum):
     DIGITAL = "digital"
     ANALOG = "analog"

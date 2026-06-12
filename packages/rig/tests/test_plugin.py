@@ -68,12 +68,6 @@ def test_device_protocol_satisfied_by_class_with_all_members() -> None:
         def config(self) -> object:
             return None
 
-        def plan(self, ctx: PluginContext) -> object:
-            return None
-
-        def diff(self, ctx: PluginContext) -> object:
-            return None
-
         def apply(self, ctx: DeviceApplyContext) -> object:
             return None
 
@@ -81,8 +75,6 @@ def test_device_protocol_satisfied_by_class_with_all_members() -> None:
     assert hasattr(device, "id")
     assert hasattr(device, "name")
     assert hasattr(device, "config")
-    assert hasattr(device, "plan")
-    assert hasattr(device, "diff")
     assert hasattr(device, "apply")
 
 
@@ -96,30 +88,13 @@ def test_device_protocol_missing_property_detected_via_hasattr() -> None:
         def name(self) -> str:
             return "Test"
 
-        # missing config, plan, diff, apply
+        # missing config, apply
 
     device = MissingConfigDevice()
     assert hasattr(device, "id")
     assert hasattr(device, "name")
     assert not hasattr(device, "config")
-    assert not hasattr(device, "plan")
-    assert not hasattr(device, "diff")
     assert not hasattr(device, "apply")
-
-
-def test_device_protocol_has_distinct_context_types() -> None:
-    """plan/diff take PluginContext; apply takes DeviceApplyContext."""
-    from rig.engine.plugin import Device
-
-    hints = Device.plan.__annotations__  # type: ignore[attr-defined]
-    assert "ctx" in hints
-    plan_ctx_annotation = hints["ctx"]
-    assert "PluginContext" in str(plan_ctx_annotation)
-
-    apply_hints = Device.apply.__annotations__  # type: ignore[attr-defined]
-    assert "ctx" in apply_hints
-    apply_ctx_annotation = apply_hints["ctx"]
-    assert "DeviceApplyContext" in str(apply_ctx_annotation)
 
 
 def test_device_plugin_is_absent_or_deprecated() -> None:
@@ -371,8 +346,6 @@ def test_discovery_placeholder_implements_device_protocol() -> None:
     assert hasattr(device, "id")
     assert hasattr(device, "name")
     assert hasattr(device, "config")
-    assert hasattr(device, "plan")
-    assert hasattr(device, "diff")
     assert hasattr(device, "apply")
 
 

@@ -5,6 +5,7 @@ from typing import Literal
 
 from rig.engine.plan.models import DeviceAction, Plan, ScenePlan
 from rig.engine.state import DeviceState, RigState, read_state
+from rig.models.device import DeviceType
 from rig.models.graph import DeviceGraph
 from rig.models.rig import Rig
 
@@ -85,7 +86,7 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
                 "  Device '%s': actual='%s' desired='%s'", pedal_id, actual_preset, preset_id
             )
 
-            if pedal.type.value == "analog":
+            if pedal.type == DeviceType.ANALOG:
                 device_actions.append(
                     DeviceAction(
                         device=pedal_id,
