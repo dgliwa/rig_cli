@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-06-12T10:07:10.766Z"
 last_activity: 2026-06-12
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-10)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** Milestone v1.3 complete — planning next milestone
+**Current focus:** v1.4 Architecture & Type Integrity — roadmap defined, Phase 20 next
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 20 (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-12 — Milestone v1.4 started
+Status: Roadmap defined, ready for Phase 20
+Last activity: 2026-06-12 — v1.4 roadmap created (4 phases: 20-23)
+
+Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (0/4 phases)
 
 ## Performance Metrics
 
@@ -76,6 +78,13 @@ Last activity: 2026-06-12 — Milestone v1.4 started
 - **Validation (Phase 15) before reset (Phase 16)** — both phases consume catalog controls; validation naturally precedes any action that touches the device; convention from research
 - **All three phases live in rig-chasebliss package** — no core changes; `Control` model change is additive and backward-compatible
 - **Imperative validation in apply(), not Pydantic model_validator** — catalog lookup at model construction time would couple the model layer to the plugin; validation at apply time is correct
+
+### v1.4 roadmap decisions
+
+- **Phase 20 bundles all zero-dependency quick wins** — TYPE-04, TEST-01, QUAL-01, QUAL-02 share no intra-group dependencies and each is individually reversible; batching reduces phase count without coupling risk
+- **TYPE-02 and TYPE-03 in same phase (Phase 21)** — concrete plugin config types and the Preset Protocol are co-dependent at the boundary; plugins need the Protocol to declare their preset lists, and the Protocol needs to be defined before the engine can reference it; doing them separately would leave the codebase in a half-typed state
+- **TYPE-01 (retire legacy Device model) is its own phase (Phase 22)** — it is the most impactful change and depends on Phase 21 being complete; isolating it reduces blast radius and makes the phase easy to verify independently
+- **TEST-02 bundled with TYPE-05 in Phase 23** — stdin-capture test failures are likely entangled with the dual ApplyContext types; resolving the context first gives the correct foundation for the ConfirmationIO Protocol fix
 
 ## Accumulated Context
 
