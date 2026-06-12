@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Chase Bliss Pedal Support
-status: shipped
-last_updated: "2026-06-10T12:00:00Z"
-last_activity: 2026-06-10 — Milestone v1.3 shipped
+milestone: v1.4
+milestone_name: Architecture & Type Integrity
+status: planning
+last_updated: "2026-06-12T10:07:10.766Z"
+last_activity: 2026-06-12
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 6
-  completed_plans: 6
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -24,13 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 
 ## Current Position
 
-Phase: Complete — v1.3 shipped
-Status: Shipped 2026-06-10
-Last activity: 2026-06-10 — Completed quick task 260610-vae: Remove controls from ChaseBlissConfig, resolve from catalog at call sites
-
-```
-Progress: ████████████ 100% (6/6 phases)
-```
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-06-12 — Milestone v1.4 started
 
 ## Performance Metrics
 

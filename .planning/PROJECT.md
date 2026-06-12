@@ -46,6 +46,15 @@ A single command should bring the physical rig to the exact state described in t
 ### Active
 
 - [ ] **PKG-07**: Plugin authoring docs — how to write a new plugin package
+- [ ] **TYPE-01**: Retire legacy `Device(BaseModel)` from `models/device.py`; `Rig.devices: dict[str, Device]` typed against the Protocol
+- [ ] **TYPE-02**: Concrete config types in each plugin (`config: ChaseBlissConfig`, not `config: Any`)
+- [ ] **TYPE-03**: `Preset` Protocol in core; `presets: list[Preset]` in plugin device classes
+- [ ] **TYPE-04**: Retire dead `plan()`/`diff()` stubs from the `Device` Protocol
+- [ ] **TYPE-05**: Reconcile duplicate `ApplyContext` / `DeviceApplier` objects in `apply.py`
+- [ ] **TEST-01**: Delete stale root `tests/` directory (broken imports, stale migration artifacts)
+- [ ] **TEST-02**: Fix 3 stdin-capture test failures by routing through `ConfirmationIO` Protocol
+- [ ] **QUAL-01**: Replace raw string `"analog"` device-type comparisons with `DeviceType.ANALOG` enum
+- [ ] **QUAL-02**: Standardize domain discriminators on Enums; reserve `Literal` for narrow type narrowing only
 
 ### Out of Scope
 
@@ -60,9 +69,23 @@ A single command should bring the physical rig to the exact state described in t
 | UI (#18) | Speculative — not planned |
 | CI independent package publishing | Low-priority infra — local `uv` workflow sufficient for now |
 
+## Current Milestone: v1.4 Architecture & Type Integrity
+
+**Goal:** Eliminate the parallel device model systems, establish a single typed boundary throughout the plugin/core interface, and fix all outstanding test and code-quality debt — with zero user-visible behavior changes.
+
+**Target features:**
+- Consolidate parallel Device models: retire legacy `Device(BaseModel)` from `models/device.py`; `Rig.devices: dict[str, Device]` typed against the Protocol
+- Concrete config types in plugins (`config: ChaseBlissConfig` not `config: Any`)
+- `Preset` Protocol in core; `presets: list[Preset]` typed in plugin device classes
+- Retire dead `plan()`/`diff()` stubs from the `Device` Protocol
+- Reconcile duplicate `ApplyContext` / `DeviceApplier` objects in `apply.py`
+- Delete stale root `tests/` directory; fix 3 stdin-capture test failures
+- `DeviceType` enum comparisons throughout (no more raw `"analog"` strings)
+- Standardize domain discriminators on Enums vs Literals
+
 ## Current State
 
-Phases 1–19 shipped across v1.0–v1.3 (4 milestones). v1.3 Chase Bliss Pedal Support milestone complete.
+Phases 1–19 shipped across v1.0–v1.3 (4 milestones). v1.3 Chase Bliss Pedal Support milestone complete. v1.4 Architecture & Type Integrity in progress.
 
 **Milestone v1.3 shipped 2026-06-10:** 6 phases (14-19), 6 plans, 1,023 LOC in `rig_chasebliss/` package. Full CBA catalog support (Mood MkII, Wombtone MkII, Brothers AM), preset parameter validation, reset-to-defaults flow, and catalog auto-population from device model name. All 6 CBA requirements satisfied.
 
@@ -126,4 +149,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-10 — v1.3 Chase Bliss Pedal Support milestone shipped*
+*Last updated: 2026-06-12 — v1.4 Architecture & Type Integrity milestone started*
