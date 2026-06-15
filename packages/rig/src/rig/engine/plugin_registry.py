@@ -65,19 +65,14 @@ def _discover() -> PluginRegistry:
                 continue
             # Register the model class for loader dispatch
             registry.register_model(ep.name, model_class)
-            # Create a lazy placeholder instance for plugin dispatch.
-            # The instance will be replaced when the loader parses actual device YAML.
-            try:
-                placeholder = model_class(id=f"__{ep.name}__", name=str(ep.name), config=None)
-            except Exception:
-                # Some model classes may require non-None config; try minimal constructor
-                try:
-                    placeholder = model_class(
-                        id=f"__{ep.name}__", name=str(ep.name), config=object()
-                    )
-                except Exception as exc:
-                    logger.warning("Could not instantiate placeholder for '%s': %s", ep.name, exc)
-                    continue
+            # Create a lazy placeholder instance for plugin dispatch via model_construct
+            # to bypass Pydantic validators — placeholder is never used for production data.
+            placeholder = model_class.model_construct(
+                id=f"__{ep.name}__",
+                name=str(ep.name),
+                config=None,
+                presets=[],
+            )
             registry.register(ep.name, placeholder)
             logger.debug("Registered device plugin '%s' → %s", ep.name, model_class.__name__)
         except Exception as exc:
