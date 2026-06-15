@@ -1,12 +1,14 @@
 from pathlib import Path
 
 from rig.config.loader import load_rig
-from rig.models.device import Device, DeviceType
+from rig.engine.plugin import DeviceType
 from rig.models.rig import Rig
 from rig_chasebliss.catalog import MOOD_MKII_CONTROLS, Control, ControlType
-from rig_chasebliss.device import ChaseBlissConfig, _get_cc_params
+from rig_chasebliss.device import ChaseBlissConfig, ChaseBlissDevice, _get_cc_params
 from rig_chasebliss.preset import DigitalPreset
+from rig_hx.device import HXStompDevice
 from rig_hx.preset import HXStompPreset
+from tests.conftest import FakeDevice
 
 FIXTURE_PATH = str(Path(__file__).parent / "fixtures" / "sample_rig")
 
@@ -62,19 +64,19 @@ class TestGetScenePcCommand:
     def _rig_with_hx_and_digital(self):
         hx_preset = HXStompPreset(id="lead", name="Lead", preset_number=5, hlx_file="lead.hlx")
         digital_preset = DigitalPreset(id="preset-1", pedal="mood", name="Shimmer", preset_number=1)
-        hx_pedal = Device(
+        hx_pedal = HXStompDevice(
             id="hx-stomp",
             type=DeviceType.MODELER,
             config={"type": "midi", "midi_channel": 1},
             presets=[hx_preset],
         )
-        mood_pedal = Device(
+        mood_pedal = ChaseBlissDevice(
             id="mood",
             type=DeviceType.DIGITAL,
             config=ChaseBlissConfig(midi_channel=2),
             presets=[digital_preset],
         )
-        analog_pedal = Device(
+        analog_pedal = FakeDevice(
             id="comp",
             type=DeviceType.ANALOG,
             config=None,

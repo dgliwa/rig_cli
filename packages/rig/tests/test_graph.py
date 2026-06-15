@@ -3,12 +3,13 @@ from __future__ import annotations
 import pytest
 
 from rig.config.errors import ConfigError
-from rig.models.device import Device, DeviceType
+from rig.engine.plugin import DeviceType
 from rig.models.graph import CycleError, DeviceGraph
 from rig.models.rig import Rig
+from tests.conftest import FakeDevice
 
 
-def _make_device(id: str, type: DeviceType, config=None) -> Device:
+def _make_device(id: str, type: DeviceType, config=None) -> FakeDevice:
     if config is None:
         if type in (DeviceType.ANALOG,):
             config = {"type": "manual"}
@@ -16,10 +17,10 @@ def _make_device(id: str, type: DeviceType, config=None) -> Device:
             config = {"type": "controller", "banks": []}
         else:
             config = {"type": "midi", "midi_channel": 1}
-    return Device(id=id, type=type, config=config)
+    return FakeDevice(id=id, type=type, config=config)
 
 
-def _make_rig(devices: list[Device], signal_chain_ids: list[str], scenes=None) -> Rig:
+def _make_rig(devices: list[FakeDevice], signal_chain_ids: list[str], scenes=None) -> Rig:
     return Rig(
         name="test",
         devices={d.id: d for d in devices},

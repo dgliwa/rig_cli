@@ -165,7 +165,7 @@ devices:
         assert hx_presets[0].hlx_file == "hlx/clean-edge.hlx"
 
     def test_loads_controller_as_device(self, rig_dir):
-        from rig.models.device import DeviceType
+        from rig.engine.plugin import DeviceType
 
         config = load_rig(str(rig_dir))
         assert "mc6" in config.devices

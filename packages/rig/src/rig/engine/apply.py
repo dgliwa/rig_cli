@@ -92,13 +92,12 @@ def apply_plan(
             connected_devices=connected_devices,
         )
         for _device_id, device in rig.devices.items():
-            if hasattr(device, "setup"):
-                result = device.setup(setup_ctx)
-                if result.cancelled:
-                    console.print("[red]Apply cancelled by user[/red]")
-                    return ApplyResult(status="cancelled", scenes=scene_results)
-                if result.state_modified:
-                    state_modified = True
+            result = device.setup(setup_ctx)
+            if result.cancelled:
+                console.print("[red]Apply cancelled by user[/red]")
+                return ApplyResult(status="cancelled", scenes=scene_results)
+            if result.state_modified:
+                state_modified = True
 
     # --- Phase 1: Scene apply ---
     scene_names = [scene] if scene else list(plan.scenes.keys())
@@ -124,10 +123,8 @@ def apply_plan(
         for action in sp.device_actions:
             device = rig.devices.get(action.device) if rig else None
 
-            if device is None or not hasattr(device, "apply"):
-                logger.warning(
-                    "Device '%s' not found or missing apply() — skipping action", action.device
-                )
+            if device is None:
+                logger.warning("Device '%s' not found — skipping action", action.device)
                 action_result = DeviceApplyResult(
                     device=action.device, status="skipped", preset=action.preset_name
                 )
@@ -172,7 +169,7 @@ def apply_plan(
     # --- Phase 2: Controller programming ---
     if rig and rig.controller and not scene:
         controller = rig.controller
-        if hasattr(controller, "apply") and midi:
+        if midi:
             console.print("\n[bold]Controller Programming Phase[/bold]")
             from rig.engine.plan.models import DeviceAction
 

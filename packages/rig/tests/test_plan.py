@@ -1,17 +1,19 @@
 import json
+from types import SimpleNamespace
 
 from rig.engine.diff import compute_diff
 from rig.engine.plan import compute_plan
-from rig.models.device import Device, DeviceType
+from rig.engine.plugin import DeviceType
 from rig.models.rig import Rig
 from rig_analog.preset import AnalogPreset
 from rig_chasebliss.device import ChaseBlissConfig
 from rig_chasebliss.preset import DigitalPreset
 from rig_hx.preset import HXStompPreset
+from tests.conftest import FakeDevice
 
 
 def _make_rig(scene_presets: dict | None = None) -> Rig:
-    hx = Device(
+    hx = FakeDevice(
         id="hx-stomp",
         type=DeviceType.MODELER,
         config={"type": "midi", "midi_channel": 1},
@@ -21,27 +23,27 @@ def _make_rig(scene_presets: dict | None = None) -> Rig:
             )
         ],
     )
-    bro = Device(
+    bro = FakeDevice(
         id="brothers",
         type=DeviceType.DIGITAL,
         config=ChaseBlissConfig(midi_channel=3),
         presets=[DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)],
     )
-    tum = Device(
+    tum = FakeDevice(
         id="tumnus",
         type=DeviceType.ANALOG,
         config={"type": "manual"},
     )
     scene_presets = scene_presets or {"hx-stomp": "clean-edge", "brothers": "low-gain"}
-    ctrl = Device(
+    ctrl = FakeDevice(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config={
-            "type": "controller",
-            "midi_channel": 1,
-            "banks": [],
-            "scenes": {"test-scene": {"presets": scene_presets}},
-        },
+        config=SimpleNamespace(
+            scenes={"test-scene": {"presets": scene_presets}},
+            type="controller",
+            midi_channel=1,
+            banks=[],
+        ),
     )
     return Rig(
         name="test",
@@ -138,7 +140,7 @@ class TestComputePlan:
 
 def _make_rig_with_extra_preset() -> Rig:
     """Rig with an extra DigitalPreset on brothers that is NOT referenced in any scene."""
-    hx = Device(
+    hx = FakeDevice(
         id="hx-stomp",
         type=DeviceType.MODELER,
         config={"type": "midi", "midi_channel": 1},
@@ -148,7 +150,7 @@ def _make_rig_with_extra_preset() -> Rig:
             )
         ],
     )
-    bro = Device(
+    bro = FakeDevice(
         id="brothers",
         type=DeviceType.DIGITAL,
         config=ChaseBlissConfig(midi_channel=3),
@@ -157,15 +159,15 @@ def _make_rig_with_extra_preset() -> Rig:
             DigitalPreset(id="high-gain", pedal="brothers", name="High Gain", preset_number=5),
         ],
     )
-    tum = Device(
+    tum = FakeDevice(
         id="tumnus",
         type=DeviceType.ANALOG,
         config={"type": "manual"},
     )
-    ctrl = Device(
+    ctrl = FakeDevice(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config={"type": "controller", "midi_channel": 1, "banks": []},
+        config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
     )
     return Rig(
         name="test",
@@ -200,7 +202,7 @@ class TestUnusedPresets:
         assert any("high-gain" in entry and "brothers" in entry for entry in plan.unused_presets)
 
     def test_unused_hx_preset_detected(self):
-        hx = Device(
+        hx = FakeDevice(
             id="hx-stomp",
             type=DeviceType.MODELER,
             config={"type": "midi", "midi_channel": 1},
@@ -219,7 +221,7 @@ class TestUnusedPresets:
                 ),
             ],
         )
-        bro = Device(
+        bro = FakeDevice(
             id="brothers",
             type=DeviceType.DIGITAL,
             config=ChaseBlissConfig(midi_channel=3),
@@ -227,15 +229,15 @@ class TestUnusedPresets:
                 DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)
             ],
         )
-        tum = Device(
+        tum = FakeDevice(
             id="tumnus",
             type=DeviceType.ANALOG,
             config={"type": "manual"},
         )
-        ctrl = Device(
+        ctrl = FakeDevice(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config={"type": "controller", "midi_channel": 1, "banks": []},
+            config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
         )
         rig = Rig(
             name="test",
@@ -246,7 +248,7 @@ class TestUnusedPresets:
         assert any("unused-patch" in entry and "hx-stomp" in entry for entry in plan.unused_presets)
 
     def test_analog_presets_excluded_from_unused(self):
-        tum = Device(
+        tum = FakeDevice(
             id="tumnus",
             type=DeviceType.ANALOG,
             config={"type": "manual"},
@@ -259,7 +261,7 @@ class TestUnusedPresets:
                 )
             ],
         )
-        hx = Device(
+        hx = FakeDevice(
             id="hx-stomp",
             type=DeviceType.MODELER,
             config={"type": "midi", "midi_channel": 1},
@@ -272,7 +274,7 @@ class TestUnusedPresets:
                 )
             ],
         )
-        bro = Device(
+        bro = FakeDevice(
             id="brothers",
             type=DeviceType.DIGITAL,
             config=ChaseBlissConfig(midi_channel=3),
@@ -280,10 +282,10 @@ class TestUnusedPresets:
                 DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)
             ],
         )
-        ctrl = Device(
+        ctrl = FakeDevice(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config={"type": "controller", "midi_channel": 1, "banks": []},
+            config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
         )
         rig = Rig(
             name="test",
@@ -371,7 +373,7 @@ class TestComputeDiff:
 
 def _make_ordered_rig() -> Rig:
     """Rig with two signal-chain devices at known positions and an off-chain CBA device."""
-    hx = Device(
+    hx = FakeDevice(
         id="hx-stomp",
         type=DeviceType.MODELER,
         config={"type": "midi", "midi_channel": 1},
@@ -381,21 +383,21 @@ def _make_ordered_rig() -> Rig:
             )
         ],
     )
-    tuner = Device(
+    tuner = FakeDevice(
         id="polytune",
         type=DeviceType.DIGITAL,
         config={"type": "midi", "midi_channel": 2},
         presets=[DigitalPreset(id="mute", pedal="polytune", name="Mute", preset_number=1)],
     )
-    ctrl = Device(
+    ctrl = FakeDevice(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config={
-            "type": "controller",
-            "midi_channel": 1,
-            "banks": [],
-            "scenes": {"test-scene": {"presets": {"polytune": "mute", "hx-stomp": "clean-edge"}}},
-        },
+        config=SimpleNamespace(
+            scenes={"test-scene": {"presets": {"polytune": "mute", "hx-stomp": "clean-edge"}}},
+            type="controller",
+            midi_channel=1,
+            banks=[],
+        ),
     )
     return Rig(
         name="test",
@@ -428,7 +430,7 @@ class TestDeviceOrdering:
 
     def test_signal_chain_device_comes_before_off_chain_device(self):
         """D-07: devices in the signal chain appear before off-chain devices in device_actions."""
-        hx = Device(
+        hx = FakeDevice(
             id="hx-stomp",
             type=DeviceType.MODELER,
             config={"type": "midi", "midi_channel": 1},
@@ -441,7 +443,7 @@ class TestDeviceOrdering:
                 )
             ],
         )
-        bro = Device(
+        bro = FakeDevice(
             id="brothers",
             type=DeviceType.DIGITAL,
             config={"type": "midi", "midi_channel": 3},
@@ -449,17 +451,17 @@ class TestDeviceOrdering:
                 DigitalPreset(id="low-gain", pedal="brothers", name="Low Gain", preset_number=4)
             ],
         )
-        ctrl = Device(
+        ctrl = FakeDevice(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config={
-                "type": "controller",
-                "midi_channel": 1,
-                "banks": [],
-                "scenes": {
+            config=SimpleNamespace(
+                scenes={
                     "test-scene": {"presets": {"brothers": "low-gain", "hx-stomp": "clean-edge"}}
                 },
-            },
+                type="controller",
+                midi_channel=1,
+                banks=[],
+            ),
         )
         rig = Rig(
             name="test",

@@ -186,12 +186,19 @@ class TestChaseBlissApplierSetup:
         assert results[0].status == "skipped"
 
     def test_detect_cba_setup_fresh_device_produces_all_phases(self):
-        from rig.models.device import Device, DeviceType
-        from rig.models.rig import Rig
-        from rig_chasebliss.device import ChaseBlissConfig, _detect_cba_setup_for_device
-        from rig_chasebliss.preset import DigitalPreset
+        from types import SimpleNamespace
 
-        bro = Device(
+        from rig.engine.plugin import DeviceType
+        from rig.models.rig import Rig
+        from rig_chasebliss.device import (
+            ChaseBlissConfig,
+            ChaseBlissDevice,
+            _detect_cba_setup_for_device,
+        )
+        from rig_chasebliss.preset import DigitalPreset
+        from tests.conftest import FakeDevice
+
+        bro = ChaseBlissDevice(
             id="cba-mood",
             type=DeviceType.DIGITAL,
             config=ChaseBlissConfig(midi_channel=3),
@@ -200,15 +207,15 @@ class TestChaseBlissApplierSetup:
                 DigitalPreset(id="drone", name="Drone", preset_number=3),
             ],
         )
-        ctrl = Device(
+        ctrl = FakeDevice(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config={
-                "type": "controller",
-                "midi_channel": 1,
-                "banks": [],
-                "scenes": {"scene-a": {"presets": {"cba-mood": "shimmer"}}},
-            },
+            config=SimpleNamespace(
+                scenes={"scene-a": {"presets": {"cba-mood": "shimmer"}}},
+                type="controller",
+                midi_channel=1,
+                banks=[],
+            ),
         )
         rig = Rig(
             name="test",

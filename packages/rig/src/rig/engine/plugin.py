@@ -31,7 +31,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Protocol, Self
+from typing import TYPE_CHECKING, Any, Protocol, Self, runtime_checkable
 
 from rig.engine.state import RigState
 
@@ -98,6 +98,7 @@ class Preset(Protocol):
     def name(self) -> str: ...
 
 
+@runtime_checkable
 class Device(Protocol):
     """Structural contract for device plugin classes.
 

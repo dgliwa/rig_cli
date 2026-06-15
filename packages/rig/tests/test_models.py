@@ -1,9 +1,12 @@
-from rig.models.device import Device, DeviceType
+from types import SimpleNamespace
+
+from rig.engine.plugin import DeviceType
 from rig.models.rig import Rig
 from rig.models.scene import Scene
 from rig_analog.preset import AnalogPreset
 from rig_chasebliss.preset import DigitalPreset
 from rig_hx.preset import HXStompPreset
+from tests.conftest import FakeDevice
 
 
 class TestPresetModels:
@@ -77,25 +80,15 @@ class TestSceneModel:
         assert scene.tempo == 118
 
 
-def _make_controller_device(scenes: dict | None = None) -> Device:
-    """Helper: build a Device with DeviceType.CONTROLLER."""
-    config: dict = {"type": "controller", "midi_channel": 1, "banks": []}
-    if scenes:
-        config["scenes"] = scenes
-    return Device(
-        id="mc6",
-        type=DeviceType.CONTROLLER,
-        config=config,
-    )
+def _make_controller_device(scenes: dict | None = None) -> FakeDevice:
+    """Helper: build a FakeDevice with DeviceType.CONTROLLER."""
+    cfg = SimpleNamespace(scenes=scenes or {}, type="controller", midi_channel=1, banks=[])
+    return FakeDevice(id="mc6", type=DeviceType.CONTROLLER, config=cfg)
 
 
-def _make_analog_device(device_id: str) -> Device:
+def _make_analog_device(device_id: str) -> FakeDevice:
     """Helper: build a minimal analog device."""
-    return Device(
-        id=device_id,
-        type=DeviceType.ANALOG,
-        config=None,
-    )
+    return FakeDevice(id=device_id, type=DeviceType.ANALOG, config=None)
 
 
 class TestRigConfig:

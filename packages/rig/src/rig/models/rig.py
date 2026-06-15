@@ -1,14 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
 from pydantic import BaseModel, ConfigDict
 
-from rig.engine.plugin import DeviceType
+from rig.engine.plugin import Device, DeviceType
 from rig.models.scene import Scene
-
-if TYPE_CHECKING:
-    from rig.engine.plugin import Device
 
 
 class Rig(BaseModel):
@@ -17,7 +12,7 @@ class Rig(BaseModel):
     name: str
     description: str | None = None
     signal_chain: list[str] = []
-    devices: dict[str, Any] = {}
+    devices: dict[str, Device] = {}
     midi_channel: int | None = None
 
     @property

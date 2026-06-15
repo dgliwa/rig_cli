@@ -23,6 +23,23 @@ class _FakeDevice:
         self.config = config
         self.presets = []
 
+    def setup(self, ctx):  # type: ignore[no-untyped-def]
+        from rig.engine.plugin import SetupResult
+
+        return SetupResult()
+
+    def get_scene_pc_command(self, preset_id: str):
+        return None
+
+    def apply(self, ctx):  # type: ignore[no-untyped-def]
+        from rig.engine.appliers.base import DeviceApplyResult
+
+        return DeviceApplyResult(device=self.id, status="skipped", preset="")
+
+    @classmethod
+    def from_raw_yaml(cls, data):  # type: ignore[no-untyped-def]
+        return cls(data["id"], data.get("config", {}))
+
 
 def _make_rig() -> Rig:
     config = ChaseBlissConfig(model=_TEST_MODEL)
