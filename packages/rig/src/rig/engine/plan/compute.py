@@ -119,9 +119,7 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
                     status="configure" if needs_config else "verify",
                     preset_name=preset_id,
                     preset_number=preset_number,
-                    midi_channel=pedal.config.get("midi_channel")
-                    if isinstance(pedal.config, dict)
-                    else getattr(pedal.config, "midi_channel", None),
+                    midi_channel=getattr(pedal.config, "midi_channel", None),
                     before=actual_preset,
                     after=preset_id,
                 )

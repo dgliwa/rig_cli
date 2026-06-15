@@ -42,9 +42,7 @@ def status(
             "pedals": {
                 pid: {
                     "type": p.type.value,
-                    "midi_channel": p.config.get("midi_channel")
-                    if isinstance(p.config, dict)
-                    else getattr(p.config, "midi_channel", None),
+                    "midi_channel": getattr(p.config, "midi_channel", None),
                 }
                 for pid, p in rig.devices.items()
             },
@@ -63,11 +61,7 @@ def status(
         table.add_row(
             pid,
             device.type.value,
-            str(
-                device.config.get("midi_channel")
-                if isinstance(device.config, dict)
-                else getattr(device.config, "midi_channel", None) or "-"
-            ),
+            str(getattr(device.config, "midi_channel", None) or "-"),
             str(preset_count),
         )
     console.print(table)
