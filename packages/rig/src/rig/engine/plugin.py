@@ -80,6 +80,16 @@ class DeviceApplyContext:
     config_path: str | None = None
 
 
+class Preset(Protocol):
+    """Minimal interface required by the engine from any preset type."""
+
+    @property
+    def id(self) -> str: ...
+
+    @property
+    def name(self) -> str: ...
+
+
 class Device(Protocol):
     """Structural contract for device plugin classes.
 
@@ -92,7 +102,7 @@ class Device(Protocol):
         from pydantic import BaseModel, ConfigDict, Field
         from rig.engine.plugin import (
             Device, DeviceApplyContext, DeviceApplyResult,
-            SetupContext, SetupResult,
+            Preset, SetupContext, SetupResult,
         )
 
         class MyDevice(BaseModel):
@@ -101,7 +111,7 @@ class Device(Protocol):
             id: str
             name: str = ""
             config: Any
-            presets: list[Any] = Field(default_factory=list)
+            presets: list[Preset] = Field(default_factory=list)
 
             def setup(self, ctx: SetupContext) -> SetupResult:
                 return SetupResult()
@@ -125,7 +135,7 @@ class Device(Protocol):
     def config(self) -> Any: ...
 
     @property
-    def presets(self) -> list[Any]: ...
+    def presets(self) -> list[Preset]: ...
 
     @classmethod
     def from_raw_yaml(cls, data: dict[str, Any]) -> Self: ...
