@@ -365,3 +365,17 @@ def test_bad_entry_point_does_not_crash_discovery() -> None:
 
     registry = _discover()
     assert isinstance(registry, PluginRegistry)
+
+
+def test_all_plugin_devices_satisfy_preset_field_is_not_list_any() -> None:
+    """Regression: preset-bearing plugin device classes must use typed preset annotations.
+
+    MC6Device is excluded — it has no real presets and retains list[Any] intentionally.
+    """
+    from rig_analog.device import AnalogDevice
+    from rig_chasebliss.device import ChaseBlissDevice
+    from rig_hx.device import HXStompDevice
+
+    for cls in (AnalogDevice, ChaseBlissDevice, HXStompDevice):
+        ann = cls.__annotations__.get("presets", "")
+        assert "Any" not in str(ann), f"{cls.__name__}.presets should not be list[Any]"

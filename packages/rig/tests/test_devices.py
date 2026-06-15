@@ -16,6 +16,10 @@ from unittest.mock import MagicMock
 from rig.engine.plan.models import DeviceAction
 from rig.engine.plugin import DeviceApplyContext
 from rig.engine.state import RigState
+from rig_analog.config import AnalogConfig
+from rig_chasebliss.device import ChaseBlissConfig
+from rig_hx.config import HXStompConfig
+from rig_morningstar.config import MC6Config
 from tests.fakes import InMemoryPromptAdapter
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "sample_rig"
@@ -92,23 +96,23 @@ def test_mc6_device_importable() -> None:
 def test_analog_device_has_id_property() -> None:
     from rig_analog.device import AnalogDevice
 
-    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=object())
+    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=AnalogConfig())
     assert dev.id == "fuzz"
 
 
 def test_analog_device_has_name_property() -> None:
     from rig_analog.device import AnalogDevice
 
-    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=object())
+    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=AnalogConfig())
     assert dev.name == "Fuzz Face"
 
 
 def test_analog_device_has_config_property() -> None:
     from rig_analog.device import AnalogDevice
 
-    cfg = object()
+    cfg = AnalogConfig()
     dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=cfg)
-    assert dev.config is cfg
+    assert isinstance(dev.config, AnalogConfig)
 
 
 # ---------------------------------------------------------------------------
@@ -119,7 +123,7 @@ def test_analog_device_has_config_property() -> None:
 def test_analog_device_apply_dry_run_returns_skipped() -> None:
     from rig_analog.device import AnalogDevice
 
-    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=object())
+    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=AnalogConfig())
     ctx = _make_apply_ctx(device_id="fuzz", preset_name="Noon", dry_run=True)
     result = dev.apply(ctx)
     assert result.status == "skipped"
@@ -131,7 +135,7 @@ def test_analog_device_apply_confirm_returns_confirmed() -> None:
 
     from rig_analog.device import AnalogDevice
 
-    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=object())
+    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=AnalogConfig())
     ctx = _make_apply_ctx(device_id="fuzz", preset_name="Noon")
     with patch("rig_analog.device.prompt_analog", return_value="confirm"):
         result = dev.apply(ctx)
@@ -144,7 +148,7 @@ def test_analog_device_apply_quit_returns_error() -> None:
 
     from rig_analog.device import AnalogDevice
 
-    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=object())
+    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=AnalogConfig())
     ctx = _make_apply_ctx(device_id="fuzz", preset_name="Noon")
     with patch("rig_analog.device.prompt_analog", return_value="quit"):
         result = dev.apply(ctx)
@@ -160,14 +164,14 @@ def test_analog_device_apply_quit_returns_error() -> None:
 def test_midi_device_has_id_property() -> None:
     from rig_hx.device import HXStompDevice
 
-    dev = HXStompDevice(id="hx-stomp", name="HX Stomp", config=object())
+    dev = HXStompDevice(id="hx-stomp", name="HX Stomp", config=HXStompConfig())
     assert dev.id == "hx-stomp"
 
 
 def test_midi_device_apply_dry_run_returns_skipped() -> None:
     from rig_hx.device import HXStompDevice
 
-    dev = HXStompDevice(id="hx-stomp", name="HX Stomp", config=object())
+    dev = HXStompDevice(id="hx-stomp", name="HX Stomp", config=HXStompConfig())
     ctx = _make_apply_ctx(device_id="hx-stomp", preset_name="Clean", dry_run=True)
     result = dev.apply(ctx)
     assert result.status == "skipped"
@@ -177,7 +181,7 @@ def test_midi_device_apply_dry_run_returns_skipped() -> None:
 def test_midi_device_apply_confirm_returns_confirmed() -> None:
     from rig_hx.device import HXStompDevice
 
-    dev = HXStompDevice(id="hx-stomp", name="HX Stomp", config=object())
+    dev = HXStompDevice(id="hx-stomp", name="HX Stomp", config=HXStompConfig())
     ctx = _make_apply_ctx(
         device_id="hx-stomp",
         preset_name="Clean",
@@ -195,14 +199,14 @@ def test_midi_device_apply_confirm_returns_confirmed() -> None:
 def test_chase_bliss_device_has_id_property() -> None:
     from rig_chasebliss.device import ChaseBlissDevice
 
-    dev = ChaseBlissDevice(id="mood", name="Mood Mk II", config=object())
+    dev = ChaseBlissDevice(id="mood", name="Mood Mk II", config=ChaseBlissConfig(midi_channel=1))
     assert dev.id == "mood"
 
 
 def test_chase_bliss_device_apply_dry_run_returns_skipped() -> None:
     from rig_chasebliss.device import ChaseBlissDevice
 
-    dev = ChaseBlissDevice(id="mood", name="Mood Mk II", config=object())
+    dev = ChaseBlissDevice(id="mood", name="Mood Mk II", config=ChaseBlissConfig(midi_channel=1))
     ctx = _make_apply_ctx(device_id="mood", preset_name="Bloom", dry_run=True)
     result = dev.apply(ctx)
     assert result.status == "skipped"
@@ -212,7 +216,7 @@ def test_chase_bliss_device_apply_dry_run_returns_skipped() -> None:
 def test_chase_bliss_device_apply_confirm_returns_confirmed() -> None:
     from rig_chasebliss.device import ChaseBlissDevice
 
-    dev = ChaseBlissDevice(id="mood", name="Mood Mk II", config=object())
+    dev = ChaseBlissDevice(id="mood", name="Mood Mk II", config=ChaseBlissConfig(midi_channel=1))
     ctx = _make_apply_ctx(
         device_id="mood",
         preset_name="Bloom",
@@ -230,7 +234,7 @@ def test_chase_bliss_device_apply_confirm_returns_confirmed() -> None:
 def test_mc6_device_has_id_property() -> None:
     from rig_morningstar.device import MC6Device
 
-    dev = MC6Device(id="mc6", name="MC6 MkII", config=object())
+    dev = MC6Device(id="mc6", name="MC6 MkII", config=MC6Config())
     assert dev.id == "mc6"
 
 
@@ -311,9 +315,15 @@ def test_all_device_types_satisfy_device_protocol_structurally() -> None:
     from rig_hx.device import HXStompDevice
     from rig_morningstar.device import MC6Device
 
+    config_map = {
+        AnalogDevice: AnalogConfig(),
+        HXStompDevice: HXStompConfig(),
+        ChaseBlissDevice: ChaseBlissConfig(midi_channel=1),
+        MC6Device: MC6Config(),
+    }
     for cls in (AnalogDevice, HXStompDevice, ChaseBlissDevice, MC6Device):
         for attr in ("id", "name", "config", "apply"):
-            assert hasattr(cls(id="x", name="X", config=object()), attr), (
+            assert hasattr(cls(id="x", name="X", config=config_map[cls]), attr), (
                 f"{cls.__name__} missing '{attr}'"
             )
 
@@ -328,7 +338,7 @@ def test_analog_device_apply_skip_returns_skipped() -> None:
 
     from rig_analog.device import AnalogDevice
 
-    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=object())
+    dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=AnalogConfig())
     ctx = _make_apply_ctx(device_id="fuzz", preset_name="Noon")
     with patch("rig_analog.device.prompt_analog", return_value="skip"):
         result = dev.apply(ctx)
@@ -339,7 +349,7 @@ def test_analog_device_apply_skip_returns_skipped() -> None:
 def test_midi_device_apply_skip_returns_skipped() -> None:
     from rig_hx.device import HXStompDevice
 
-    dev = HXStompDevice(id="hx-stomp", name="HX Stomp", config=object())
+    dev = HXStompDevice(id="hx-stomp", name="HX Stomp", config=HXStompConfig())
     ctx = _make_apply_ctx(
         device_id="hx-stomp",
         preset_name="Clean",
@@ -351,11 +361,11 @@ def test_midi_device_apply_skip_returns_skipped() -> None:
 
 
 def test_midi_device_get_scene_pc_command_with_digital_preset() -> None:
-    from rig_chasebliss.preset import DigitalPreset
+    from rig.models.preset import MidiPreset
     from rig_hx.device import HXStompDevice
 
-    preset = DigitalPreset(id="clean", name="Clean", preset_number=5)
-    cfg = {"type": "midi", "midi_channel": 3}
+    preset = MidiPreset(id="clean", name="Clean", preset_number=5)
+    cfg = HXStompConfig(midi_channel=3)
     dev = HXStompDevice(id="hx", name="HX Stomp", config=cfg, presets=[preset])
     cmd = dev.get_scene_pc_command("clean")
     assert cmd is not None
@@ -365,11 +375,11 @@ def test_midi_device_get_scene_pc_command_with_digital_preset() -> None:
 
 
 def test_midi_device_get_scene_pc_command_no_matching_preset_returns_none() -> None:
-    from rig_chasebliss.preset import DigitalPreset
+    from rig.models.preset import MidiPreset
     from rig_hx.device import HXStompDevice
 
-    preset = DigitalPreset(id="clean", name="Clean", preset_number=5)
-    cfg = {"type": "midi", "midi_channel": 3}
+    preset = MidiPreset(id="clean", name="Clean", preset_number=5)
+    cfg = HXStompConfig(midi_channel=3)
     dev = HXStompDevice(id="hx", name="HX Stomp", config=cfg, presets=[preset])
     assert dev.get_scene_pc_command("nonexistent") is None
 

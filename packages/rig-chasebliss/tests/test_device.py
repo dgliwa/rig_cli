@@ -1,5 +1,10 @@
 from rig_chasebliss.catalog import Control, ControlType
-from rig_chasebliss.device import ChaseBlissDevice, _get_cc_params, validate_cc_params
+from rig_chasebliss.device import (
+    ChaseBlissConfig,
+    ChaseBlissDevice,
+    _get_cc_params,
+    validate_cc_params,
+)
 
 
 def test_validate_valid_params():
@@ -196,3 +201,10 @@ def test_from_raw_yaml_no_model_is_none():
         {"id": "x", "name": "Mystery", "config": {"type": "chase_bliss"}}
     )
     assert device.config.model is None
+
+
+def test_from_raw_yaml_config_field_is_chase_bliss_config_instance():
+    device = ChaseBlissDevice.from_raw_yaml(
+        {"id": "mood", "name": "Mood MkII", "config": {"type": "chase_bliss"}}
+    )
+    assert isinstance(device.config, ChaseBlissConfig)
