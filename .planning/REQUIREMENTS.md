@@ -9,7 +9,7 @@ Internal refactor milestone — zero user-visible behavior changes. Eliminates t
 
 ### TYPE — Type System & Model Consolidation
 
-- [ ] **TYPE-01**: The codebase has a single `Device` type surface — the legacy `Device(BaseModel)` in `models/device.py` is retired; `Rig.devices` is typed `dict[str, Device]` against the Protocol; all code paths that touch `rig.devices` are type-safe without `Any` or `hasattr` guards
+- [x] **TYPE-01**: The codebase has a single `Device` type surface — the legacy `Device(BaseModel)` in `models/device.py` is retired; `Rig.devices` is typed `dict[str, Device]` against the Protocol; all code paths that touch `rig.devices` are type-safe without `Any` or `hasattr` guards
 - [ ] **TYPE-02**: Each plugin device class carries a concrete config type (`config: ChaseBlissConfig`, `config: HXStompConfig`, etc.) — not `config: Any`; construction from YAML validates against the concrete type
 - [ ] **TYPE-03**: A `Preset` Protocol exists in `rig.engine.plugin`; all plugin device classes declare `presets: list[Preset]`; the engine no longer sees `list[Any]`
 - [ ] **TYPE-04**: The dead `plan()` and `diff()` methods are removed from the `Device` Protocol and all plugin implementations (they raise `NotImplementedError` and are never called by the engine)
@@ -52,7 +52,7 @@ Deferred to the next milestone (Terraform Loop Completeness).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TYPE-01 | Phase 22 | Pending |
+| TYPE-01 | Phase 22 | Complete |
 | TYPE-02 | Phase 21 | Pending |
 | TYPE-03 | Phase 21 | Pending |
 | TYPE-04 | Phase 20 | Pending |
@@ -63,6 +63,7 @@ Deferred to the next milestone (Terraform Loop Completeness).
 | QUAL-02 | Phase 20 | Pending |
 
 **Coverage:**
+
 - v1.4 requirements: 9 total
 - Mapped to phases: 9 (complete)
 - Unmapped: 0 ✓
