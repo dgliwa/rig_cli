@@ -9,10 +9,9 @@ for scene switching (same as HXStompDevice/analog PC send behavior).
 from __future__ import annotations
 
 import logging
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
-from pydantic import BaseModel as PydanticBaseModel
 from rich.console import Console
 
 from rig.config.errors import ValidationError
@@ -22,12 +21,16 @@ from rig.engine.appliers.base import (
     update_device_state,
 )
 from rig.engine.plugin import DeviceApplyContext, SetupContext, SetupResult
-from rig.engine.state import DeviceState
+from rig.engine.state import DeviceState, RigState
 from rig.models.device import DeviceType
 from rig_chasebliss.catalog import Control, get_controls
+from rig_chasebliss.preset import DigitalPreset
+
+if TYPE_CHECKING:
+    from rig.models.rig import Rig
 
 
-class ChaseBlissConfig(PydanticBaseModel):
+class ChaseBlissConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     type: Literal["chase_bliss"] = "chase_bliss"
@@ -113,7 +116,7 @@ logger = logging.getLogger(__name__)
 console = Console()
 
 
-def _detect_cba_setup_for_device(device: Any, state: Any, rig: Any) -> list[Any]:
+def _detect_cba_setup_for_device(device: ChaseBlissDevice, state: RigState, rig: Rig) -> list[Any]:
     """Detect which CBA setup actions are needed for this device.
 
     Checks state for channel establishment, saved presets, and scene registration.
@@ -121,9 +124,6 @@ def _detect_cba_setup_for_device(device: Any, state: Any, rig: Any) -> list[Any]
     from rig_chasebliss.models import CbaSetupAction
 
     actions: list[CbaSetupAction] = []
-    if not isinstance(device.config, ChaseBlissConfig):
-        return actions
-
     ch = device.config.midi_channel or 1
     ds = state.devices.get(device.id, DeviceState())
 
@@ -181,14 +181,12 @@ class ChaseBlissDevice(BaseModel):
 
     id: str
     name: str = ""
-    config: Any
+    config: ChaseBlissConfig
     type: DeviceType = DeviceType.DIGITAL
-    presets: list[Any] = Field(default_factory=list)
+    presets: list[DigitalPreset] = Field(default_factory=list)
 
     @classmethod
     def from_raw_yaml(cls, data: dict[str, Any]) -> ChaseBlissDevice:
-        from rig_chasebliss.preset import DigitalPreset
-
         config = ChaseBlissConfig(**(data.get("config") or {}))
         presets = [DigitalPreset(**p) for p in (data.get("presets") or [])]
         return cls(
@@ -206,9 +204,6 @@ class ChaseBlissDevice(BaseModel):
         2. Detect required setup actions (channel, presets, registration)
         3. Execute actions via ChaseBlissApplier
         """
-        if not isinstance(self.config, ChaseBlissConfig):
-            return SetupResult()
-
         ch = self.config.midi_channel or 1
         state_modified = False
 
@@ -258,11 +253,7 @@ class ChaseBlissDevice(BaseModel):
 
     def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
         """Return a PC command dict for the given preset_id, or None."""
-        ch = (
-            self.config.get("midi_channel")
-            if isinstance(self.config, dict)
-            else getattr(self.config, "midi_channel", None)
-        )
+        ch = self.config.midi_channel
         if ch is None:
             return None
         for preset in self.presets:

@@ -9,7 +9,9 @@ from rich.console import Console
 from rig.engine.appliers.base import DeviceApplyResult, update_device_state
 from rig.engine.plugin import DeviceApplyContext, SetupContext, SetupResult
 from rig.models.device import DeviceType
+from rig_analog.config import AnalogConfig
 from rig_analog.interaction import prompt_analog
+from rig_analog.preset import AnalogPreset
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -22,20 +24,19 @@ class AnalogDevice(BaseModel):
 
     id: str
     name: str = ""
-    config: Any
+    config: AnalogConfig
     type: DeviceType = DeviceType.ANALOG
-    presets: list[Any] = Field(default_factory=list)
+    presets: list[AnalogPreset] = Field(default_factory=list)
 
     @classmethod
     def from_raw_yaml(cls, data: dict[str, Any]) -> AnalogDevice:
-        from rig_analog.preset import AnalogPreset
-
+        config = AnalogConfig(**(data.get("config") or {}))
         presets = [AnalogPreset(**p) for p in (data.get("presets") or [])]
         return cls(
             id=data["id"],
             name=data.get("name", ""),
             type=DeviceType.ANALOG,
-            config=data.get("config") or {},
+            config=config,
             presets=presets,
         )
 

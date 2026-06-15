@@ -10,6 +10,7 @@ from rig.engine.appliers.base import DeviceApplyResult, update_device_state
 from rig.engine.plugin import DeviceApplyContext, SetupContext, SetupResult
 from rig.engine.state import DeviceState
 from rig.models.device import DeviceType
+from rig_morningstar.config import MC6Config
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -22,17 +23,18 @@ class MC6Device(BaseModel):
 
     id: str
     name: str = ""
-    config: Any
+    config: MC6Config
     type: DeviceType = DeviceType.CONTROLLER
     presets: list[Any] = Field(default_factory=list)
 
     @classmethod
     def from_raw_yaml(cls, data: dict[str, Any]) -> MC6Device:
+        config = MC6Config(**(data.get("config") or {}))
         return cls(
             id=data["id"],
             name=data.get("name", ""),
             type=DeviceType.CONTROLLER,
-            config=data.get("config") or {},
+            config=config,
             presets=[],
         )
 
@@ -68,11 +70,7 @@ class MC6Device(BaseModel):
 
         device_id = ctx.action.device
 
-        banks = (
-            self.config.get("banks", [])
-            if isinstance(self.config, dict)
-            else getattr(self.config, "banks", [])
-        )
+        banks = self.config.banks
         if not banks or ctx.midi is None:
             return DeviceApplyResult(device=device_id, status="skipped")
 

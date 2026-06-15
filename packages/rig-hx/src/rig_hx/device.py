@@ -12,6 +12,9 @@ from rig.engine.appliers.base import DeviceApplyResult, update_device_state
 from rig.engine.plugin import DeviceApplyContext, SetupContext, SetupResult
 from rig.engine.state import DeviceState
 from rig.models.device import DeviceType
+from rig.models.preset import MidiPreset
+from rig_hx.config import HXStompConfig
+from rig_hx.preset import HXStompPreset
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -30,28 +33,25 @@ class HXStompDevice(BaseModel):
 
     id: str
     name: str = ""
-    config: Any
+    config: HXStompConfig
     type: DeviceType = DeviceType.MODELER
-    presets: list[Any] = Field(default_factory=list)
+    presets: list[HXStompPreset | MidiPreset] = Field(default_factory=list)
 
     @classmethod
     def from_raw_yaml(cls, data: dict[str, Any]) -> HXStompDevice:
+        config = HXStompConfig(**(data.get("config") or {}))
         raw_presets = data.get("presets") or []
         if data.get("type") == DeviceType.MODELER:
-            from rig_hx.preset import HXStompPreset
-
-            presets = [HXStompPreset(**p) for p in raw_presets]
+            presets: list[HXStompPreset | MidiPreset] = [HXStompPreset(**p) for p in raw_presets]
             device_type = DeviceType.MODELER
         else:
-            from rig.models.preset import MidiPreset
-
             presets = [MidiPreset(**p) for p in raw_presets]
             device_type = DeviceType.DIGITAL
         return cls(
             id=data["id"],
             name=data.get("name", ""),
             type=device_type,
-            config=data.get("config") or {},
+            config=config,
             presets=presets,
         )
 
@@ -61,11 +61,7 @@ class HXStompDevice(BaseModel):
             ctx.connected_devices.add(self.id)
             return SetupResult()
 
-        ch = (
-            self.config.get("midi_channel")
-            if isinstance(self.config, dict)
-            else getattr(self.config, "midi_channel", None) or 1
-        )
+        ch = self.config.midi_channel or 1
         from rig.interaction.midi import prompt_midi_connect
 
         cached_port = ctx.state.devices.get(self.id, DeviceState()).midi_port
@@ -80,11 +76,7 @@ class HXStompDevice(BaseModel):
 
     def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None:
         """Return a PC command dict for the given preset_id, or None if not applicable."""
-        ch = (
-            self.config.get("midi_channel")
-            if isinstance(self.config, dict)
-            else getattr(self.config, "midi_channel", None)
-        )
+        ch = self.config.midi_channel
         if ch is None:
             return None
         for preset in self.presets:
