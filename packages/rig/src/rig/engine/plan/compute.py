@@ -4,8 +4,8 @@ import logging
 from typing import Literal
 
 from rig.engine.plan.models import DeviceAction, Plan, ScenePlan
+from rig.engine.plugin import DeviceType
 from rig.engine.state import DeviceState, RigState, read_state
-from rig.models.device import DeviceType
 from rig.models.graph import DeviceGraph
 from rig.models.rig import Rig
 

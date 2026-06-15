@@ -9,9 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from rich.console import Console
 
 from rig.engine.appliers.base import DeviceApplyResult, update_device_state
-from rig.engine.plugin import DeviceApplyContext, SetupContext, SetupResult
+from rig.engine.plugin import DeviceApplyContext, DeviceType, SetupContext, SetupResult
 from rig.engine.state import DeviceState
-from rig.models.device import DeviceType
 from rig.models.preset import MidiPreset
 from rig_hx.config import HXStompConfig
 from rig_hx.preset import HXStompPreset

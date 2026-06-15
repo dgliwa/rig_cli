@@ -20,9 +20,8 @@ from rig.engine.appliers.base import (
     DeviceApplyResult,
     update_device_state,
 )
-from rig.engine.plugin import DeviceApplyContext, SetupContext, SetupResult
+from rig.engine.plugin import DeviceApplyContext, DeviceType, SetupContext, SetupResult
 from rig.engine.state import DeviceState, RigState
-from rig.models.device import DeviceType
 from rig_chasebliss.catalog import Control, get_controls
 from rig_chasebliss.preset import DigitalPreset
 

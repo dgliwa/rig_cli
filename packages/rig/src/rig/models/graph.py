@@ -4,7 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from rig.config.errors import ConfigError
-from rig.models.device import Device, DeviceType
+from rig.engine.plugin import Device, DeviceType
 
 if TYPE_CHECKING:
     from rig.models.rig import Rig

@@ -30,6 +30,7 @@ Required methods:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Protocol, Self
 
 from rig.engine.state import RigState
@@ -40,6 +41,13 @@ if TYPE_CHECKING:
     from rig.engine.ports import ConfirmationIO
     from rig.midi.adapter import MidiManager
     from rig.models.rig import Rig
+
+
+class DeviceType(StrEnum):
+    DIGITAL = "digital"
+    ANALOG = "analog"
+    MODELER = "modeler"
+    CONTROLLER = "controller"
 
 
 @dataclass

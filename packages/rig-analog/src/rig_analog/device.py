@@ -7,8 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from rich.console import Console
 
 from rig.engine.appliers.base import DeviceApplyResult, update_device_state
-from rig.engine.plugin import DeviceApplyContext, SetupContext, SetupResult
-from rig.models.device import DeviceType
+from rig.engine.plugin import DeviceApplyContext, DeviceType, SetupContext, SetupResult
 from rig_analog.config import AnalogConfig
 from rig_analog.interaction import prompt_analog
 from rig_analog.preset import AnalogPreset

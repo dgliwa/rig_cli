@@ -17,8 +17,8 @@ from rig.cli._shared import (
 from rig.config.errors import ConfigError
 from rig.config.loader import load_rig
 from rig.engine.plan import compute_plan
+from rig.engine.plugin import DeviceType
 from rig.log_setup import setup_logging
-from rig.models.device import DeviceType
 
 logger = logging.getLogger(__name__)
 

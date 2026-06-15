@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict
 
-from rig.models.device import Device, DeviceType
+from rig.engine.plugin import DeviceType
 from rig.models.scene import Scene
+
+if TYPE_CHECKING:
+    from rig.engine.plugin import Device
 
 
 class Rig(BaseModel):
-    # arbitrary_types_allowed so concrete Device plugin types (AnalogDevice, MidiDevice, etc.)
-    # can be stored alongside the legacy Device model during the P3 migration.
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     name: str
@@ -30,9 +31,7 @@ class Rig(BaseModel):
         for device in self.devices.values():
             if device.type == DeviceType.CONTROLLER:
                 cfg = device.config
-                raw_scenes = (
-                    cfg.get("scenes", {}) if isinstance(cfg, dict) else getattr(cfg, "scenes", {})
-                )
+                raw_scenes = getattr(cfg, "scenes", {})
                 for name, data in raw_scenes.items():
                     if isinstance(data, dict):
                         aggregated[name] = Scene(
