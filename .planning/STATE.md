@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Architecture & Type Integrity
-status: Phase 22 complete — Phase 23 next
-last_updated: "2026-06-15T00:00:00.000Z"
-last_activity: "2026-06-15 — Phase 22 complete (retire legacy Device model; 306 tests green)"
+status: completed
+last_updated: "2026-06-16T13:29:10.186Z"
+last_activity: 2026-06-15 — Phase 22 complete (retire legacy Device model; 306 tests green)
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 3
+  completed_plans: 3
   percent: 75
 ---
 
