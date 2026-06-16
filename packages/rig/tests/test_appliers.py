@@ -12,23 +12,27 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from rig.engine.appliers.base import ApplyContext
+from rig.engine.plugin import SetupContext
 from rig.engine.state import RigState
 from rig_chasebliss.applier import ChaseBlissApplier
 from rig_chasebliss.models import CbaSetupAction
+from tests.fakes import InMemoryPromptAdapter
 
 
 def _make_ctx(
     dry_run: bool = False,
     connected: set[str] | None = None,
-) -> ApplyContext:
+    confirmation_io=None,
+) -> SetupContext:
     midi = MagicMock()
-    return ApplyContext(
+    return SetupContext(
+        state=RigState(),
+        rig=None,
         dry_run=dry_run,
-        confirmation_io=MagicMock(),
+        confirmation_io=confirmation_io or InMemoryPromptAdapter(),
         midi=midi,
         connected_devices=connected or set(),
-        state=RigState(),
+        config_path=None,
     )
 
 

@@ -6,8 +6,14 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 from rich.console import Console
 
-from rig.engine.appliers.base import DeviceApplyResult, update_device_state
-from rig.engine.plugin import DeviceApplyContext, DeviceType, SetupContext, SetupResult
+from rig.engine.plugin import (
+    DeviceApplyContext,
+    DeviceApplyResult,
+    DeviceType,
+    SetupContext,
+    SetupResult,
+    update_device_state,
+)
 from rig.engine.state import DeviceState
 from rig_morningstar.config import MC6Config
 

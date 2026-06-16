@@ -15,12 +15,14 @@ from pydantic import BaseModel, ConfigDict, Field
 from rich.console import Console
 
 from rig.config.errors import ValidationError
-from rig.engine.appliers.base import (
-    ApplyContext,
+from rig.engine.plugin import (
+    DeviceApplyContext,
     DeviceApplyResult,
+    DeviceType,
+    SetupContext,
+    SetupResult,
     update_device_state,
 )
-from rig.engine.plugin import DeviceApplyContext, DeviceType, SetupContext, SetupResult
 from rig.engine.state import DeviceState, RigState
 from rig_chasebliss.catalog import Control, get_controls
 from rig_chasebliss.preset import DigitalPreset
@@ -233,16 +235,7 @@ class ChaseBlissDevice(BaseModel):
         from rig_chasebliss.applier import ChaseBlissApplier
 
         applier = ChaseBlissApplier()
-        apply_ctx = ApplyContext(
-            state=ctx.state,
-            rig=ctx.rig,
-            dry_run=ctx.dry_run,
-            confirmation_io=ctx.confirmation_io,
-            midi=ctx.midi,
-            connected_devices=ctx.connected_devices,
-            config_path=ctx.config_path,
-        )
-        results = applier.apply_setup(actions, apply_ctx)
+        results = applier.apply_setup(actions, ctx)
         if results is None:
             return SetupResult(cancelled=True)
         if any(r.status == "confirmed" for r in results):

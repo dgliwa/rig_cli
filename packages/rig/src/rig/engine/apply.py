@@ -6,12 +6,8 @@ from typing import Literal
 from pydantic import BaseModel
 from rich.console import Console
 
-from rig.engine.appliers.base import (
-    ApplyContext,
-    DeviceApplyResult,
-)
 from rig.engine.plan import Plan
-from rig.engine.plugin import DeviceApplyContext, SetupContext
+from rig.engine.plugin import DeviceApplyContext, DeviceApplyResult, SetupContext
 from rig.engine.ports import ConfirmationIO, RichConfirmationIO, StateWriter
 from rig.engine.state import RigState
 from rig.midi.adapter import MidiManager
@@ -64,16 +60,7 @@ def apply_plan(
         state = state_writer.read(config_path)
 
     connected_devices: set[str] = set()
-
-    ctx = ApplyContext(
-        dry_run=dry_run,
-        confirmation_io=confirmation_io or RichConfirmationIO(),
-        midi=midi,
-        state=state,
-        config_path=config_path,
-        rig=rig,
-        connected_devices=connected_devices,
-    )
+    _io = confirmation_io or RichConfirmationIO()
 
     state_modified = False
     scene_results: list[SceneApplyResult] = []
@@ -86,7 +73,7 @@ def apply_plan(
             state=state,
             rig=rig,
             dry_run=dry_run,
-            confirmation_io=confirmation_io or RichConfirmationIO(),
+            confirmation_io=_io,
             midi=midi,
             config_path=config_path,
             connected_devices=connected_devices,
@@ -131,13 +118,13 @@ def apply_plan(
             else:
                 device_ctx = DeviceApplyContext(
                     action=action,
-                    state=ctx.state,
+                    state=state,
                     rig=rig,
-                    dry_run=ctx.dry_run,
-                    confirmation_io=ctx.confirmation_io,
-                    midi=ctx.midi,
-                    connected_devices=ctx.connected_devices,
-                    config_path=ctx.config_path,
+                    dry_run=dry_run,
+                    confirmation_io=_io,
+                    midi=midi,
+                    connected_devices=connected_devices,
+                    config_path=config_path,
                 )
                 action_result = device.apply(device_ctx)
 
@@ -181,13 +168,13 @@ def apply_plan(
             )
             controller_ctx = DeviceApplyContext(
                 action=controller_action,
-                state=ctx.state,
+                state=state,
                 rig=rig,
-                dry_run=ctx.dry_run,
-                confirmation_io=ctx.confirmation_io,
-                midi=ctx.midi,
-                connected_devices=ctx.connected_devices,
-                config_path=ctx.config_path,
+                dry_run=dry_run,
+                confirmation_io=_io,
+                midi=midi,
+                connected_devices=connected_devices,
+                config_path=config_path,
             )
             controller.apply(controller_ctx)
             if controller.id in state.devices:

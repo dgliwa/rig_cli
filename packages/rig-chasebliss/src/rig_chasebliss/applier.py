@@ -4,9 +4,9 @@ import logging
 
 from rich.console import Console
 
-from rig.engine.appliers.base import (
-    ApplyContext,
+from rig.engine.plugin import (
     DeviceApplyResult,
+    SetupContext,
     mark_preset_saved,
     update_device_state,
 )
@@ -34,7 +34,7 @@ class ChaseBlissApplier:
     def apply_setup(
         self,
         actions: list[CbaSetupAction],
-        ctx: ApplyContext,
+        ctx: SetupContext,
     ) -> list[DeviceApplyResult] | None:
         """Run the 3-phase CBA setup: establish_channel → build_preset → register_scenes.
 
@@ -72,7 +72,7 @@ class ChaseBlissApplier:
         return results
 
     def _establish_channel(
-        self, action: CbaSetupAction, ctx: ApplyContext
+        self, action: CbaSetupAction, ctx: SetupContext
     ) -> DeviceApplyResult | None:
         """Phase 1: power-cycle + hold footswitches to enter learn mode, then send PC#0."""
         if ctx.dry_run:
@@ -137,7 +137,7 @@ class ChaseBlissApplier:
             preset=None,
         )
 
-    def _build_preset(self, action: CbaSetupAction, ctx: ApplyContext) -> DeviceApplyResult | None:
+    def _build_preset(self, action: CbaSetupAction, ctx: SetupContext) -> DeviceApplyResult | None:
         """Phase 2: send CC params, prompt user to save preset."""
         if ctx.dry_run:
             cc_count = len(action.cc_params)
@@ -276,7 +276,7 @@ class ChaseBlissApplier:
         )
 
     def _register_scenes(
-        self, action: CbaSetupAction, ctx: ApplyContext
+        self, action: CbaSetupAction, ctx: SetupContext
     ) -> DeviceApplyResult | None:
         """Phase 3: confirm that all referenced scenes have been built."""
         if ctx.dry_run:

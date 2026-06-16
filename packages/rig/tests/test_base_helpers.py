@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-from rig.engine.appliers.base import mark_preset_saved
+from rig.engine.plugin import mark_preset_saved
 from rig.engine.state import DeviceState, RigState
 
 # ---------------------------------------------------------------------------

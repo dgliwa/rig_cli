@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, call, patch
 
-from rig.engine.appliers.base import ApplyContext
+from rig.engine.plugin import SetupContext
 from rig.engine.state import RigState
 from rig.models.rig import Rig
 from rig_chasebliss.applier import ChaseBlissApplier, _find_device
@@ -32,7 +32,7 @@ class _FakeDevice:
         return None
 
     def apply(self, ctx):  # type: ignore[no-untyped-def]
-        from rig.engine.appliers.base import DeviceApplyResult
+        from rig.engine.plugin import DeviceApplyResult
 
         return DeviceApplyResult(device=self.id, status="skipped", preset="")
 
@@ -57,13 +57,13 @@ def _patch_get_controls(controls: list[Control]):
     return patch("rig_chasebliss.applier.get_controls", return_value=controls)
 
 
-def _make_ctx(rig: Rig, dry_run: bool = False) -> ApplyContext:
+def _make_ctx(rig: Rig, dry_run: bool = False) -> SetupContext:
     midi = MagicMock() if not dry_run else None
-    return ApplyContext(
+    return SetupContext(
         state=RigState(),
         rig=rig,
         dry_run=dry_run,
-        confirmation_io=MagicMock() if dry_run else None,
+        confirmation_io=MagicMock(),
         midi=midi,
         connected_devices={"test_cba"} if not dry_run else set(),
         config_path=None,
@@ -278,11 +278,11 @@ def test_reset_with_rig_none():
     """When ctx.rig is None, _build_preset still handles gracefully."""
     action = _make_action([{"cc": 14, "value": 100}])
     midi = MagicMock()
-    ctx = ApplyContext(
+    ctx = SetupContext(
         state=RigState(),
         rig=None,
         dry_run=False,
-        confirmation_io=None,
+        confirmation_io=MagicMock(),
         midi=midi,
         connected_devices={"test_cba"},
         config_path=None,

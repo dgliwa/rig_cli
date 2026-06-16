@@ -31,12 +31,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Protocol, Self, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, runtime_checkable
 
-from rig.engine.state import RigState
+from pydantic import BaseModel
+
+from rig.engine.state import DeviceState, RigState
 
 if TYPE_CHECKING:
-    from rig.engine.appliers.base import DeviceApplyResult
     from rig.engine.plan.models import DeviceAction
     from rig.engine.ports import ConfirmationIO
     from rig.midi.adapter import MidiManager
@@ -86,6 +87,29 @@ class DeviceApplyContext:
     midi: MidiManager | None = None
     connected_devices: set[str] = field(default_factory=set)
     config_path: str | None = None
+
+
+class DeviceApplyResult(BaseModel):
+    """Result of applying one device action."""
+
+    device: str
+    status: Literal["confirmed", "skipped", "error"]
+    preset: str | None = None
+    error: str | None = None
+
+
+def update_device_state(state: RigState, device: str, **fields) -> None:
+    """Update a device's state fields in-place."""
+    current = state.devices.get(device, DeviceState())
+    state.devices[device] = current.model_copy(update=fields)
+
+
+def mark_preset_saved(state: RigState, device: str, preset_id: str) -> None:
+    """Mark one preset as saved through the single state-write path."""
+    current = state.devices.get(device, DeviceState())
+    updated = dict(current.presets_saved)
+    updated[preset_id] = True
+    update_device_state(state, device, presets_saved=updated)
 
 
 class Preset(Protocol):

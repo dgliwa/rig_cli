@@ -3,8 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from rig.engine.appliers.base import DeviceApplyResult
-from rig.engine.plugin import DeviceApplyContext, DeviceType, SetupContext, SetupResult
+from rig.engine.plugin import (
+    DeviceApplyContext,
+    DeviceApplyResult,
+    DeviceType,
+    SetupContext,
+    SetupResult,
+)
 
 
 @dataclass
