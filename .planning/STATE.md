@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Architecture & Type Integrity
-status: Roadmap defined, ready for Phase 20
-last_updated: "2026-06-15T21:32:48.463Z"
-last_activity: "2026-06-12 — v1.4 roadmap created (4 phases: 20-23)"
+status: Phase 22 complete — Phase 23 next
+last_updated: "2026-06-15T00:00:00.000Z"
+last_activity: "2026-06-15 — Phase 22 complete (retire legacy Device model; 306 tests green)"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 4
+  completed_plans: 4
   percent: 75
 ---
 
@@ -24,12 +24,12 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 
 ## Current Position
 
-Phase: 20 (not started)
+Phase: 23 (not started)
 Plan: —
-Status: Roadmap defined, ready for Phase 20
-Last activity: 2026-06-12 — v1.4 roadmap created (4 phases: 20-23)
+Status: Phase 22 complete — ApplyContext consolidation & test capture fixes next
+Last activity: 2026-06-15 — Phase 22 complete (retire legacy Device model; 306 tests green)
 
-Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (0/4 phases)
+Progress: [███████████████░░░░░] 75% (3/4 phases)
 
 ## Performance Metrics
 
