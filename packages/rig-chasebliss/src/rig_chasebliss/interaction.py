@@ -1,15 +1,24 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from rich.console import Console
+
+if TYPE_CHECKING:
+    from rig.engine.ports import ConfirmationIO
 
 console = Console()
 
 _ConfirmResult = Literal["confirm", "retry", "skip", "quit"]
 
 
-def prompt_cba_channel(device: str, midi_channel: int, midi_sent: bool = False) -> _ConfirmResult:
+def prompt_cba_channel(
+    device: str,
+    midi_channel: int,
+    midi_sent: bool = False,
+    *,
+    confirmation_io: ConfirmationIO,
+) -> _ConfirmResult:
     """Guide user through CBA power-on MIDI channel learn process."""
     console.print(f"\n[bold]Chase Bliss Setup — {device}[/bold]")
     console.print()
@@ -24,7 +33,7 @@ def prompt_cba_channel(device: str, midi_channel: int, midi_sent: bool = False) 
         console.print(f"  4. I will send PC#0 on channel {midi_channel} to lock the channel")
     while True:
         label = "done — channel saved" if midi_sent else f"ready — send PC on ch {midi_channel}"
-        response = input(f"  [c] {label}  [r] show again  [s] skip  [q] quit: ").strip().lower()
+        response = confirmation_io.prompt(f"  [c] {label}  [r] show again  [s] skip  [q] quit: ")
         if response in ("c", "confirm", "done"):
             console.print(f"  [green]✓[/green] {device}: channel {midi_channel} established")
             return "confirm"
@@ -39,7 +48,12 @@ def prompt_cba_channel(device: str, midi_channel: int, midi_sent: bool = False) 
 
 
 def prompt_cba_build_preset(
-    device: str, preset_name: str, preset_number: int | None, midi_channel: int
+    device: str,
+    preset_name: str,
+    preset_number: int | None,
+    midi_channel: int,
+    *,
+    confirmation_io: ConfirmationIO,
 ) -> _ConfirmResult:
     """Guide user through saving a preset on a CBA pedal (hold footswitches)."""
     pc_info = f"PC#{preset_number}" if preset_number is not None else "preset"
@@ -50,8 +64,8 @@ def prompt_cba_build_preset(
     console.print("Hold BOTH footswitches to enter save mode, then confirm below.")
     console.print(f"[dim]On confirm, {pc_info} will be sent to write to that slot.[/dim]")
     while True:
-        response = (
-            input("  [c] done — preset saved  [r] retry  [s] skip  [q] quit: ").strip().lower()
+        response = confirmation_io.prompt(
+            "  [c] done — preset saved  [r] retry  [s] skip  [q] quit: "
         )
         if response in ("c", "done"):
             console.print(f"  [green]✓[/green] {device}: '{preset_name}' saved")
@@ -66,7 +80,13 @@ def prompt_cba_build_preset(
         console.print("[yellow]Invalid choice. Enter c, r, s, or q[/yellow]")
 
 
-def prompt_cba_after_pc(device: str, preset_name: str, preset_number: int) -> _ConfirmResult:
+def prompt_cba_after_pc(
+    device: str,
+    preset_name: str,
+    preset_number: int,
+    *,
+    confirmation_io: ConfirmationIO,
+) -> _ConfirmResult:
     """Confirm the pedal accepted the preset after PC send."""
     console.print(
         f"  [green]✓[/green] PC#{preset_number} sent — verify '{preset_name}' "
@@ -74,10 +94,8 @@ def prompt_cba_after_pc(device: str, preset_name: str, preset_number: int) -> _C
     )
     console.print()
     while True:
-        response = (
-            input("  [c] confirmed — preset looks good  [r] retry (resend PC)  [q] quit: ")
-            .strip()
-            .lower()
+        response = confirmation_io.prompt(
+            "  [c] confirmed — preset looks good  [r] retry (resend PC)  [q] quit: "
         )
         if response in ("c", "confirm", "done"):
             return "confirm"
@@ -88,7 +106,12 @@ def prompt_cba_after_pc(device: str, preset_name: str, preset_number: int) -> _C
         console.print("[yellow]Invalid choice. Enter c, r, or q[/yellow]")
 
 
-def prompt_cba_register(device: str, scene_refs: list[str]) -> _ConfirmResult:
+def prompt_cba_register(
+    device: str,
+    scene_refs: list[str],
+    *,
+    confirmation_io: ConfirmationIO,
+) -> _ConfirmResult:
     """Confirm that CBA presets have been built for all referencing scenes."""
     console.print(f"\n[bold]Chase Bliss Scene Registration — {device}[/bold]")
     console.print()
@@ -98,7 +121,7 @@ def prompt_cba_register(device: str, scene_refs: list[str]) -> _ConfirmResult:
     console.print()
     console.print("Presets are built on the device. Confirm registration?")
     while True:
-        response = input("  [c] confirm  [s] skip  [q] quit: ").strip().lower()
+        response = confirmation_io.prompt("  [c] confirm  [s] skip  [q] quit: ")
         if response in ("c", "confirm"):
             console.print(f"  [green]✓[/green] {device}: registered to {len(scene_refs)} scene(s)")
             return "confirm"

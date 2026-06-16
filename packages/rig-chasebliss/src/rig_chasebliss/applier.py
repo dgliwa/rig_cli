@@ -89,7 +89,9 @@ class ChaseBlissApplier:
 
         # Step 1: guide user to power-cycle + enter learn mode
         while True:
-            res = prompt_cba_channel(action.device, action.midi_channel, False)
+            res = prompt_cba_channel(
+                action.device, action.midi_channel, False, confirmation_io=ctx.confirmation_io
+            )
             if res != "retry":
                 break
         if res == "quit":
@@ -112,7 +114,9 @@ class ChaseBlissApplier:
         if midi_sent:
             # Step 3: prompt user to hold footswitches to save
             while True:
-                res = prompt_cba_channel(action.device, action.midi_channel, True)
+                res = prompt_cba_channel(
+                    action.device, action.midi_channel, True, confirmation_io=ctx.confirmation_io
+                )
                 if res == "retry":
                     try:
                         ctx.midi.send_program_change(action.device, 0, action.midi_channel)
@@ -221,7 +225,11 @@ class ChaseBlissApplier:
 
         while True:
             res = prompt_cba_build_preset(
-                action.device, action.preset_name, action.preset_number, action.midi_channel
+                action.device,
+                action.preset_name,
+                action.preset_number,
+                action.midi_channel,
+                confirmation_io=ctx.confirmation_io,
             )
             if res == "retry":
                 reset_sent = _send_reset_ccs()
@@ -259,7 +267,10 @@ class ChaseBlissApplier:
                         console.print(f"  [red]✗[/red] PC send failed: {e}")
                         break
                     after = prompt_cba_after_pc(
-                        action.device, action.preset_name, action.preset_number
+                        action.device,
+                        action.preset_name,
+                        action.preset_number,
+                        confirmation_io=ctx.confirmation_io,
                     )
                     if after == "retry":
                         continue
@@ -286,7 +297,9 @@ class ChaseBlissApplier:
             )
             return DeviceApplyResult(device=action.device, status="skipped", preset=None)
 
-        res = prompt_cba_register(action.device, action.scene_refs)
+        res = prompt_cba_register(
+            action.device, action.scene_refs, confirmation_io=ctx.confirmation_io
+        )
         if res == "quit":
             console.print("[red]Apply cancelled by user[/red]")
             return None

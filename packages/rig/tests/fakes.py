@@ -53,6 +53,9 @@ class InMemoryPromptAdapter:
     def prompt_mc6_navigate(self, bank_num: int) -> str:
         return self._next()
 
+    def prompt(self, text: str) -> str:
+        return self._next()
+
 
 class InMemoryStateAdapter:
     """Fake StateWriter that stores RigState in memory only."""
