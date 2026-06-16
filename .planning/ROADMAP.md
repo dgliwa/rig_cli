@@ -6,7 +6,7 @@
 - ✅ **v1.1 Package Extraction & Plugin Isolation** — Phases 6-8 (shipped 2026-06-07)
 - ✅ **v1.2 Cleaner Core** — Phases 9-13 (shipped 2026-06-08)
 - ✅ **v1.3 Chase Bliss Pedal Support** — Phases 14-19 (shipped 2026-06-10)
-- 🔄 **v1.4 Architecture & Type Integrity** — Phases 20-23 (in progress)
+- ✅ **v1.4 Architecture & Type Integrity** — Phases 20-23 (shipped 2026-06-16)
 
 ## Phases
 
@@ -55,10 +55,10 @@
 
 ### v1.4 Architecture & Type Integrity
 
-- [ ] **Phase 20: Quick Wins & Dead Code** - Remove dead stubs, delete stale tests, and lock in enum and documentation decisions with no dependencies on other work
-- [ ] **Phase 21: Concrete Types at the Plugin Boundary** - Each plugin carries a typed config and typed preset list; Preset Protocol lives in core
+- [x] **Phase 20: Quick Wins & Dead Code** - Remove dead stubs, delete stale tests, and lock in enum and documentation decisions with no dependencies on other work (completed 2026-06-15)
+- [x] **Phase 21: Concrete Types at the Plugin Boundary** - Each plugin carries a typed config and typed preset list; Preset Protocol lives in core (completed 2026-06-15)
 - [x] **Phase 22: Retire the Legacy Device Model** - The legacy Device(BaseModel) is gone; Rig.devices is typed against the Protocol end-to-end (completed 2026-06-15)
-- [ ] **Phase 23: ApplyContext Consolidation & Test Capture Fixes** - Single ApplyContext flows through apply.py; all tests pass without flags
+- [x] **Phase 23: ApplyContext Consolidation & Test Capture Fixes** - ApplyContext retired; base.py deleted; all 309 tests pass (completed 2026-06-16)
 
 ## Phase Details
 
@@ -141,7 +141,7 @@
 | 17. Fix stale Mood MkII catalog tests | v1.3 | 1/1 | Complete | 2026-06-08 |
 | 18. Close gap: CBA-01/CBA-02 auto-populate controls | v1.3 | 1/1 | Complete | 2026-06-10 |
 | 19. Close v1.3 verification gaps | v1.3 | 1/1 | Complete | 2026-06-10 |
-| 20. Quick Wins & Dead Code | v1.4 | 0/? | Not started | - |
-| 21. Concrete Types at the Plugin Boundary | v1.4 | 0/? | Not started | - |
-| 22. Retire the Legacy Device Model | v1.4 | 1/1 | Complete   | 2026-06-15 |
-| 23. ApplyContext Consolidation & Test Capture Fixes | v1.4 | 0/? | Not started | - |
+| 20. Quick Wins & Dead Code | v1.4 | 1/1 | Complete | 2026-06-15 |
+| 21. Concrete Types at the Plugin Boundary | v1.4 | 1/1 | Complete | 2026-06-15 |
+| 22. Retire the Legacy Device Model | v1.4 | 1/1 | Complete | 2026-06-15 |
+| 23. ApplyContext Consolidation & Test Capture Fixes | v1.4 | 1/1 | Complete | 2026-06-16 |
