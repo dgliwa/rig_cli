@@ -67,7 +67,7 @@ def prompt_cba_build_preset(
         response = confirmation_io.prompt(
             "  [c] done — preset saved  [r] retry  [s] skip  [q] quit: "
         )
-        if response in ("c", "done"):
+        if response in ("c", "confirm", "done"):
             console.print(f"  [green]✓[/green] {device}: '{preset_name}' saved")
             return "confirm"
         if response in ("r", "retry"):

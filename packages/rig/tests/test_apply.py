@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import ExitStack
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -25,25 +24,6 @@ def _fake_midi_connect(
     """Fake prompt_midi_connect that connects to a test port and returns confirm."""
     midi.connect("USB Interface", device)
     return ("confirm", "USB Interface")
-
-
-def _patch_cba_prompts(
-    channel: str = "confirm",
-    preset: str = "confirm",
-    register: str = "confirm",
-) -> ExitStack:
-    """Patch all three CBA prompt functions at rig_chasebliss.applier.
-
-    Returns an ExitStack that can be used as a context manager:
-    ``with _patch_cba_prompts():`` or ``with (_patch_cba_prompts(), other_patch):``
-    """
-    stack = ExitStack()
-    stack.enter_context(patch("rig_chasebliss.applier.prompt_cba_channel", return_value=channel))
-    stack.enter_context(
-        patch("rig_chasebliss.applier.prompt_cba_build_preset", return_value=preset)
-    )
-    stack.enter_context(patch("rig_chasebliss.applier.prompt_cba_register", return_value=register))
-    return stack
 
 
 def _make_config() -> Rig:
@@ -135,15 +115,14 @@ class TestApplyPlan:
         plan = compute_plan(config)
         state_adapter = InMemoryStateAdapter()
         prompt_io = InMemoryPromptAdapter(default="confirm")
-        with _patch_cba_prompts():
-            apply_plan(
-                plan,
-                state_writer=state_adapter,
-                confirmation_io=prompt_io,
-                rig=config,
-                config_path=str(tmp_path),
-                dry_run=False,
-            )
+        apply_plan(
+            plan,
+            state_writer=state_adapter,
+            confirmation_io=prompt_io,
+            rig=config,
+            config_path=str(tmp_path),
+            dry_run=False,
+        )
         state = state_adapter.state
         assert "hx-stomp" in state.devices
         assert state.devices["hx-stomp"].last_preset == "clean-edge"
@@ -171,15 +150,14 @@ class TestApplyPlan:
         plan = compute_plan(config)
         state_adapter = InMemoryStateAdapter()
         prompt_io = InMemoryPromptAdapter(default="quit")
-        with _patch_cba_prompts(channel="quit"):
-            apply_plan(
-                plan,
-                state_writer=state_adapter,
-                confirmation_io=prompt_io,
-                rig=config,
-                config_path=str(tmp_path),
-                dry_run=False,
-            )
+        apply_plan(
+            plan,
+            state_writer=state_adapter,
+            confirmation_io=prompt_io,
+            rig=config,
+            config_path=str(tmp_path),
+            dry_run=False,
+        )
         captured = capsys.readouterr()
         assert "cancelled" in captured.out.lower()
 
@@ -207,13 +185,13 @@ class TestMidiApply:
                 "confirm",
                 "confirm",
                 "confirm",
+                "confirm",
             ]
         )
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=fake_port),
             patch("rig.interaction.midi.prompt_midi_connect", _fake_midi_connect),
-            _patch_cba_prompts(),
         ):
             from rig.midi.adapter import MidiManager
 
@@ -276,12 +254,11 @@ class TestMidiApply:
         rig = _make_config()
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
-        prompt_io = InMemoryPromptAdapter(side_effect=["confirm", "confirm"])
+        prompt_io = InMemoryPromptAdapter(default="confirm", side_effect=["skip"])
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=MagicMock()),
             patch("rig.interaction.midi.prompt_midi_connect", return_value=("skip", None)),
-            _patch_cba_prompts(channel="skip"),
         ):
             from rig.midi.adapter import MidiManager
 
@@ -363,11 +340,10 @@ class TestMidiApply:
         rig = _make_config()
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
-        prompt_io = InMemoryPromptAdapter(side_effect=["confirm", "confirm"])
+        prompt_io = InMemoryPromptAdapter(default="confirm", side_effect=["skip"])
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=[]),
             patch("rig.interaction.midi.prompt_midi_connect", return_value=("skip", None)),
-            _patch_cba_prompts(channel="skip"),
         ):
             from rig.midi.adapter import MidiManager
 
@@ -397,12 +373,11 @@ class TestCbaApply:
         plan = compute_plan(rig)
         fake_port = MagicMock()
         state_adapter = InMemoryStateAdapter()
-        prompt_io = InMemoryPromptAdapter(side_effect=["confirm", "confirm"])
+        prompt_io = InMemoryPromptAdapter(side_effect=["confirm"] * 7)
         with (
             patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
             patch("rig.midi.adapter.mido.open_output", return_value=fake_port),
             patch("rig.interaction.midi.prompt_midi_connect", _fake_midi_connect),
-            _patch_cba_prompts(),
         ):
             from rig.midi.adapter import MidiManager
 
@@ -428,15 +403,14 @@ class TestCbaApply:
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
         prompt_io = InMemoryPromptAdapter(default="skip")
-        with _patch_cba_prompts(channel="skip"):
-            apply_plan(
-                plan,
-                state_writer=state_adapter,
-                confirmation_io=prompt_io,
-                rig=rig,
-                config_path=str(tmp_path),
-                dry_run=False,
-            )
+        apply_plan(
+            plan,
+            state_writer=state_adapter,
+            confirmation_io=prompt_io,
+            rig=rig,
+            config_path=str(tmp_path),
+            dry_run=False,
+        )
         state = state_adapter.state
         # Channel was skipped, no channel_established set
         brothers_dev = state.devices.get("brothers")
@@ -460,16 +434,14 @@ class TestCbaApply:
         plan = compute_plan(rig, root_path=str(tmp_path))
         state_adapter = InMemoryStateAdapter()
         prompt_io = InMemoryPromptAdapter(default="confirm")
-        # Patch CBA prompts - channel already established so only build_preset fires
-        with _patch_cba_prompts():
-            apply_plan(
-                plan,
-                state_writer=state_adapter,
-                confirmation_io=prompt_io,
-                rig=rig,
-                config_path=str(tmp_path),
-                dry_run=False,
-            )
+        apply_plan(
+            plan,
+            state_writer=state_adapter,
+            confirmation_io=prompt_io,
+            rig=rig,
+            config_path=str(tmp_path),
+            dry_run=False,
+        )
         state = state_adapter.state
         assert state.devices["brothers"].presets_saved.get("low-gain") is True
 
@@ -505,16 +477,14 @@ class TestCbaApply:
         plan = compute_plan(rig, root_path=str(tmp_path))
         state_adapter = InMemoryStateAdapter()
         prompt_io = InMemoryPromptAdapter(default="confirm")
-        # Patch CBA prompts — channel & build_saved already done, only register_scenes fires
-        with _patch_cba_prompts():
-            apply_plan(
-                plan,
-                state_writer=state_adapter,
-                confirmation_io=prompt_io,
-                rig=rig,
-                config_path=str(tmp_path),
-                dry_run=False,
-            )
+        apply_plan(
+            plan,
+            state_writer=state_adapter,
+            confirmation_io=prompt_io,
+            rig=rig,
+            config_path=str(tmp_path),
+            dry_run=False,
+        )
         state = state_adapter.state
         assert state.devices["brothers"].registration_done is True
 
@@ -523,15 +493,14 @@ class TestCbaApply:
         plan = compute_plan(rig)
         state_adapter = InMemoryStateAdapter()
         prompt_io = InMemoryPromptAdapter(default="quit")
-        with _patch_cba_prompts(channel="quit"):
-            apply_plan(
-                plan,
-                state_writer=state_adapter,
-                confirmation_io=prompt_io,
-                rig=rig,
-                config_path=str(tmp_path),
-                dry_run=False,
-            )
+        apply_plan(
+            plan,
+            state_writer=state_adapter,
+            confirmation_io=prompt_io,
+            rig=rig,
+            config_path=str(tmp_path),
+            dry_run=False,
+        )
         captured = capsys.readouterr()
         assert "cancelled" in captured.out.lower()
         # No device state written because quit before any confirmation
@@ -604,10 +573,7 @@ class TestDevicePluginRouting:
             called_with_device_ctx.append(ctx)
             return original_apply(self, ctx)
 
-        with (
-            patch.object(HXStompDevice, "apply", patched_apply),
-            _patch_cba_prompts(),
-        ):
+        with patch.object(HXStompDevice, "apply", patched_apply):
             apply_plan(
                 plan,
                 state_writer=state_adapter,

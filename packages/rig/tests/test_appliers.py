@@ -102,9 +102,9 @@ class TestChaseBlissApplierSetup:
 
     # --- build_preset ---
 
-    @patch("rig_chasebliss.applier.prompt_cba_build_preset", return_value="confirm")
-    def test_build_preset_confirm_sends_ccs_and_updates_state(self, mock_prompt):
-        ctx = _make_ctx(connected={"cba-mood"})
+    def test_build_preset_confirm_sends_ccs_and_updates_state(self):
+        confirmation_io = InMemoryPromptAdapter(side_effect=["confirm", "confirm"])
+        ctx = _make_ctx(connected={"cba-mood"}, confirmation_io=confirmation_io)
         cc_params = [{"cc": 10, "value": 64}, {"cc": 20, "value": 100}]
         actions = [self._bp_action(cc_params=cc_params)]
 
