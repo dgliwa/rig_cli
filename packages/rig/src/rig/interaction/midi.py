@@ -28,7 +28,10 @@ def prompt_device(
     if midi_connected:
         console.print(f"[green]✓[/green] Sent via MIDI — did {device} respond?")
     else:
-        console.print(f"[dim]→ Connect MIDI to {device}[/dim]")
+        if midi_channel is None:
+            console.print(f"[dim]→ Set {device} manually (knobs/switches)[/dim]")
+        else:
+            console.print(f"[dim]→ Connect MIDI to {device}[/dim]")
     while True:
         response = input("  [c] confirm  [r] retry  [s] skip  [q] quit: ").strip().lower()
         if response in ("c", "confirm"):
