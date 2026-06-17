@@ -13,8 +13,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from rig.engine.plan.models import DeviceAction
-from rig.engine.plugin import DeviceApplyContext
+from rig.engine.plan.models import ActionStatus, DeviceAction
+from rig.engine.plugin import DeviceApplyContext, DeviceType
 from rig.engine.state import RigState
 from rig_analog.config import AnalogConfig
 from rig_chasebliss.device import ChaseBlissConfig
@@ -41,8 +41,8 @@ def _make_apply_ctx(
 ) -> DeviceApplyContext:
     action = DeviceAction(
         device=device_id,
-        device_type="analog",
-        status="analog",
+        device_type=DeviceType.ANALOG,
+        status=ActionStatus.ANALOG,
         preset_name=preset_name,
         preset_number=preset_number,
         midi_channel=midi_channel,

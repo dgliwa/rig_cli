@@ -158,12 +158,13 @@ def apply_plan(
         controller = rig.controller
         if midi:
             console.print("\n[bold]Controller Programming Phase[/bold]")
-            from rig.engine.plan.models import DeviceAction
+            from rig.engine.plan.models import ActionStatus, DeviceAction
+            from rig.engine.plugin import DeviceType
 
             controller_action = DeviceAction(
                 device=controller.id,
-                device_type="controller",
-                status="configure",
+                device_type=DeviceType.CONTROLLER,
+                status=ActionStatus.CONFIGURE,
                 preset_name="",
             )
             controller_ctx = DeviceApplyContext(

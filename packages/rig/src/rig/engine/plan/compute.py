@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Literal
 
-from rig.engine.plan.models import DeviceAction, Plan, ScenePlan
+from rig.engine.plan.models import ActionStatus, DeviceAction, Plan, ScenePlan
 from rig.engine.plugin import DeviceType
 from rig.engine.state import DeviceState, RigState, read_state
 from rig.models.graph import DeviceGraph
@@ -90,8 +90,8 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
                 device_actions.append(
                     DeviceAction(
                         device=pedal_id,
-                        device_type="analog",
-                        status="analog",
+                        device_type=DeviceType.ANALOG,
+                        status=ActionStatus.ANALOG,
                         preset_name=preset_id,
                         before=actual_preset,
                         after=preset_id,
@@ -115,8 +115,8 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
             device_actions.append(
                 DeviceAction(
                     device=pedal_id,
-                    device_type=pedal.type.value,
-                    status="configure" if needs_config else "verify",
+                    device_type=pedal.type,
+                    status=ActionStatus.CONFIGURE if needs_config else ActionStatus.VERIFY,
                     preset_name=preset_id,
                     preset_number=preset_number,
                     midi_channel=getattr(pedal.config, "midi_channel", None),

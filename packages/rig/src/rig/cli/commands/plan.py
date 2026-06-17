@@ -17,6 +17,7 @@ from rig.cli._shared import (
 from rig.config.errors import ConfigError
 from rig.config.loader import load_rig
 from rig.engine.plan import compute_plan
+from rig.engine.plan.models import ActionStatus
 from rig.engine.plugin import DeviceType
 from rig.log_setup import setup_logging
 
@@ -100,14 +101,14 @@ def plan(
                 console.print(
                     f"    [yellow]⚠[/yellow] {action.device}: set to '{action.preset_name}' (manual)"
                 )
-            elif action.status == "configure":
+            elif action.status == ActionStatus.CONFIGURE:
                 configure_count += 1
                 pc_info = f" PC#{action.preset_number}" if action.preset_number else ""
                 ch_info = f" (ch {action.midi_channel})" if action.midi_channel else ""
                 console.print(
                     f"    [cyan]~[/cyan] {action.device}:{pc_info} '{action.preset_name}'{ch_info}"
                 )
-            elif action.status == "verify":
+            elif action.status == ActionStatus.VERIFY:
                 already_set_count += 1
                 console.print(
                     f"    [green]✓[/green] {action.device}: '{action.preset_name}' (already set)"
