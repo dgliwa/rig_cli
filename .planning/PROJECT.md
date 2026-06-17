@@ -73,9 +73,18 @@ A single command should bring the physical rig to the exact state described in t
 | UI (#18) | Speculative — not planned |
 | CI independent package publishing | Low-priority infra — local `uv` workflow sufficient for now |
 
+## Current Milestone: v1.5 Interactive Preset Management
+
+**Goal:** Give the rig owner ways to work with presets directly — target a single device without full rig setup, and iteratively tune a preset live before committing it.
+
+**Target features:**
+- Isolated preset apply: apply a single device's preset without triggering full scene setup
+- Editor Mode: interactive loop to dial in CC values for a device's preset live, send each change in real-time, save or discard when done
+- AnalogApplier `ConfirmationIO` parity: thread `ConfirmationIO` through `prompt_analog()` (deferred from v1.4)
+
 ## Current State
 
-Phases 1–24 shipped across v1.0–v1.4 (5 milestones). v1.4 Architecture & Type Integrity milestone complete.
+Phases 1–24 shipped across v1.0–v1.4 (5 milestones). v1.4 Architecture & Type Integrity milestone complete. v1.5 Interactive Preset Management in progress.
 
 **Milestone v1.4 shipped 2026-06-17:** 5 phases (20-24), 5 plans, 8,344 LOC Python across all packages. Single `Device` Protocol end-to-end; concrete plugin config types; `Preset` Protocol; `appliers/base.py` deleted; 309 tests pass. Zero raw-string device-type comparisons; `ActionStatus` StrEnum added. AnalogApplier `ConfirmationIO` gap deferred to v1.5.
 
@@ -148,4 +157,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-17 after v1.4 milestone*
+*Last updated: 2026-06-17 — v1.5 milestone started*
