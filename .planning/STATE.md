@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Architecture & Type Integrity
 status: executing
-last_updated: "2026-06-17T04:03:04.942Z"
-last_activity: 2026-06-15 — Phase 22 complete (retire legacy Device model; 306 tests green)
+last_updated: "2026-06-17T12:25:59.275Z"
+last_activity: 2026-06-17 — Phase 24 complete (ActionStatus StrEnum, MC6 preset typing, Phase 21 verification; 309 tests green)
 progress:
   total_phases: 5
   completed_phases: 5
@@ -24,12 +24,12 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 
 ## Current Position
 
-Phase: 23 (not started)
-Plan: —
-Status: Ready to execute
-Last activity: 2026-06-15 — Phase 22 complete (retire legacy Device model; 306 tests green)
+Phase: 24 (complete)
+Plan: 24-01
+Status: Phase complete — milestone v1.4 all phases done
+Last activity: 2026-06-17 — Phase 24 complete (ActionStatus StrEnum, MC6 preset typing, Phase 21 verification; 309 tests green)
 
-Progress: [███████████████░░░░░] 75% (3/4 phases)
+Progress: [████████████████████] 100% (5/5 phases)
 
 ## Performance Metrics
 
