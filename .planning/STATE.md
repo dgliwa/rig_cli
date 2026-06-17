@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Interactive Preset Management
-status: planning
-last_updated: "2026-06-17T13:15:40.335Z"
+status: in_progress
+last_updated: "2026-06-17T00:00:00.000Z"
 last_activity: 2026-06-17
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-17)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** Planning next milestone (v1.5)
+**Current focus:** Phase 25 — I/O Parity (ConfirmationIO through AnalogApplier)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 25 — I/O Parity
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-17 — Milestone v1.5 started
+Status: Not started
+Last activity: 2026-06-17 — Roadmap created for v1.5
+
+Progress: [----------] 0% (0/4 phases complete)
 
 ## Performance Metrics
 
@@ -84,6 +86,14 @@ Last activity: 2026-06-17 — Milestone v1.5 started
 - **TYPE-01 (retire legacy Device model) is its own phase (Phase 22)** — it is the most impactful change and depends on Phase 21 being complete; isolating it reduces blast radius and makes the phase easy to verify independently
 - **TEST-02 bundled with TYPE-05 in Phase 23** — stdin-capture test failures are likely entangled with the dual ApplyContext types; resolving the context first gives the correct foundation for the ConfirmationIO Protocol fix
 
+### v1.5 roadmap decisions
+
+- **IO-01/IO-02 in their own phase (Phase 25)** — the v1.4 MILESTONES.md explicitly notes AnalogApplier bypasses ConfirmationIO as a deferred item; it is an isolated, low-risk fix with its own verification criterion (no `builtins.input` in any applier); folding it into Phase 26 would obscure the cleanup and make rollback harder
+- **PRESET-01/02/03 grouped in Phase 26** — the three requirements are a single coherent feature: `--device`/`--preset` flags on `rig apply`; they cannot be partially delivered and verified independently
+- **EDIT-01 folded into Phase 27 (not its own phase)** — the Protocol extension has no observable user behavior on its own; it is only verifiable when the CLI command exists to exercise it; keeping Protocol + CLI + YAML writer together makes Phase 27 the first phase where `rig edit` can be run end-to-end
+- **EDIT-04/05 (save/discard) kept in Phase 27 with the CLI** — the YAML writer is the most novel piece of v1.5 (no existing write-back path), but it is inseparable from the CLI save/discard lifecycle; delivering the CLI without save/discard would leave an unusable stub
+- **EDIT-03/06 in their own phase (Phase 28)** — plugin implementations depend on Phase 27's Protocol and CLI frame being stable; isolating them makes the blast radius of plugin-side changes smaller and keeps each plugin's behavior independently verifiable
+
 ## Accumulated Context
 
 ### Milestones
@@ -92,6 +102,7 @@ Last activity: 2026-06-17 — Milestone v1.5 started
 - **v1.1** (Phases 6-8): Package Extraction & Plugin Isolation — shipped 2026-06-07
 - **v1.2** (Phases 9-13): Cleaner Core — shipped 2026-06-08
 - **v1.3** (Phases 14-19): Chase Bliss Pedal Support — shipped 2026-06-10 — CBA catalog expansion (Mood MkII, Wombtone MkII, Brothers AM), preset parameter validation, reset-to-defaults flow, catalog auto-population from device model name
+- **v1.4** (Phases 20-24): Architecture & Type Integrity — shipped 2026-06-17 — retired legacy Device model, concrete plugin types, Preset Protocol, deleted dead plan()/diff() stubs, ConfirmationIO threaded through CBA, ActionStatus enum
 
 ### Quick Tasks Completed
 
@@ -107,3 +118,4 @@ Last activity: 2026-06-17 — Milestone v1.5 started
 | Plugin | MC6 apply could leverage `composes` data | resolved — removed in Phase 12 | Phase 10 |
 | Validation | CBA validation skips already-saved presets (state-gating) — edited YAML params not re-validated until state reset | 🟡 Acknowledged | v1.3 |
 | Reset | `_send_reset_ccs()` lacks `connected_devices` gate — asymmetric with `_send_ccs()` (non-blocking, exceptions caught) | 🟡 Acknowledged | v1.3 |
+| I/O | AnalogApplier bypasses `ConfirmationIO` — `prompt_analog()` still calls `input()` directly | ✅ Scheduled Phase 25 | v1.4 |

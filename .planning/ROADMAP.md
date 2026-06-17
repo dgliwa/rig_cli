@@ -7,6 +7,7 @@
 - ✅ **v1.2 Cleaner Core** — Phases 9-13 (shipped 2026-06-08)
 - ✅ **v1.3 Chase Bliss Pedal Support** — Phases 14-19 (shipped 2026-06-10)
 - ✅ **v1.4 Architecture & Type Integrity** — Phases 20-24 (shipped 2026-06-17)
+- 🔄 **v1.5 Interactive Preset Management** — Phases 25-28 (in progress)
 
 ## Phases
 
@@ -64,6 +65,60 @@
 
 </details>
 
+<details open>
+<summary>🔄 v1.5 Interactive Preset Management (Phases 25-28) — IN PROGRESS</summary>
+
+- [ ] **Phase 25: I/O Parity** - Thread ConfirmationIO through AnalogApplier; update tests to use InMemoryPromptAdapter
+- [ ] **Phase 26: Isolated Preset Apply** - `rig apply --device <id> --preset <id>` applies one device's preset without full scene setup
+- [ ] **Phase 27: Editor Protocol, CLI Surface & YAML Writer** - `rig edit` command, save/discard lifecycle, and rig.yaml preset writer
+- [ ] **Phase 28: Editor Plugin Implementations** - CC-based live MIDI editing (CBA/MIDI/HX) and analog prompt-per-control flow
+
+</details>
+
+## Phase Details
+
+### Phase 25: I/O Parity
+**Goal**: Analog device prompts flow through the same ConfirmationIO abstraction as all other prompts — no raw `input()` calls remain in any applier
+**Depends on**: Phase 24 (ConfirmationIO Protocol and InMemoryPromptAdapter already exist in v1.4)
+**Requirements**: IO-01, IO-02
+**Success Criteria** (what must be TRUE):
+  1. Running `rig apply` with an analog device never calls `builtins.input` directly — all prompts go through `ConfirmationIO.prompt()`
+  2. AnalogApplier tests pass without monkeypatching `builtins.input` — they instantiate `InMemoryPromptAdapter` and pass it through context
+  3. The test suite passes with no stdin-capture flags required for analog tests
+**Plans**: TBD
+
+### Phase 26: Isolated Preset Apply
+**Goal**: Users can apply a single device's preset without triggering full scene setup — useful for mid-session tweaks and targeted reapplies
+**Depends on**: Phase 25
+**Requirements**: PRESET-01, PRESET-02, PRESET-03
+**Success Criteria** (what must be TRUE):
+  1. User can run `rig apply --device <id> --preset <id>` and only that device is activated — all other devices are skipped
+  2. After a targeted apply, `state.json` reflects the updated preset for the targeted device only — other device states are unchanged
+  3. Running `rig apply --device <id> --preset <id>` with an unknown device or preset ID produces a clear error message
+  4. Running `rig apply` without `--device`/`--preset` flags behaves exactly as before (no regression)
+**Plans**: TBD
+
+### Phase 27: Editor Protocol, CLI Surface & YAML Writer
+**Goal**: Users can enter editor mode for a device's preset via `rig edit`, and the save/discard lifecycle writes changes back to rig.yaml atomically
+**Depends on**: Phase 26
+**Requirements**: EDIT-01, EDIT-02, EDIT-04, EDIT-05
+**Success Criteria** (what must be TRUE):
+  1. `rig edit <device-id> <preset-id>` launches editor mode for the named preset — the command exists and routes correctly
+  2. When the user confirms a save, the updated preset values are written back to `rig.yaml` and can be loaded by `rig validate` without error
+  3. When the user discards, `rig.yaml` is bit-for-bit identical to its state before `rig edit` was run
+  4. The Device Protocol (or companion EditorProtocol) declares `edit(preset_id, ctx)` — plugins can implement it without touching core
+**Plans**: TBD
+
+### Phase 28: Editor Plugin Implementations
+**Goal**: Each device plugin delivers its own interactive editing behavior — CC-based plugins stream live values; analog plugin presents a prompt-per-control flow
+**Depends on**: Phase 27
+**Requirements**: EDIT-03, EDIT-06
+**Success Criteria** (what must be TRUE):
+  1. During CBA/MIDI editor mode, changing a control value immediately sends the corresponding CC message to the device — the user hears the change live
+  2. Analog plugin editor mode walks the user through each control with a prompt — no MIDI is sent (manual set); the plugin owns this loop entirely
+  3. After any plugin's editor session saves, `rig validate` confirms the written values are valid preset parameters
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -92,3 +147,7 @@
 | 22. Retire the Legacy Device Model | v1.4 | 1/1 | Complete | 2026-06-15 |
 | 23. ApplyContext Consolidation & Test Capture Fixes | v1.4 | 1/1 | Complete | 2026-06-16 |
 | 24. Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction | v1.4 | 1/1 | Complete | 2026-06-17 |
+| 25. I/O Parity | v1.5 | 0/? | Not started | - |
+| 26. Isolated Preset Apply | v1.5 | 0/? | Not started | - |
+| 27. Editor Protocol, CLI Surface & YAML Writer | v1.5 | 0/? | Not started | - |
+| 28. Editor Plugin Implementations | v1.5 | 0/? | Not started | - |

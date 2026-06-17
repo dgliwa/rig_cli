@@ -45,27 +45,25 @@
 
 ## Traceability
 
-Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| IO-01 | TBD | Pending |
-| IO-02 | TBD | Pending |
-| PRESET-01 | TBD | Pending |
-| PRESET-02 | TBD | Pending |
-| PRESET-03 | TBD | Pending |
-| EDIT-01 | TBD | Pending |
-| EDIT-02 | TBD | Pending |
-| EDIT-03 | TBD | Pending |
-| EDIT-04 | TBD | Pending |
-| EDIT-05 | TBD | Pending |
-| EDIT-06 | TBD | Pending |
+| IO-01 | Phase 25 | Pending |
+| IO-02 | Phase 25 | Pending |
+| PRESET-01 | Phase 26 | Pending |
+| PRESET-02 | Phase 26 | Pending |
+| PRESET-03 | Phase 26 | Pending |
+| EDIT-01 | Phase 27 | Pending |
+| EDIT-02 | Phase 27 | Pending |
+| EDIT-04 | Phase 27 | Pending |
+| EDIT-05 | Phase 27 | Pending |
+| EDIT-03 | Phase 28 | Pending |
+| EDIT-06 | Phase 28 | Pending |
 
 **Coverage:**
 - v1.5 requirements: 11 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 11 ⚠️
+- Mapped to phases: 11
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-17*
-*Last updated: 2026-06-17 after initial definition*
+*Last updated: 2026-06-17 — phase mappings added after roadmap creation*
