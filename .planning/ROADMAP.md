@@ -6,7 +6,7 @@
 - ✅ **v1.1 Package Extraction & Plugin Isolation** — Phases 6-8 (shipped 2026-06-07)
 - ✅ **v1.2 Cleaner Core** — Phases 9-13 (shipped 2026-06-08)
 - ✅ **v1.3 Chase Bliss Pedal Support** — Phases 14-19 (shipped 2026-06-10)
-- ✅ **v1.4 Architecture & Type Integrity** — Phases 20-23 (shipped 2026-06-16)
+- 🔄 **v1.4 Architecture & Type Integrity** — Phases 20-24 (in progress)
 
 ## Phases
 
@@ -59,6 +59,7 @@
 - [x] **Phase 21: Concrete Types at the Plugin Boundary** - Each plugin carries a typed config and typed preset list; Preset Protocol lives in core (completed 2026-06-15)
 - [x] **Phase 22: Retire the Legacy Device Model** - The legacy Device(BaseModel) is gone; Rig.devices is typed against the Protocol end-to-end (completed 2026-06-15)
 - [x] **Phase 23: ApplyContext Consolidation & Test Capture Fixes** - ApplyContext retired; base.py deleted; all 309 tests pass (completed 2026-06-16)
+- [ ] **Phase 24: Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction**
 
 ## Phase Details
 
@@ -118,6 +119,20 @@
 
 **Plans**: TBD
 
+### Phase 24: Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction
+
+**Goal**: All v1.4 audit gaps are closed — Phase 21 has a VERIFICATION.md, MC6 preset fields carry concrete types, and QUAL-01 DeviceAction items are resolved
+**Depends on**: Phase 23
+**Requirements**: TYPE-02, TYPE-03, QUAL-01
+**Success Criteria** (what must be TRUE):
+
+  1. A VERIFICATION.md for Phase 21 exists and confirms all Phase 21 success criteria are met in the current codebase
+  2. MC6 preset fields use typed models (no `Any` or untyped dict) in the MC6 plugin
+  3. QUAL-01 DeviceAction items are implemented or have an explicit recorded decision; no open QUAL-01 stubs remain in engine source
+  4. `make test` passes with no regressions after all gap-closing changes
+
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -145,3 +160,4 @@
 | 21. Concrete Types at the Plugin Boundary | v1.4 | 1/1 | Complete | 2026-06-15 |
 | 22. Retire the Legacy Device Model | v1.4 | 1/1 | Complete | 2026-06-15 |
 | 23. ApplyContext Consolidation & Test Capture Fixes | v1.4 | 1/1 | Complete | 2026-06-16 |
+| 24. Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction | v1.4 | 0/1 | Pending | — |
