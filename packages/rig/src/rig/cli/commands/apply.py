@@ -23,6 +23,8 @@ def apply(
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would happen"),
     scene: str | None = _SCENE_OPTION,
     verbose: int = _VERBOSE_OPTION,
+    device: str | None = typer.Option(None, "--device", help="Device ID to apply in isolation"),
+    preset: str | None = typer.Option(None, "--preset", help="Preset ID to apply to device"),
 ):
     """Apply changes — walks through each device with MIDI prompts."""
     setup_logging(verbose)
@@ -33,19 +35,52 @@ def apply(
         console.print(f"[red]✗[/red] {e}")
         raise typer.Exit(1)
 
+    # D-04: --scene is exclusive with --device/--preset
+    if scene and (device or preset):
+        console.print("[red]✗[/red] --scene cannot be combined with --device/--preset")
+        raise typer.Exit(1)
+
+    # D-05: --device and --preset must be used together
+    if bool(device) != bool(preset):
+        console.print("[red]✗[/red] --device and --preset must be used together")
+        raise typer.Exit(1)
+
+    # D-06: existence validation before MIDI port is opened
+    if device and preset:
+        if device not in rig.devices:
+            console.print(f"[red]✗[/red] Device '{device}' not found in rig config")
+            raise typer.Exit(1)
+        target_device = rig.devices[device]
+        if not any(p.id == preset for p in target_device.presets):
+            console.print(f"[red]✗[/red] Preset '{preset}' not found on device '{device}'")
+            raise typer.Exit(1)
+
     midi = MidiManager()
     config_path = str(Path(config).resolve())
-    result = compute_plan(rig, root_path=config_path)
     state_writer = FileStateWriter()
     try:
-        apply_plan(
-            result,
-            state_writer=state_writer,
-            rig=rig,
-            config_path=config_path,
-            dry_run=dry_run,
-            scene=scene,
-            midi=midi,
-        )
+        if device and preset:
+            from rig.engine.apply import apply_device_preset
+
+            apply_device_preset(
+                device,
+                preset,
+                state_writer=state_writer,
+                rig=rig,
+                config_path=config_path,
+                dry_run=dry_run,
+                midi=midi,
+            )
+        else:
+            result = compute_plan(rig, root_path=config_path)
+            apply_plan(
+                result,
+                state_writer=state_writer,
+                rig=rig,
+                config_path=config_path,
+                dry_run=dry_run,
+                scene=scene,
+                midi=midi,
+            )
     finally:
         midi.disconnect_all()
