@@ -131,27 +131,29 @@ def test_analog_device_apply_dry_run_returns_skipped() -> None:
 
 
 def test_analog_device_apply_confirm_returns_confirmed() -> None:
-    from unittest.mock import patch
-
     from rig_analog.device import AnalogDevice
 
     dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=AnalogConfig())
-    ctx = _make_apply_ctx(device_id="fuzz", preset_name="Noon")
-    with patch("rig_analog.device.prompt_analog", return_value="confirm"):
-        result = dev.apply(ctx)
+    ctx = _make_apply_ctx(
+        device_id="fuzz",
+        preset_name="Noon",
+        confirmation_io=InMemoryPromptAdapter(default="confirm"),
+    )
+    result = dev.apply(ctx)
     assert result.status == "confirmed"
     assert result.preset == "Noon"
 
 
 def test_analog_device_apply_quit_returns_error() -> None:
-    from unittest.mock import patch
-
     from rig_analog.device import AnalogDevice
 
     dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=AnalogConfig())
-    ctx = _make_apply_ctx(device_id="fuzz", preset_name="Noon")
-    with patch("rig_analog.device.prompt_analog", return_value="quit"):
-        result = dev.apply(ctx)
+    ctx = _make_apply_ctx(
+        device_id="fuzz",
+        preset_name="Noon",
+        confirmation_io=InMemoryPromptAdapter(default="quit"),
+    )
+    result = dev.apply(ctx)
     assert result.status == "error"
     assert result.error == "quit"
 
@@ -334,14 +336,15 @@ def test_all_device_types_satisfy_device_protocol_structurally() -> None:
 
 
 def test_analog_device_apply_skip_returns_skipped() -> None:
-    from unittest.mock import patch
-
     from rig_analog.device import AnalogDevice
 
     dev = AnalogDevice(id="fuzz", name="Fuzz Face", config=AnalogConfig())
-    ctx = _make_apply_ctx(device_id="fuzz", preset_name="Noon")
-    with patch("rig_analog.device.prompt_analog", return_value="skip"):
-        result = dev.apply(ctx)
+    ctx = _make_apply_ctx(
+        device_id="fuzz",
+        preset_name="Noon",
+        confirmation_io=InMemoryPromptAdapter(default="skip"),
+    )
+    result = dev.apply(ctx)
     assert result.status == "skipped"
     assert result.device == "fuzz"
 
