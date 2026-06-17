@@ -7,8 +7,8 @@
 
 ### I/O Parity
 
-- [ ] **IO-01**: User's analog device prompts route through `ConfirmationIO.prompt()` — no `builtins.input` call in `AnalogApplier`
-- [ ] **IO-02**: AnalogApplier tests use `InMemoryPromptAdapter` — no `builtins.input` monkeypatching
+- [x] **IO-01**: User's analog device prompts route through `ConfirmationIO.prompt()` — no `builtins.input` call in `AnalogApplier`
+- [x] **IO-02**: AnalogApplier tests use `InMemoryPromptAdapter` — no `builtins.input` monkeypatching
 
 ### Isolated Preset Apply
 
@@ -47,8 +47,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| IO-01 | Phase 25 | Pending |
-| IO-02 | Phase 25 | Pending |
+| IO-01 | Phase 25 | Complete |
+| IO-02 | Phase 25 | Complete |
 | PRESET-01 | Phase 26 | Pending |
 | PRESET-02 | Phase 26 | Pending |
 | PRESET-03 | Phase 26 | Pending |
@@ -60,6 +60,7 @@
 | EDIT-06 | Phase 28 | Pending |
 
 **Coverage:**
+
 - v1.5 requirements: 11 total
 - Mapped to phases: 11
 - Unmapped: 0 ✓
