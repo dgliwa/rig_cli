@@ -368,14 +368,15 @@ def test_bad_entry_point_does_not_crash_discovery() -> None:
 
 
 def test_all_plugin_devices_satisfy_preset_field_is_not_list_any() -> None:
-    """Regression: preset-bearing plugin device classes must use typed preset annotations.
+    """Regression: all plugin device classes must use typed preset annotations, not list[Any].
 
-    MC6Device is excluded — it has no real presets and retains list[Any] intentionally.
+    MC6Device uses SkipValidation[list[Preset]] — satisfies the Protocol, Pydantic-compatible.
     """
     from rig_analog.device import AnalogDevice
     from rig_chasebliss.device import ChaseBlissDevice
     from rig_hx.device import HXStompDevice
+    from rig_morningstar.device import MC6Device
 
-    for cls in (AnalogDevice, ChaseBlissDevice, HXStompDevice):
+    for cls in (AnalogDevice, ChaseBlissDevice, HXStompDevice, MC6Device):
         ann = cls.__annotations__.get("presets", "")
         assert "Any" not in str(ann), f"{cls.__name__}.presets should not be list[Any]"
