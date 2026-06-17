@@ -15,7 +15,6 @@ from rig.engine.plugin import (
     update_device_state,
 )
 from rig_analog.config import AnalogConfig
-from rig_analog.interaction import prompt_analog
 from rig_analog.preset import AnalogPreset
 
 logger = logging.getLogger(__name__)
@@ -67,14 +66,21 @@ class AnalogDevice(BaseModel):
                 device=action.device, status="skipped", preset=action.preset_name
             )
 
-        res = prompt_analog(action.device, action.preset_name)
-        if res == "quit":
-            return DeviceApplyResult(
-                device=action.device, status="error", preset=action.preset_name, error="quit"
+        while True:
+            res = ctx.confirmation_io.prompt_device(
+                action.device, action.preset_name, None, None, False
             )
-        if res == "confirm":
-            update_device_state(ctx.state, action.device, last_preset=action.preset_name)
+            if res == "quit":
+                return DeviceApplyResult(
+                    device=action.device, status="error", preset=action.preset_name, error="quit"
+                )
+            if res == "confirm":
+                update_device_state(ctx.state, action.device, last_preset=action.preset_name)
+                return DeviceApplyResult(
+                    device=action.device, status="confirmed", preset=action.preset_name
+                )
+            if res == "retry":
+                continue
             return DeviceApplyResult(
-                device=action.device, status="confirmed", preset=action.preset_name
+                device=action.device, status="skipped", preset=action.preset_name
             )
-        return DeviceApplyResult(device=action.device, status="skipped", preset=action.preset_name)
