@@ -85,7 +85,10 @@
   1. Running `rig apply` with an analog device never calls `builtins.input` directly — all prompts go through `ConfirmationIO.prompt()`
   2. AnalogApplier tests pass without monkeypatching `builtins.input` — they instantiate `InMemoryPromptAdapter` and pass it through context
   3. The test suite passes with no stdin-capture flags required for analog tests
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 25-01-PLAN.md — Thread ConfirmationIO through AnalogDevice.apply(), delete prompt_analog(), migrate 3 tests
 
 ### Phase 26: Isolated Preset Apply
 **Goal**: Users can apply a single device's preset without triggering full scene setup — useful for mid-session tweaks and targeted reapplies
@@ -96,7 +99,10 @@
   2. After a targeted apply, `state.json` reflects the updated preset for the targeted device only — other device states are unchanged
   3. Running `rig apply --device <id> --preset <id>` with an unknown device or preset ID produces a clear error message
   4. Running `rig apply` without `--device`/`--preset` flags behaves exactly as before (no regression)
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 25-01-PLAN.md — Thread ConfirmationIO through AnalogDevice.apply(), delete prompt_analog(), migrate 3 tests
 
 ### Phase 27: Editor Protocol, CLI Surface & YAML Writer
 **Goal**: Users can enter editor mode for a device's preset via `rig edit`, and the save/discard lifecycle writes changes back to rig.yaml atomically
@@ -107,7 +113,10 @@
   2. When the user confirms a save, the updated preset values are written back to `rig.yaml` and can be loaded by `rig validate` without error
   3. When the user discards, `rig.yaml` is bit-for-bit identical to its state before `rig edit` was run
   4. The Device Protocol (or companion EditorProtocol) declares `edit(preset_id, ctx)` — plugins can implement it without touching core
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 25-01-PLAN.md — Thread ConfirmationIO through AnalogDevice.apply(), delete prompt_analog(), migrate 3 tests
 
 ### Phase 28: Editor Plugin Implementations
 **Goal**: Each device plugin delivers its own interactive editing behavior — CC-based plugins stream live values; analog plugin presents a prompt-per-control flow
@@ -117,7 +126,10 @@
   1. During CBA/MIDI editor mode, changing a control value immediately sends the corresponding CC message to the device — the user hears the change live
   2. Analog plugin editor mode walks the user through each control with a prompt — no MIDI is sent (manual set); the plugin owns this loop entirely
   3. After any plugin's editor session saves, `rig validate` confirms the written values are valid preset parameters
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 25-01-PLAN.md — Thread ConfirmationIO through AnalogDevice.apply(), delete prompt_analog(), migrate 3 tests
 
 ## Progress
 
