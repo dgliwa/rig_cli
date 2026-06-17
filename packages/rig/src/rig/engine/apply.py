@@ -187,3 +187,84 @@ def apply_plan(
         console.print("[green]✓[/green] State saved to .rig/state.json")
 
     return ApplyResult(status="completed", scenes=scene_results)
+
+
+def apply_device_preset(
+    device_id: str,
+    preset_id: str,
+    *,
+    state_writer: StateWriter,
+    confirmation_io: ConfirmationIO | None = None,
+    rig: Rig,
+    config_path: str | None = None,
+    dry_run: bool = False,
+    midi: MidiManager | None = None,
+) -> DeviceApplyResult:
+    """Apply a single device's preset in isolation — no scene plan, no other devices touched.
+
+    Validates device_id and preset_id against the rig model, calls setup() then apply()
+    on the targeted device only, and writes state only for that device.
+    """
+    from rig.engine.plan.models import ActionStatus, DeviceAction
+    from rig.engine.plugin import DeviceType
+
+    if device_id not in rig.devices:
+        raise ValueError(f"Device '{device_id}' not found in rig config")
+    device = rig.devices[device_id]
+    if not any(p.id == preset_id for p in device.presets):
+        raise ValueError(f"Preset '{preset_id}' not found on device '{device_id}'")
+
+    state = state_writer.read(config_path) if config_path else RigState()
+    connected_devices: set[str] = set()
+    _io = confirmation_io or RichConfirmationIO()
+
+    setup_ctx = SetupContext(
+        state=state,
+        rig=rig,
+        dry_run=dry_run,
+        confirmation_io=_io,
+        midi=midi,
+        connected_devices=connected_devices,
+        config_path=config_path,
+    )
+    setup_result = device.setup(setup_ctx)
+    if setup_result.cancelled:
+        console.print("[red]Apply cancelled by user[/red]")
+        return DeviceApplyResult(device=device_id, status="skipped", preset=preset_id)
+
+    # Resolve preset_number and midi_channel from device data
+    preset_number: int | None = None
+    for p in device.presets:
+        if p.id == preset_id:
+            preset_number = getattr(p, "preset_number", None)
+            break
+    midi_channel: int | None = getattr(device.config, "midi_channel", None)
+
+    device_type: DeviceType = getattr(device, "type", DeviceType.DIGITAL)
+
+    action = DeviceAction(
+        device=device_id,
+        device_type=device_type,
+        status=ActionStatus.CONFIGURE,
+        preset_name=preset_id,
+        preset_number=preset_number,
+        midi_channel=midi_channel,
+    )
+    device_ctx = DeviceApplyContext(
+        action=action,
+        state=state,
+        rig=rig,
+        dry_run=dry_run,
+        confirmation_io=_io,
+        midi=midi,
+        connected_devices=connected_devices,
+        config_path=config_path,
+    )
+    result = device.apply(device_ctx)
+
+    if result.status == "confirmed" and not dry_run and config_path:
+        logger.info("Saving state to .rig/state.json")
+        state_writer.write(config_path, state)
+        console.print("[green]✓[/green] State saved to .rig/state.json")
+
+    return result

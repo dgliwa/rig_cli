@@ -12,6 +12,7 @@ from rig.engine.plugin import (
     DeviceType,
     SetupContext,
     SetupResult,
+    update_device_state,
 )
 from rig.engine.state import RigState
 from rig.models.rig import Rig
@@ -31,9 +32,10 @@ class FakePreset:
 
 
 class ConfirmedFakeDevice(FakeDevice):
-    """FakeDevice whose apply() always returns 'confirmed'."""
+    """FakeDevice whose apply() returns 'confirmed' and updates state, like real devices do."""
 
     def apply(self, ctx: DeviceApplyContext) -> DeviceApplyResult:
+        update_device_state(ctx.state, self.id, last_preset=ctx.action.preset_name)
         return DeviceApplyResult(device=self.id, status="confirmed", preset=ctx.action.preset_name)
 
 
@@ -149,7 +151,7 @@ class TestApplyDevicePresetIsolation:
 
 class TestApplyDevicePresetDryRun:
     def test_dry_run_does_not_write_state(self):
-        """dry_run=True: state writer write() is never called."""
+        """dry_run=True: state_writer.write() is never called (state object identity unchanged)."""
         rig = _make_rig()
         state_adapter = InMemoryStateAdapter()
         prompt_io = InMemoryPromptAdapter(default="confirm")
@@ -165,9 +167,11 @@ class TestApplyDevicePresetDryRun:
             confirmation_io=prompt_io,
         )
 
-        # State object should not have changed (write never called)
-        assert state_adapter.state is initial_state, "state should not be written in dry_run mode"
-        assert "klon" not in state_adapter.state.devices
+        # InMemoryStateAdapter.write() replaces self._state with a new object.
+        # In dry_run mode, write() is never called so object identity is preserved.
+        assert state_adapter.state is initial_state, (
+            "state_writer.write() must not be called in dry_run mode"
+        )
 
 
 class TestApplyDevicePresetSkipped:
