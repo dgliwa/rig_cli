@@ -4,7 +4,7 @@ milestone: v1.5
 milestone_name: milestone
 status: Not started
 last_updated: "2026-06-17T14:07:27.682Z"
-last_activity: 2026-06-17 — Roadmap created for v1.5
+last_activity: 2026-06-17 — Phase 25 complete: IO parity via ConfirmationIO threading
 progress:
   total_phases: 1
   completed_phases: 1
