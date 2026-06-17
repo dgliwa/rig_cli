@@ -131,7 +131,10 @@
   3. QUAL-01 DeviceAction items are implemented or have an explicit recorded decision; no open QUAL-01 stubs remain in engine source
   4. `make test` passes with no regressions after all gap-closing changes
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 24-01-PLAN.md — Close v1.4 gaps: MC6 list[Preset] typing, ActionStatus + DeviceType on DeviceAction, Phase 21 VERIFICATION.md, mark TYPE-02/TYPE-03 complete
 
 ## Progress
 
