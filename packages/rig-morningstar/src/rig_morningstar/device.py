@@ -4,12 +4,14 @@ import logging
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic.functional_validators import SkipValidation
 from rich.console import Console
 
 from rig.engine.plugin import (
     DeviceApplyContext,
     DeviceApplyResult,
     DeviceType,
+    Preset,
     SetupContext,
     SetupResult,
     update_device_state,
@@ -30,7 +32,7 @@ class MC6Device(BaseModel):
     name: str = ""
     config: MC6Config
     type: DeviceType = DeviceType.CONTROLLER
-    presets: list[Any] = Field(default_factory=list)
+    presets: SkipValidation[list[Preset]] = Field(default_factory=list)
 
     @classmethod
     def from_raw_yaml(cls, data: dict[str, Any]) -> MC6Device:

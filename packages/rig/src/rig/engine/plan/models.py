@@ -1,14 +1,23 @@
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import BaseModel
 
+from rig.engine.plugin import DeviceType
+
+
+class ActionStatus(StrEnum):
+    CONFIGURE = "configure"
+    VERIFY = "verify"
+    ANALOG = "analog"
+
 
 class DeviceAction(BaseModel):
     device: str
-    device_type: str
-    status: Literal["configure", "verify", "analog"]
+    device_type: DeviceType
+    status: ActionStatus
     preset_name: str = ""
     preset_number: int | None = None
     midi_channel: int | None = None
