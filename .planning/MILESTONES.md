@@ -72,3 +72,25 @@
 **Known deferred items at close:** 2 (see STATE.md Deferred Items — validation state-gating, reset CC connected_devices gate)
 
 ---
+
+## v1.4 Architecture & Type Integrity (Shipped: 2026-06-17)
+
+**Phases completed:** 5 phases (20-24), 5 plans
+**Files changed:** 94, +5,144 / -5,606 lines
+**Total Python LOC:** 8,344 (packages/)
+**Timeline:** 2026-06-10 → 2026-06-17 (7 days)
+
+**Key accomplishments:**
+
+- Retired `Device(BaseModel)` legacy model from `models/device.py`; `Rig.devices` typed against Protocol end-to-end — no `hasattr` guards, no `cast(Any)` in engine or loader
+- All 4 plugins carry concrete config types (`AnalogConfig`, `HXStompConfig`, `ChaseBlissConfig`, `MC6Config`); YAML construction validates against concrete type
+- `Preset` Protocol defined in core; `MC6Device.presets: SkipValidation[list[Preset]]` eliminates the last `list[Any]` field in the plugin boundary
+- Dead `plan()`/`diff()` stubs removed from Protocol and all 4 plugin device files; deleted 8 stub tests
+- `appliers/base.py` deleted — legacy `ApplyContext` dataclass retired; `DeviceApplyContext` is the sole apply context type in `apply.py`
+- 3 stdin-capture tests now pass without `-s`; `ConfirmationIO.prompt()` threaded through all 4 CBA interaction functions; `InMemoryPromptAdapter` replaces `builtins.input` monkeypatching
+- `ActionStatus(StrEnum)` added; `DeviceAction` fully enum-typed (`device_type: DeviceType`, `status: ActionStatus`) — no raw string literals at any construction site
+- Root `tests/` directory deleted (9 import errors eliminated); 309 passed, 0 failures
+
+**Known deferred items at close:** 1 (AnalogApplier bypasses `ConfirmationIO` — `prompt_analog()` still calls `input()` directly; analog parity deferred to v1.5)
+
+---

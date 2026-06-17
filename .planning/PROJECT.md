@@ -43,18 +43,22 @@ A single command should bring the physical rig to the exact state described in t
 - ✓ **CBA-05: Preset parameter validation** — unknown names and out-of-range values raise `ValidationError` before pedal interaction — v1.3
 - ✓ **CBA-06: Reset-to-defaults** — per-preset CC reset of all resettable controls before preset CC sends — v1.3
 
+- ✓ **Single `Device` Protocol end-to-end** — `Device(BaseModel)` legacy model retired; `Rig.devices: dict[str, Device]` typed against Protocol; zero `hasattr` or `cast(Any)` guards in engine — v1.4
+- ✓ **Concrete plugin config types** — `AnalogConfig`, `HXStompConfig`, `ChaseBlissConfig`, `MC6Config` in respective plugins; `config: Any` gone; YAML construction validates against concrete type — v1.4
+- ✓ **`Preset` Protocol in core** — `presets: list[Preset]` in all 4 plugins; `MC6Device` uses `SkipValidation[list[Preset]]` to satisfy Pydantic constraint — v1.4
+- ✓ **Dead stubs removed** — `plan()` and `diff()` stubs deleted from Protocol and all 4 plugin device files — v1.4
+- ✓ **Single `ApplyContext` type** — `appliers/base.py` deleted; `DeviceApplyContext` from `engine.plugin` is the sole apply context throughout `apply.py` — v1.4
+- ✓ **Test infrastructure clean** — Root `tests/` directory deleted; 309 passed, 0 failures; 3 stdin-capture tests pass without `-s` flag — v1.4
+- ✓ **`DeviceType` + `ActionStatus` enums throughout** — zero raw string device-type comparisons; `DeviceAction` fully enum-typed — v1.4
+
 ### Active
 
 - [ ] **PKG-07**: Plugin authoring docs — how to write a new plugin package
-- [ ] **TYPE-01**: Retire legacy `Device(BaseModel)` from `models/device.py`; `Rig.devices: dict[str, Device]` typed against the Protocol
-- [ ] **TYPE-02**: Concrete config types in each plugin (`config: ChaseBlissConfig`, not `config: Any`)
-- [ ] **TYPE-03**: `Preset` Protocol in core; `presets: list[Preset]` in plugin device classes
-- [ ] **TYPE-04**: Retire dead `plan()`/`diff()` stubs from the `Device` Protocol
-- [ ] **TYPE-05**: Reconcile duplicate `ApplyContext` / `DeviceApplier` objects in `apply.py`
-- [ ] **TEST-01**: Delete stale root `tests/` directory (broken imports, stale migration artifacts)
-- [ ] **TEST-02**: Fix 3 stdin-capture test failures by routing through `ConfirmationIO` Protocol
-- [ ] **QUAL-01**: Replace raw string `"analog"` device-type comparisons with `DeviceType.ANALOG` enum
-- [ ] **QUAL-02**: Standardize domain discriminators on Enums; reserve `Literal` for narrow type narrowing only
+- [ ] **APPLY-01**: `rig apply` skips the manual knob prompt for an analog device when `state.json` already records that device in the desired preset
+- [ ] **APPLY-02**: `rig apply --device <id>` applies only the named device's actions across all scenes
+- [ ] **PLAN-01**: `rig plan` shows which specific CC values / knob positions changed for a device, not just that a scene is "changed"
+- [ ] **PLAN-02**: `rig plan` output per device-action includes before/after values for each changed parameter
+- [ ] **ANALOG-IO**: Thread `ConfirmationIO` through `AnalogApplier` / `prompt_analog()` so analog tests no longer monkeypatch `builtins.input` (parity with CBA path fixed in v1.4)
 
 ### Out of Scope
 
@@ -69,28 +73,15 @@ A single command should bring the physical rig to the exact state described in t
 | UI (#18) | Speculative — not planned |
 | CI independent package publishing | Low-priority infra — local `uv` workflow sufficient for now |
 
-## Current Milestone: v1.4 Architecture & Type Integrity
-
-**Goal:** Eliminate the parallel device model systems, establish a single typed boundary throughout the plugin/core interface, and fix all outstanding test and code-quality debt — with zero user-visible behavior changes.
-
-**Target features:**
-- Consolidate parallel Device models: retire legacy `Device(BaseModel)` from `models/device.py`; `Rig.devices: dict[str, Device]` typed against the Protocol
-- Concrete config types in plugins (`config: ChaseBlissConfig` not `config: Any`)
-- `Preset` Protocol in core; `presets: list[Preset]` typed in plugin device classes
-- Retire dead `plan()`/`diff()` stubs from the `Device` Protocol
-- Reconcile duplicate `ApplyContext` / `DeviceApplier` objects in `apply.py`
-- Delete stale root `tests/` directory; fix 3 stdin-capture test failures
-- `DeviceType` enum comparisons throughout (no more raw `"analog"` strings)
-- Standardize domain discriminators on Enums vs Literals
-
 ## Current State
 
-Phases 1–19 shipped across v1.0–v1.3 (4 milestones). v1.3 Chase Bliss Pedal Support milestone complete. v1.4 Architecture & Type Integrity in progress.
+Phases 1–24 shipped across v1.0–v1.4 (5 milestones). v1.4 Architecture & Type Integrity milestone complete.
 
-**Milestone v1.3 shipped 2026-06-10:** 6 phases (14-19), 6 plans, 1,023 LOC in `rig_chasebliss/` package. Full CBA catalog support (Mood MkII, Wombtone MkII, Brothers AM), preset parameter validation, reset-to-defaults flow, and catalog auto-population from device model name. All 6 CBA requirements satisfied.
+**Milestone v1.4 shipped 2026-06-17:** 5 phases (20-24), 5 plans, 8,344 LOC Python across all packages. Single `Device` Protocol end-to-end; concrete plugin config types; `Preset` Protocol; `appliers/base.py` deleted; 309 tests pass. Zero raw-string device-type comparisons; `ActionStatus` StrEnum added. AnalogApplier `ConfirmationIO` gap deferred to v1.5.
 
 ## Context
 
+- **v1.4 shipped 2026-06-17**: 5 phases (20–24), 5 plans, 8,344 LOC Python across all packages
 - **v1.3 shipped 2026-06-10**: 6 phases (14–19), 6 plans, 1,023 LOC in `rig_chasebliss/` package
 - **v1.2 shipped 2026-06-08**: 5 phases (9–13), 8 plans, 7,349 LOC Python across all packages
 - **v1.1 shipped 2026-06-07**: 3 phases (6–8), 8 plans
@@ -99,8 +90,9 @@ Phases 1–19 shipped across v1.0–v1.3 (4 milestones). v1.3 Chase Bliss Pedal 
 - State persisted at `.rig/state.json` in the config repo — tracks what has been applied to physical devices
 - Plugin discovery: `importlib.metadata.entry_points('rig.devices')` — install a package, it appears; uninstall, it disappears
 - `rig plan` is the read-only preview step; `rig apply` is the commit step — clean separation enforced by no-MIDI-in-plan constraint
-- Known tech debt: `Device.plan()` / `Device.diff()` stubs raise NotImplementedError — dead code from Phase 4 forward stubs; plan is computed via `compute_plan`, not device methods
-- CBA catalog auto-population: device YAML with `config.model: <Model Name>` (e.g., "Wombtone MkII", "Brothers AM", "Mood MkII") auto-populates controls from the catalog; explicit YAML controls take precedence
+- Type system (v1.4): single `Device` Protocol; concrete plugin config types; `Preset` Protocol; `DeviceApplyContext` sole apply context; `DeviceType` + `ActionStatus` StrEnums at all call sites
+- CBA catalog auto-population: device YAML with `config.model: <Model Name>` auto-populates controls from catalog; explicit YAML controls take precedence
+- Known tech debt: `AnalogApplier` still calls `input()` directly — `ConfirmationIO` not threaded through analog path (CBA path fixed in v1.4; analog deferred to v1.5)
 
 ## Constraints
 
@@ -130,6 +122,13 @@ Phases 1–19 shipped across v1.0–v1.3 (4 milestones). v1.3 Chase Bliss Pedal 
 | Imperative validation in apply(), not Pydantic model_validator | Catalog lookup at construction time would couple model layer to plugin | ✓ Good — v1.3 |
 | Auto-populate only when controls list is empty | Explicit YAML controls always take precedence over catalog lookup | ✓ Good — v1.3 |
 | Manufacturer hardcoded as "Chase Bliss Audio" in from_raw_yaml() | This is the CBA plugin — model is the only variable discriminator needed | ✓ Good — v1.3 |
+| Phase 20 bundles all zero-dependency quick wins | TYPE-04, TEST-01, QUAL-01, QUAL-02 share no intra-group dependencies; batching reduces phase count without coupling risk | ✓ Good — v1.4 |
+| TYPE-02 and TYPE-03 in same phase | Concrete plugin config types and Preset Protocol are co-dependent at the boundary; splitting leaves a half-typed codebase | ✓ Good — v1.4 |
+| TYPE-01 (retire legacy Device model) isolated | Most impactful change; depends on Phase 21 being complete; isolated blast radius makes phase easy to verify | ✓ Good — v1.4 |
+| TEST-02 bundled with TYPE-05 | stdin-capture test failures entangled with dual ApplyContext types; fixing context first gives correct ConfirmationIO foundation | ✓ Good — v1.4 |
+| SkipValidation[list[Preset]] for MC6Device.presets | Pydantic cannot validate list[Protocol] at runtime (raises SchemaError); SkipValidation preserves typed annotation for static analysis | ✓ Good — v1.4 |
+| ActionStatus(StrEnum) in models.py, not engine/plugin.py | Plan models are a separate concern from apply-time contracts (DeviceApplyContext lives in plugin.py) | ✓ Good — v1.4 |
+| Phase 24 inserted to close audit gaps | v1.4 audit found 3 gaps (missing Phase 21 VERIFICATION.md, MC6 list[Any], QUAL-01 raw-string assignment sites); gap-close phase keeps milestone clean | ✓ Good — v1.4 |
 
 ## Evolution
 
@@ -149,4 +148,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-12 — v1.4 Architecture & Type Integrity milestone started*
+*Last updated: 2026-06-17 after v1.4 milestone*

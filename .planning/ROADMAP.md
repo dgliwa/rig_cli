@@ -6,7 +6,7 @@
 - ✅ **v1.1 Package Extraction & Plugin Isolation** — Phases 6-8 (shipped 2026-06-07)
 - ✅ **v1.2 Cleaner Core** — Phases 9-13 (shipped 2026-06-08)
 - ✅ **v1.3 Chase Bliss Pedal Support** — Phases 14-19 (shipped 2026-06-10)
-- 🔄 **v1.4 Architecture & Type Integrity** — Phases 20-24 (in progress)
+- ✅ **v1.4 Architecture & Type Integrity** — Phases 20-24 (shipped 2026-06-17)
 
 ## Phases
 
@@ -53,89 +53,16 @@
 
 </details>
 
-### v1.4 Architecture & Type Integrity
+<details>
+<summary>✅ v1.4 Architecture & Type Integrity (Phases 20-24) — SHIPPED 2026-06-17</summary>
 
-- [x] **Phase 20: Quick Wins & Dead Code** - Remove dead stubs, delete stale tests, and lock in enum and documentation decisions with no dependencies on other work (completed 2026-06-15)
-- [x] **Phase 21: Concrete Types at the Plugin Boundary** - Each plugin carries a typed config and typed preset list; Preset Protocol lives in core (completed 2026-06-15)
-- [x] **Phase 22: Retire the Legacy Device Model** - The legacy Device(BaseModel) is gone; Rig.devices is typed against the Protocol end-to-end (completed 2026-06-15)
-- [x] **Phase 23: ApplyContext Consolidation & Test Capture Fixes** - ApplyContext retired; base.py deleted; all 309 tests pass (completed 2026-06-16)
-- [x] **Phase 24: Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction** (completed 2026-06-17)
+- [x] Phase 20: Quick Wins & Dead Code (1/1 plans) — completed 2026-06-15
+- [x] Phase 21: Concrete Types at the Plugin Boundary (1/1 plans) — completed 2026-06-15
+- [x] Phase 22: Retire the Legacy Device Model (1/1 plans) — completed 2026-06-15
+- [x] Phase 23: ApplyContext Consolidation & Test Capture Fixes (1/1 plans) — completed 2026-06-16
+- [x] Phase 24: Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction (1/1 plans) — completed 2026-06-17
 
-## Phase Details
-
-### Phase 20: Quick Wins & Dead Code
-
-**Goal**: The codebase has no dead stubs, no broken test infrastructure, and a recorded decision on the Enums-vs-Literals question — all independent changes with zero cross-phase risk
-**Depends on**: Phase 19 (v1.3 complete)
-**Requirements**: TYPE-04, TEST-01, QUAL-01, QUAL-02
-**Success Criteria** (what must be TRUE):
-
-  1. `plan()` and `diff()` methods no longer appear in the Device Protocol or any plugin implementation; a grep for these method names in non-test source returns zero hits
-  2. `make test` completes collection with no import errors — the stale root `tests/` directory is gone
-  3. A grep for `== "analog"`, `== "digital"`, `== "controller"`, `== "modeler"` in `src/` returns zero hits; all comparisons use `DeviceType` enum members
-  4. The Enums-vs-Literals TODO comment is replaced with an inline explanation: `Literal` is required by Pydantic discriminated unions; `DeviceType` StrEnum is for runtime comparisons; they coexist intentionally
-
-**Plans**: TBD
-
-### Phase 21: Concrete Types at the Plugin Boundary
-
-**Goal**: Every plugin device class carries a concrete, named config type and a typed preset list; the `Preset` Protocol exists in core so the engine never sees `list[Any]`
-**Depends on**: Phase 20
-**Requirements**: TYPE-02, TYPE-03
-**Success Criteria** (what must be TRUE):
-
-  1. Each plugin device class (`ChaseBlissDevice`, `HXStompDevice`, `AnalogDevice`, `MC6Device`) declares `config: <ConcreteConfig>` — no `config: Any` annotations remain in plugin source
-  2. A `Preset` Protocol is defined in `rig.engine.plugin` (or equivalent core module) with the minimal interface the engine requires
-  3. Each plugin device class declares `presets: list[Preset]`; mypy or grep confirms no `list[Any]` in plugin preset fields
-  4. YAML construction for each device type validates against the concrete config type — a YAML with an invalid field raises a validation error, not an `AttributeError` at runtime
-
-**Plans**: TBD
-
-### Phase 22: Retire the Legacy Device Model
-
-**Goal**: The legacy `Device(BaseModel)` in `models/device.py` is gone; `Rig.devices` is typed `dict[str, Device]` against the Protocol; all code paths touching `rig.devices` are type-safe without `Any` or `hasattr` guards
-**Depends on**: Phase 21
-**Requirements**: TYPE-01
-**Success Criteria** (what must be TRUE):
-
-  1. `models/device.py` no longer contains a Pydantic `BaseModel` subclass named `Device`; the file is removed or repurposed
-  2. `Rig.devices` is typed `dict[str, Device]` where `Device` is the Protocol from `rig.engine.plugin`
-  3. A grep for `hasattr` and `cast(Any` in engine and loader source returns zero hits introduced by this change
-  4. `make test` passes with no regressions after the legacy model is removed
-
-**Plans**: TBD
-
-### Phase 23: ApplyContext Consolidation & Test Capture Fixes
-
-**Goal**: `apply.py` flows one `ApplyContext` type end-to-end; the 3 failing stdin-capture tests pass without `-s` by routing interaction through the `ConfirmationIO` Protocol
-**Depends on**: Phase 22
-**Requirements**: TYPE-05, TEST-02
-**Success Criteria** (what must be TRUE):
-
-  1. `appliers/base.py` no longer exports a legacy `ApplyContext` dataclass; `apply.py` imports and uses `DeviceApplyContext` from `engine.plugin` exclusively
-  2. No function in `apply.py` or any applier accepts both context types; a grep for the old `ApplyContext` import in engine source returns zero hits
-  3. `test_build_preset_confirm_…`, `test_midi_connect_and_send`, and `test_cba_channel_establishment_…` all pass when run with `make test` (no `-s` flag)
-  4. The interaction functions that previously called `input()` directly now delegate to the `ConfirmationIO` Protocol; test doubles can inject a fake implementation without monkeypatching builtins
-
-**Plans**: TBD
-
-### Phase 24: Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction
-
-**Goal**: All v1.4 audit gaps are closed — Phase 21 has a VERIFICATION.md, MC6 preset fields carry concrete types, and QUAL-01 DeviceAction items are resolved
-**Depends on**: Phase 23
-**Requirements**: TYPE-02, TYPE-03, QUAL-01
-**Success Criteria** (what must be TRUE):
-
-  1. A VERIFICATION.md for Phase 21 exists and confirms all Phase 21 success criteria are met in the current codebase
-  2. MC6 preset fields use typed models (no `Any` or untyped dict) in the MC6 plugin
-  3. QUAL-01 DeviceAction items are implemented or have an explicit recorded decision; no open QUAL-01 stubs remain in engine source
-  4. `make test` passes with no regressions after all gap-closing changes
-
-**Plans**: 1 plan
-
-Plans:
-
-- [x] 24-01-PLAN.md — Close v1.4 gaps: MC6 list[Preset] typing, ActionStatus + DeviceType on DeviceAction, Phase 21 VERIFICATION.md, mark TYPE-02/TYPE-03 complete
+</details>
 
 ## Progress
 
@@ -164,4 +91,4 @@ Plans:
 | 21. Concrete Types at the Plugin Boundary | v1.4 | 1/1 | Complete | 2026-06-15 |
 | 22. Retire the Legacy Device Model | v1.4 | 1/1 | Complete | 2026-06-15 |
 | 23. ApplyContext Consolidation & Test Capture Fixes | v1.4 | 1/1 | Complete | 2026-06-16 |
-| 24. Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction | v1.4 | 1/1 | Complete   | 2026-06-17 |
+| 24. Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction | v1.4 | 1/1 | Complete | 2026-06-17 |

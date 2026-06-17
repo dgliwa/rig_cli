@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Architecture & Type Integrity
-status: executing
-last_updated: "2026-06-17T12:25:59.275Z"
-last_activity: 2026-06-17 — Phase 24 complete (ActionStatus StrEnum, MC6 preset typing, Phase 21 verification; 309 tests green)
+status: complete
+last_updated: "2026-06-17"
+last_activity: 2026-06-17 — v1.4 milestone complete; archived; tagged v1.4
 progress:
   total_phases: 5
   completed_phases: 5
@@ -17,17 +17,15 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-10)
+See: .planning/PROJECT.md (updated 2026-06-17)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** v1.4 Architecture & Type Integrity — roadmap defined, Phase 20 next
+**Current focus:** Planning next milestone (v1.5)
 
 ## Current Position
 
-Phase: 24 (complete)
-Plan: 24-01
-Status: Phase complete — milestone v1.4 all phases done
-Last activity: 2026-06-17 — Phase 24 complete (ActionStatus StrEnum, MC6 preset typing, Phase 21 verification; 309 tests green)
+Milestone: v1.4 complete — archived 2026-06-17
+Last activity: 2026-06-17 — v1.4 milestone archived; REQUIREMENTS.md removed; tag v1.4 created
 
 Progress: [████████████████████] 100% (5/5 phases)
 
