@@ -22,7 +22,7 @@ Internal refactor milestone — zero user-visible behavior changes. Eliminates t
 
 ### QUAL — Code Quality
 
-- [ ] **QUAL-01**: All raw string device-type comparisons (`== "analog"`, `== "digital"`, `== "controller"`, `== "modeler"`) in engine and plugin code are replaced with `DeviceType` enum members; a grep for these patterns in non-test source returns zero hits
+- [x] **QUAL-01**: All raw string device-type comparisons (`== "analog"`, `== "digital"`, `== "controller"`, `== "modeler"`) in engine and plugin code are replaced with `DeviceType` enum members; a grep for these patterns in non-test source returns zero hits
 - [ ] **QUAL-02**: The TODO comment in `models/device.py` about Enums vs Literals is resolved with a recorded decision: `Literal` is used for Pydantic discriminated union `type` fields (required by Pydantic); `DeviceType` StrEnum is used for runtime comparisons; the two are not in conflict
 
 ## Future Requirements (v1.5)
@@ -59,7 +59,7 @@ Deferred to the next milestone (Terraform Loop Completeness).
 | TYPE-05 | Phase 23 | Pending |
 | TEST-01 | Phase 20 | Pending |
 | TEST-02 | Phase 23 | Pending |
-| QUAL-01 | Phase 20 | Pending |
+| QUAL-01 | Phase 20 | Complete |
 | QUAL-02 | Phase 20 | Pending |
 
 **Coverage:**

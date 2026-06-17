@@ -59,7 +59,7 @@
 - [x] **Phase 21: Concrete Types at the Plugin Boundary** - Each plugin carries a typed config and typed preset list; Preset Protocol lives in core (completed 2026-06-15)
 - [x] **Phase 22: Retire the Legacy Device Model** - The legacy Device(BaseModel) is gone; Rig.devices is typed against the Protocol end-to-end (completed 2026-06-15)
 - [x] **Phase 23: ApplyContext Consolidation & Test Capture Fixes** - ApplyContext retired; base.py deleted; all 309 tests pass (completed 2026-06-16)
-- [ ] **Phase 24: Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction**
+- [x] **Phase 24: Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction** (completed 2026-06-17)
 
 ## Phase Details
 
@@ -134,7 +134,8 @@
 **Plans**: 1 plan
 
 Plans:
-- [ ] 24-01-PLAN.md — Close v1.4 gaps: MC6 list[Preset] typing, ActionStatus + DeviceType on DeviceAction, Phase 21 VERIFICATION.md, mark TYPE-02/TYPE-03 complete
+
+- [x] 24-01-PLAN.md — Close v1.4 gaps: MC6 list[Preset] typing, ActionStatus + DeviceType on DeviceAction, Phase 21 VERIFICATION.md, mark TYPE-02/TYPE-03 complete
 
 ## Progress
 
@@ -163,4 +164,4 @@ Plans:
 | 21. Concrete Types at the Plugin Boundary | v1.4 | 1/1 | Complete | 2026-06-15 |
 | 22. Retire the Legacy Device Model | v1.4 | 1/1 | Complete | 2026-06-15 |
 | 23. ApplyContext Consolidation & Test Capture Fixes | v1.4 | 1/1 | Complete | 2026-06-16 |
-| 24. Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction | v1.4 | 0/1 | Pending | — |
+| 24. Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction | v1.4 | 1/1 | Complete   | 2026-06-17 |
