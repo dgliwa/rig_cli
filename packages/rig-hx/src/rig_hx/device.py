@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, Field
 from rich.console import Console
@@ -20,6 +20,9 @@ from rig.engine.state import DeviceState
 from rig.models.preset import MidiPreset
 from rig_hx.config import HXStompConfig
 from rig_hx.preset import HXStompPreset
+
+if TYPE_CHECKING:
+    from rig.engine.plugin import EditContext
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -166,3 +169,14 @@ class HXStompDevice(BaseModel):
                 preset=action.preset_name,
                 error="quit",
             )
+
+    def edit(self, preset_id: str, ctx: EditContext) -> dict[str, Any]:
+        """Skeleton editor stub — Phase 28 will add interactive editing."""
+        console.print(
+            f"Editor mode: {self.id}/{preset_id} "
+            "(no interactive editing available — Phase 28 will add this)"
+        )
+        for preset in self.presets:
+            if preset.id == preset_id:
+                return preset.model_dump()
+        raise ValueError(f"Preset '{preset_id}' not found on device '{self.id}'")

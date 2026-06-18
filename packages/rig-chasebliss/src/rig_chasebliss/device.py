@@ -28,6 +28,7 @@ from rig_chasebliss.catalog import Control, get_controls
 from rig_chasebliss.preset import DigitalPreset
 
 if TYPE_CHECKING:
+    from rig.engine.plugin import EditContext
     from rig.models.rig import Rig
 
 
@@ -333,3 +334,14 @@ class ChaseBlissDevice(BaseModel):
                 preset=action.preset_name,
                 error="quit",
             )
+
+    def edit(self, preset_id: str, ctx: EditContext) -> dict[str, Any]:
+        """Skeleton editor stub — Phase 28 will add interactive editing."""
+        console.print(
+            f"Editor mode: {self.id}/{preset_id} "
+            "(no interactive editing available — Phase 28 will add this)"
+        )
+        for preset in self.presets:
+            if preset.id == preset_id:
+                return preset.model_dump()
+        raise ValueError(f"Preset '{preset_id}' not found on device '{self.id}'")
