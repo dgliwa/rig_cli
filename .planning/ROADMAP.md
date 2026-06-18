@@ -71,7 +71,7 @@
 - [ ] **Phase 25: I/O Parity** - Thread ConfirmationIO through AnalogApplier; update tests to use InMemoryPromptAdapter
 - [ ] **Phase 26: Isolated Preset Apply** - `rig apply --device <id> --preset <id>` applies one device's preset without full scene setup
 - [ ] **Phase 27: Editor Protocol, CLI Surface & YAML Writer** - `rig edit` command, save/discard lifecycle, and rig.yaml preset writer
-- [ ] **Phase 28: Editor Plugin Implementations** - CC-based live MIDI editing (CBA/MIDI/HX) and analog prompt-per-control flow
+- [x] **Phase 28: Editor Plugin Implementations** - CC-based live MIDI editing (CBA/MIDI/HX) and analog prompt-per-control flow — Completed 2026-06-17
 
 </details>
 
