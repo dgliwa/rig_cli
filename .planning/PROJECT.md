@@ -50,6 +50,12 @@ A single command should bring the physical rig to the exact state described in t
 - ✓ **Single `ApplyContext` type** — `appliers/base.py` deleted; `DeviceApplyContext` from `engine.plugin` is the sole apply context throughout `apply.py` — v1.4
 - ✓ **Test infrastructure clean** — Root `tests/` directory deleted; 309 passed, 0 failures; 3 stdin-capture tests pass without `-s` flag — v1.4
 - ✓ **`DeviceType` + `ActionStatus` enums throughout** — zero raw string device-type comparisons; `DeviceAction` fully enum-typed — v1.4
+- ✓ **ConfirmationIO I/O Parity (Analog)** — `AnalogDevice.apply()` threaded through `ConfirmationIO` Protocol with retry loop; `prompt_analog()` deleted; 3 analog tests use `InMemoryPromptAdapter` without `builtins.input` patching — v1.5
+- ✓ **Isolated Preset Apply** — `apply_device_preset()` engine function + `--device`/`--preset` CLI flags on `rig apply` for single-device preset apply without scene plan; `state.scenes` never modified — v1.5
+- ✓ **Editor Protocol + CLI + YAML Writer** — `EditorProtocol` + `EditContext` in `plugin.py`; `rig edit <device-id> <preset-id>` command; ruamel.yaml round-trip write-back with comment preservation; save/discard lifecycle — v1.5
+- ✓ **CBA Live Editor** — `ChaseBlissDevice.edit()` sends live CC on each valid `<control> <value>` entry; unknown control/out-of-range re-prompts without advancing — v1.5
+- ✓ **Analog Key-Value Editor** — `AnalogDevice.edit()` implements `EditorProtocol` with no-MIDI key-entry loop; validates against existing keys only — v1.5
+- ✓ **`EditContext.midi` field** — `MidiManager | None = None` for CC-based plugins; `edit.py` passes `midi=None` explicitly — v1.5
 
 ### Active
 
@@ -58,13 +64,14 @@ A single command should bring the physical rig to the exact state described in t
 - [ ] **APPLY-02**: `rig apply --device <id>` applies only the named device's actions across all scenes
 - [ ] **PLAN-01**: `rig plan` shows which specific CC values / knob positions changed for a device, not just that a scene is "changed"
 - [ ] **PLAN-02**: `rig plan` output per device-action includes before/after values for each changed parameter
-- [ ] **ANALOG-IO**: Thread `ConfirmationIO` through `AnalogApplier` / `prompt_analog()` so analog tests no longer monkeypatch `builtins.input` (parity with CBA path fixed in v1.4)
 
 ### Out of Scope
 
 | Feature | Reason |
 |---------|--------|
+| HX Stomp interactive editing | Requires MIDI SysEx parsing; Phase 28 stub prints 'future milestone' message |
 | Full HX SysEx read/write via MIDI (#3) | Requires MIDI SysEx parsing complexity — future milestone |
+| `rig edit` for controllers (MC6) | MC6 editing is a different domain (bank/switch config, not CC values) — defer |
 | HX MIDI channel configurability (#4) | Current hardcoded channel works — defer |
 | Complex MC6 workflows (next page, MIDI clock, etc.) (#6) | Low-priority — defer |
 | Module-level READMEs (#9) | Nice to have, not blocking |
@@ -73,23 +80,25 @@ A single command should bring the physical rig to the exact state described in t
 | UI (#18) | Speculative — not planned |
 | CI independent package publishing | Low-priority infra — local `uv` workflow sufficient for now |
 
-## Current Milestone: v1.5 Interactive Preset Management
+## Next Milestone: v1.6 — TBD
 
-**Goal:** Give the rig owner ways to work with presets directly — target a single device without full rig setup, and iteratively tune a preset live before committing it.
+**Goal:** TBD — ready for `/gsd-new-milestone` to define requirements and roadmap.
 
-**Target features:**
-- Isolated preset apply: apply a single device's preset without triggering full scene setup
-- Editor Mode: interactive loop to dial in CC values for a device's preset live, send each change in real-time, save or discard when done
-- AnalogApplier `ConfirmationIO` parity: thread `ConfirmationIO` through `prompt_analog()` (deferred from v1.4)
+**Candidate areas:**
+- HX Stomp interactive editing (Phase 28 intentionally left as stub)
+- Plugin authoring docs (`PKG-07`)
+- `rig plan` per-parameter diff (`PLAN-01`, `PLAN-02`)
+- `rig apply --device <id>` single-device scene apply (`APPLY-02`)
 
 ## Current State
 
-Phases 1–24 shipped across v1.0–v1.4 (5 milestones). v1.4 Architecture & Type Integrity milestone complete. v1.5 Interactive Preset Management in progress.
+Phases 1–28 shipped across v1.0–v1.5 (6 milestones). All milestones complete. Next milestone TBD.
 
-**Milestone v1.4 shipped 2026-06-17:** 5 phases (20-24), 5 plans, 8,344 LOC Python across all packages. Single `Device` Protocol end-to-end; concrete plugin config types; `Preset` Protocol; `appliers/base.py` deleted; 309 tests pass. Zero raw-string device-type comparisons; `ActionStatus` StrEnum added. AnalogApplier `ConfirmationIO` gap deferred to v1.5.
+**Milestone v1.5 shipped 2026-06-17:** 4 phases (25-28), 4 plans, 2,261 LOC Python in `packages/rig/src/`. ConfirmationIO threaded through AnalogDevice; `--device`/`--preset` flags on `rig apply` for isolated preset apply; `rig edit` command with EditorProtocol and ruamel.yaml round-trip write-back; CBA live CC-send editor loop; analog key-value editor. 367 tests pass, 0 failures.
 
 ## Context
 
+- **v1.5 shipped 2026-06-17**: 4 phases (25–28), 4 plans, 2,261 LOC in `packages/rig/src/`. 367 tests pass.
 - **v1.4 shipped 2026-06-17**: 5 phases (20–24), 5 plans, 8,344 LOC Python across all packages
 - **v1.3 shipped 2026-06-10**: 6 phases (14–19), 6 plans, 1,023 LOC in `rig_chasebliss/` package
 - **v1.2 shipped 2026-06-08**: 5 phases (9–13), 8 plans, 7,349 LOC Python across all packages
@@ -101,7 +110,9 @@ Phases 1–24 shipped across v1.0–v1.4 (5 milestones). v1.4 Architecture & Typ
 - `rig plan` is the read-only preview step; `rig apply` is the commit step — clean separation enforced by no-MIDI-in-plan constraint
 - Type system (v1.4): single `Device` Protocol; concrete plugin config types; `Preset` Protocol; `DeviceApplyContext` sole apply context; `DeviceType` + `ActionStatus` StrEnums at all call sites
 - CBA catalog auto-population: device YAML with `config.model: <Model Name>` auto-populates controls from catalog; explicit YAML controls take precedence
-- Known tech debt: `AnalogApplier` still calls `input()` directly — `ConfirmationIO` not threaded through analog path (CBA path fixed in v1.4; analog deferred to v1.5)
+- Editor protocol (v1.5): `EditorProtocol` + `EditContext` in `plugin.py`; `isinstance` dispatch in CLI; CBA live CC editor, analog key-value editor, HX stub deferred;
+- HX Stomp interactive editing intentionally deferred — no live MIDI SysEx read/write support yet; flagged as future milestone
+- Known tech debt (resolved in v1.5): `AnalogApplier` `ConfirmationIO` gap closed in Phase 25 — all applier paths use `ConfirmationIO` Protocol
 
 ## Constraints
 
@@ -138,6 +149,15 @@ Phases 1–24 shipped across v1.0–v1.4 (5 milestones). v1.4 Architecture & Typ
 | SkipValidation[list[Preset]] for MC6Device.presets | Pydantic cannot validate list[Protocol] at runtime (raises SchemaError); SkipValidation preserves typed annotation for static analysis | ✓ Good — v1.4 |
 | ActionStatus(StrEnum) in models.py, not engine/plugin.py | Plan models are a separate concern from apply-time contracts (DeviceApplyContext lives in plugin.py) | ✓ Good — v1.4 |
 | Phase 24 inserted to close audit gaps | v1.4 audit found 3 gaps (missing Phase 21 VERIFICATION.md, MC6 list[Any], QUAL-01 raw-string assignment sites); gap-close phase keeps milestone clean | ✓ Good — v1.4 |
+| IO-01/IO-02 in their own phase (Phase 25) | Isolated, low-risk fix; folding into Phase 26 would obscure cleanup and make rollback harder | ✓ Good — v1.5 |
+| PRESET-01/02/03 grouped in Phase 26 | Three requirements are a single coherent feature; cannot be partially delivered | ✓ Good — v1.5 |
+| EDIT-01 folded into Phase 27 | Protocol extension has no observable behavior on its own; keeping Protocol + CLI + YAML writer together makes the first phase where rig edit runs end-to-end | ✓ Good — v1.5 |
+| EDIT-04/05 kept in Phase 27 with CLI | YAML writer is the most novel piece but inseparable from save/discard lifecycle | ✓ Good — v1.5 |
+| EDIT-03/06 in Phase 28 | Plugin implementations depend on Phase 27 Protocol and CLI being stable; isolated blast radius | ✓ Good — v1.5 |
+| Unbounded retry loop in AnalogDevice.apply() | Matches original prompt_analog() behavior; no max-retry limit added | ✓ Good — v1.5 |
+| Validation order: D-04 → D-05 → D-06 before MidiManager() | Pre-MIDI validation ensures no port opened on error; security mitigation T-26-01/03 | ✓ Good — v1.5 |
+| EditContext fields ordered matching DeviceApplyContext | Consistency; config_path, dry_run, confirmation_io, rig, then midi | ✓ Good — v1.5 |
+| EditContext.midi as optional last field | CC-based plugins need it; analog/hx don't; None default keeps backward compat | ✓ Good — v1.5 |
 
 ## Evolution
 
@@ -157,4 +177,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-17 — v1.5 milestone started*
+*Last updated: 2026-06-17 — v1.5 milestone complete*

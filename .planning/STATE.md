@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
-status: completed
-last_updated: "2026-06-17T00:00:00.000Z"
-last_activity: 2026-06-17 -- Phase 28 marked complete
+status: Awaiting next milestone
+last_updated: "2026-06-18T03:08:25.896Z"
+last_activity: 2026-06-18 — Milestone v1.5 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
@@ -24,12 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 
 ## Current Position
 
-Phase: 28 — COMPLETE
-Plan: 1 of 1
-Status: Phase 28 complete — milestone 100% done
-Last activity: 2026-06-17 -- Phase 28 marked complete
-
-Progress: [##########] 100% (4/4 phases complete)
+Phase: Milestone v1.5 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-18 — Milestone v1.5 completed and archived
 
 ## Performance Metrics
 
@@ -120,3 +118,7 @@ Progress: [##########] 100% (4/4 phases complete)
 | Validation | CBA validation skips already-saved presets (state-gating) — edited YAML params not re-validated until state reset | 🟡 Acknowledged | v1.3 |
 | Reset | `_send_reset_ccs()` lacks `connected_devices` gate — asymmetric with `_send_ccs()` (non-blocking, exceptions caught) | 🟡 Acknowledged | v1.3 |
 | I/O | AnalogApplier bypasses `ConfirmationIO` — `prompt_analog()` still calls `input()` directly | ✅ Scheduled Phase 25 | v1.4 |
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

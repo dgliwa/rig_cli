@@ -1,5 +1,17 @@
 # Milestones
 
+## v1.5 milestone (Shipped: 2026-06-18)
+
+**Phases completed:** 4 phases, 4 plans, 7 tasks
+
+**Key accomplishments:**
+
+- ConfirmationIO fully threaded through AnalogDevice.apply() — last raw input() call eliminated from all applier paths; prompt_analog() deleted; 3 tests migrated to InMemoryPromptAdapter
+- `apply_device_preset()` engine function + `--device`/`--preset` CLI flags for isolated single-device preset apply without scene-based plan.
+- EditorProtocol and EditContext protocol contract with ruamel.yaml round-trip write-back and `rig edit` CLI command dispatched via isinstance check on skeleton-stubbed CBA and HX Stomp devices.
+
+---
+
 ## v1.0 I/O Decoupling & Plugin Architecture (Shipped: 2026-06-07)
 
 **Phases completed:** 5 phases, 17 plans, 11 tasks
