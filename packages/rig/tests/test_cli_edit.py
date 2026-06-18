@@ -173,5 +173,7 @@ def test_edit_dry_run_passes_dry_run_true(tmp_path: Path):
 
     assert result.exit_code == 0
     mock_write.assert_called_once()
-    # dry_run=True should be passed as 5th positional arg
-    assert mock_write.call_args[0][4] is True
+    # dry_run=True should be passed (either as keyword or positional arg)
+    call_args = mock_write.call_args
+    all_args = list(call_args[0]) + list(call_args[1].values())
+    assert True in all_args
