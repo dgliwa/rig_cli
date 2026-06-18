@@ -51,6 +51,7 @@ def edit(
         dry_run=dry_run,
         confirmation_io=RichConfirmationIO(),
         rig=rig,
+        midi=None,
     )
 
     updated_values = device.edit(preset_id, ctx)

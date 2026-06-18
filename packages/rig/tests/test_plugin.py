@@ -462,11 +462,11 @@ def test_edit_context_is_not_pydantic_model() -> None:
     assert not issubclass(EditContext, BaseModel)
 
 
-def test_edit_context_has_four_fields() -> None:
+def test_edit_context_has_required_fields() -> None:
     from rig.engine.plugin import EditContext
 
     field_names = [f.name for f in dataclasses.fields(EditContext)]
-    assert field_names == ["config_path", "dry_run", "confirmation_io", "rig"]
+    assert field_names == ["config_path", "dry_run", "confirmation_io", "rig", "midi"]
 
 
 def test_edit_context_can_be_instantiated() -> None:

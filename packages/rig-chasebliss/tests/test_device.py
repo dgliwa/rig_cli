@@ -215,35 +215,48 @@ def test_from_raw_yaml_config_field_is_chase_bliss_config_instance():
 # ---------------------------------------------------------------------------
 
 
-def _make_edit_ctx():
-    """Build a minimal EditContext for testing."""
+class _StubIO:
+    def __init__(self, responses: list[str]) -> None:
+        self._responses = iter(responses)
+
+    def prompt(self, text: str) -> str:
+        return next(self._responses, "done")
+
+    def prompt_device(self, *args, **kwargs):
+        return "skip"
+
+    def prompt_mc6_navigate(self, *args, **kwargs):
+        return "skip"
+
+
+def _make_edit_ctx(responses: list[str] | None = None, midi=None):
     from pathlib import Path
 
     from rig.engine.plugin import EditContext
-    from rig.engine.ports import RichConfirmationIO
     from rig.models.rig import Rig
 
+    io = _StubIO(responses or []) if responses is not None else _StubIO([])
     return EditContext(
         config_path=Path("."),
         dry_run=False,
-        confirmation_io=RichConfirmationIO(),
+        confirmation_io=io,
         rig=Rig(name="test", signal_chain=[], devices={}),
+        midi=midi,
     )
 
 
-def _make_cba_device():
-    """Create a ChaseBlissDevice with one preset."""
+def _make_cba_device(model: str = "Mood MkII", parameters: dict | None = None):
     return ChaseBlissDevice.from_raw_yaml(
         {
             "id": "mood",
-            "name": "Mood MkII",
-            "config": {"type": "chase_bliss", "midi_channel": 1},
+            "name": model,
+            "config": {"type": "chase_bliss", "model": model, "midi_channel": 1},
             "presets": [
                 {
                     "id": "shimmer",
                     "name": "Shimmer Delay",
                     "preset_number": 1,
-                    "parameters": {},
+                    "parameters": parameters or {},
                 }
             ],
         }
@@ -257,19 +270,61 @@ def test_chase_bliss_device_satisfies_editor_protocol():
     assert isinstance(device, EditorProtocol)
 
 
-def test_chase_bliss_device_edit_returns_preset_dict():
-    device = _make_cba_device()
-    ctx = _make_edit_ctx()
+def test_chase_bliss_device_edit_done_returns_parameters():
+    device = _make_cba_device(parameters={"mix": 64})
+    ctx = _make_edit_ctx(responses=["done"])
     result = device.edit("shimmer", ctx)
     assert isinstance(result, dict)
-    assert result["id"] == "shimmer"
-    assert result["preset_number"] == 1
+    assert result["mix"] == 64
 
 
 def test_chase_bliss_device_edit_raises_for_unknown_preset():
     import pytest
 
     device = _make_cba_device()
-    ctx = _make_edit_ctx()
+    ctx = _make_edit_ctx(responses=["done"])
     with pytest.raises(ValueError, match="not found"):
         device.edit("nonexistent", ctx)
+
+
+def test_chase_bliss_edit_valid_entry_sends_cc():
+    from unittest.mock import MagicMock
+
+    midi_stub = MagicMock()
+    device = _make_cba_device()
+    ctx = _make_edit_ctx(responses=["mix 64", "done"], midi=midi_stub)
+    result = device.edit("shimmer", ctx)
+    midi_stub.send_control_change.assert_called_once()
+    call_args = midi_stub.send_control_change.call_args[0]
+    assert call_args[0] == "mood"
+    assert call_args[2] == 64
+    assert result["mix"] == 64
+
+
+def test_chase_bliss_edit_unknown_control_re_prompts():
+    from unittest.mock import MagicMock
+
+    midi_stub = MagicMock()
+    device = _make_cba_device()
+    ctx = _make_edit_ctx(responses=["bogus 64", "done"], midi=midi_stub)
+    result = device.edit("shimmer", ctx)
+    midi_stub.send_control_change.assert_not_called()
+    assert "bogus" not in result
+
+
+def test_chase_bliss_edit_out_of_range_re_prompts():
+    from unittest.mock import MagicMock
+
+    midi_stub = MagicMock()
+    device = _make_cba_device()
+    ctx = _make_edit_ctx(responses=["mix 999", "done"], midi=midi_stub)
+    result = device.edit("shimmer", ctx)
+    midi_stub.send_control_change.assert_not_called()
+    assert result.get("mix") != 999
+
+
+def test_chase_bliss_edit_no_midi_records_without_sending():
+    device = _make_cba_device()
+    ctx = _make_edit_ctx(responses=["mix 64", "done"], midi=None)
+    result = device.edit("shimmer", ctx)
+    assert result["mix"] == 64

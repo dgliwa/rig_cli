@@ -336,12 +336,71 @@ class ChaseBlissDevice(BaseModel):
             )
 
     def edit(self, preset_id: str, ctx: EditContext) -> dict[str, Any]:
-        """Skeleton editor stub — Phase 28 will add interactive editing."""
+        """Interactive CC-send editor loop for Chase Bliss Audio presets."""
+        preset = next((p for p in self.presets if p.id == preset_id), None)
+        if preset is None:
+            raise ValueError(f"Preset '{preset_id}' not found on device '{self.id}'")
+
+        controls = get_controls("Chase Bliss Audio", self.config.model or "")
+        active = [c for c in controls if c.midi_cc is not None]
+
         console.print(
-            f"Editor mode: {self.id}/{preset_id} "
-            "(no interactive editing available — Phase 28 will add this)"
+            f"Editing [bold]{self.id}/{preset_id}[/bold] — "
+            "type '<control> <value>' or 'done' to finish"
         )
-        for preset in self.presets:
-            if preset.id == preset_id:
-                return preset.model_dump()
-        raise ValueError(f"Preset '{preset_id}' not found on device '{self.id}'")
+        for c in active:
+            current = preset.parameters.get(c.name, c.default)
+            display = current if current is not None else "—"
+            console.print(f"  {c.name} (CC{c.midi_cc}, {c.min}–{c.max}, currently: {display})")
+
+        updated: dict[str, Any] = dict(preset.parameters)
+
+        while True:
+            raw = ctx.confirmation_io.prompt("> ")
+            if not raw or raw == "done":
+                break
+            parts = raw.split(None, 1)
+            if len(parts) != 2:
+                console.print("  [red]Usage: <control-name> <value>[/red]")
+                continue
+            control_name, raw_value = parts[0], parts[1]
+
+            ctrl = next((c for c in active if c.name.lower() == control_name.lower()), None)
+            if ctrl is None:
+                valid = ", ".join(c.name for c in active)
+                console.print(
+                    f"  [red]Unknown control '{control_name}'. Valid controls: {valid}[/red]"
+                )
+                continue
+
+            try:
+                parsed_value: Any = int(raw_value)
+            except ValueError:
+                if ctrl.positions:
+                    parsed_value = raw_value
+                else:
+                    console.print("  [red]Value must be a number[/red]")
+                    continue
+
+            errors = validate_cc_params({ctrl.name: parsed_value}, controls)
+            if errors:
+                for err in errors:
+                    console.print(f"  [red]{err}[/red]")
+                continue
+
+            cc_params = _get_cc_params({ctrl.name: parsed_value}, controls)
+            if ctx.midi is not None:
+                ctx.midi.send_control_change(
+                    self.id,
+                    cc_params[0]["cc"],
+                    cc_params[0]["value"],
+                    self.config.midi_channel or 1,
+                )
+            else:
+                console.print(
+                    "  [yellow]⚠[/yellow] No MIDI connection — value recorded but not sent live"
+                )
+
+            updated[ctrl.name] = parsed_value
+
+        return updated

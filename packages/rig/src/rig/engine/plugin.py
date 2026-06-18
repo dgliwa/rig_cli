@@ -193,6 +193,7 @@ class EditContext:
     dry_run: bool
     confirmation_io: ConfirmationIO
     rig: Rig
+    midi: MidiManager | None = None
 
 
 @runtime_checkable

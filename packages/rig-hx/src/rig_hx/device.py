@@ -171,10 +171,10 @@ class HXStompDevice(BaseModel):
             )
 
     def edit(self, preset_id: str, ctx: EditContext) -> dict[str, Any]:
-        """Skeleton editor stub — Phase 28 will add interactive editing."""
+        """HX editor stub — live patch editing is a future milestone."""
         console.print(
             f"Editor mode: {self.id}/{preset_id} "
-            "(no interactive editing available — Phase 28 will add this)"
+            "(no interactive editing available — HX live editing is a future milestone)"
         )
         for preset in self.presets:
             if preset.id == preset_id:

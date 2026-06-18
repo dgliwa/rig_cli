@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from rig.engine.plugin import EditContext
 
 from pydantic import BaseModel, ConfigDict, Field
 from rich.console import Console
@@ -84,3 +87,34 @@ class AnalogDevice(BaseModel):
             return DeviceApplyResult(
                 device=action.device, status="skipped", preset=action.preset_name
             )
+
+    def edit(self, preset_id: str, ctx: EditContext) -> dict[str, Any]:
+        """Analog editor loop — no MIDI; user sets knobs manually."""
+        preset = next((p for p in self.presets if p.id == preset_id), None)
+        if preset is None:
+            raise ValueError(f"Preset '{preset_id}' not found on device '{self.id}'")
+
+        console.print(
+            f"Editing [bold]{self.id}/{preset_id}[/bold] — type '<key> <value>' or 'done' to finish"
+        )
+        for key, value in preset.values.items():
+            console.print(f"  {key}: {value}")
+
+        updated: dict[str, Any] = dict(preset.values)
+
+        while True:
+            raw = ctx.confirmation_io.prompt("> ")
+            if not raw or raw == "done":
+                break
+            parts = raw.split(None, 1)
+            if len(parts) != 2:
+                console.print("  [red]Usage: <key> <value>[/red]")
+                continue
+            key, value = parts[0], parts[1]
+            if key not in preset.values:
+                valid = ", ".join(preset.values.keys())
+                console.print(f"  [red]Unknown key '{key}'. Valid keys: {valid}[/red]")
+                continue
+            updated[key] = value
+
+        return updated
