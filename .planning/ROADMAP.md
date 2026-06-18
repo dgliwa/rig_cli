@@ -177,5 +177,5 @@ Plans:
 | 24. Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction | v1.4 | 1/1 | Complete | 2026-06-17 |
 | 25. I/O Parity | v1.5 | 1/1 | Complete   | 2026-06-17 |
 | 26. Isolated Preset Apply | v1.5 | 1/1 | Complete   | 2026-06-17 |
-| 27. Editor Protocol, CLI Surface & YAML Writer | v1.5 | 0/? | Not started | - |
+| 27. Editor Protocol, CLI Surface & YAML Writer | v1.5 | 1/1 | Complete   | 2026-06-18 |
 | 28. Editor Plugin Implementations | v1.5 | 0/? | Not started | - |

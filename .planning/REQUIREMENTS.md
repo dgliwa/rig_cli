@@ -18,11 +18,11 @@
 
 ### Editor Mode
 
-- [ ] **EDIT-01**: Device Protocol gains an `edit(preset_id, ctx)` method (or companion Protocol) — each plugin owns its interactive editing behavior
-- [ ] **EDIT-02**: User can run `rig edit <device-id> <preset-id>` to enter editor mode for a device's preset
+- [x] **EDIT-01**: Device Protocol gains an `edit(preset_id, ctx)` method (or companion Protocol) — each plugin owns its interactive editing behavior
+- [x] **EDIT-02**: User can run `rig edit <device-id> <preset-id>` to enter editor mode for a device's preset
 - [ ] **EDIT-03**: During editor mode, CC-based plugins send live CC values to the device as values are changed interactively
-- [ ] **EDIT-04**: When the user saves, editor mode writes updated preset values back to `rig.yaml`
-- [ ] **EDIT-05**: When the user discards, `rig.yaml` is unchanged
+- [x] **EDIT-04**: When the user saves, editor mode writes updated preset values back to `rig.yaml`
+- [x] **EDIT-05**: When the user discards, `rig.yaml` is unchanged
 - [ ] **EDIT-06**: Analog plugin editor mode presents a prompt-per-control flow (no live MIDI — manual set); plugin owns this behavior
 
 ## Future Requirements
@@ -52,10 +52,10 @@
 | PRESET-01 | Phase 26 | Pending |
 | PRESET-02 | Phase 26 | Pending |
 | PRESET-03 | Phase 26 | Pending |
-| EDIT-01 | Phase 27 | Pending |
-| EDIT-02 | Phase 27 | Pending |
-| EDIT-04 | Phase 27 | Pending |
-| EDIT-05 | Phase 27 | Pending |
+| EDIT-01 | Phase 27 | Complete |
+| EDIT-02 | Phase 27 | Complete |
+| EDIT-04 | Phase 27 | Complete |
+| EDIT-05 | Phase 27 | Complete |
 | EDIT-03 | Phase 28 | Pending |
 | EDIT-06 | Phase 28 | Pending |
 
