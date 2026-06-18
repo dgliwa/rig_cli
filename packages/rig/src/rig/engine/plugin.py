@@ -31,6 +31,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Protocol, Self, runtime_checkable
 
 from pydantic import BaseModel
@@ -178,3 +179,27 @@ class Device(Protocol):
     def get_scene_pc_command(self, preset_id: str) -> dict[str, Any] | None: ...
 
     def apply(self, ctx: DeviceApplyContext) -> DeviceApplyResult: ...
+
+
+@dataclass
+class EditContext:
+    """Context passed to EditorProtocol.edit() during preset editing.
+
+    Uses string annotations for ConfirmationIO and Rig due to TYPE_CHECKING
+    guard — from __future__ import annotations ensures they resolve correctly.
+    """
+
+    config_path: Path
+    dry_run: bool
+    confirmation_io: ConfirmationIO
+    rig: Rig
+
+
+@runtime_checkable
+class EditorProtocol(Protocol):
+    """Companion protocol for devices that support interactive preset editing.
+
+    Implement alongside Device — do not add edit() to Device.
+    """
+
+    def edit(self, preset_id: str, ctx: EditContext) -> dict[str, Any]: ...
