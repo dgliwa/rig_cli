@@ -7,7 +7,7 @@
 - ✅ **v1.2 Cleaner Core** — Phases 9-13 (shipped 2026-06-08)
 - ✅ **v1.3 Chase Bliss Pedal Support** — Phases 14-19 (shipped 2026-06-10)
 - ✅ **v1.4 Architecture & Type Integrity** — Phases 20-24 (shipped 2026-06-17)
-- 🔄 **v1.5 Interactive Preset Management** — Phases 25-28 (in progress)
+- ✅ **v1.5 Interactive Preset Management** — Phases 25-28 (shipped 2026-06-17)
 
 ## Phases
 
@@ -66,11 +66,11 @@
 </details>
 
 <details open>
-<summary>🔄 v1.5 Interactive Preset Management (Phases 25-28) — IN PROGRESS</summary>
+<summary>✅ v1.5 Interactive Preset Management (Phases 25-28) — SHIPPED 2026-06-17</summary>
 
-- [ ] **Phase 25: I/O Parity** - Thread ConfirmationIO through AnalogApplier; update tests to use InMemoryPromptAdapter
-- [ ] **Phase 26: Isolated Preset Apply** - `rig apply --device <id> --preset <id>` applies one device's preset without full scene setup
-- [ ] **Phase 27: Editor Protocol, CLI Surface & YAML Writer** - `rig edit` command, save/discard lifecycle, and rig.yaml preset writer
+- [x] **Phase 25: I/O Parity** - Thread ConfirmationIO through AnalogApplier; update tests to use InMemoryPromptAdapter — Completed 2026-06-17
+- [x] **Phase 26: Isolated Preset Apply** - `rig apply --device <id> --preset <id>` applies one device's preset without full scene setup — Completed 2026-06-17
+- [x] **Phase 27: Editor Protocol, CLI Surface & YAML Writer** - `rig edit` command, save/discard lifecycle, and rig.yaml preset writer — Completed 2026-06-17
 - [x] **Phase 28: Editor Plugin Implementations** - CC-based live MIDI editing (CBA/MIDI/HX) and analog prompt-per-control flow — Completed 2026-06-17
 
 </details>
@@ -145,7 +145,7 @@ Plans:
 
 Plans:
 
-- [ ] 25-01-PLAN.md — Thread ConfirmationIO through AnalogDevice.apply(), delete prompt_analog(), migrate 3 tests
+- [x] 28-01-PLAN.md — CBA live editor (CC send), Analog key-value editor, HX stub, EditContext.midi field
 
 ## Progress
 
@@ -178,4 +178,4 @@ Plans:
 | 25. I/O Parity | v1.5 | 1/1 | Complete   | 2026-06-17 |
 | 26. Isolated Preset Apply | v1.5 | 1/1 | Complete   | 2026-06-17 |
 | 27. Editor Protocol, CLI Surface & YAML Writer | v1.5 | 1/1 | Complete   | 2026-06-18 |
-| 28. Editor Plugin Implementations | v1.5 | 0/? | Not started | - |
+| 28. Editor Plugin Implementations | v1.5 | 1/1 | Complete | 2026-06-17 |

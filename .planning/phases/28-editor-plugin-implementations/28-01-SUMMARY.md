@@ -3,6 +3,8 @@ phase: 28-editor-plugin-implementations
 plan: 01
 status: completed
 commit: f7428da
+
+requirements-completed: [EDIT-03, EDIT-06]
 ---
 
 # Summary: Phase 28-01 — Editor Plugin Implementations

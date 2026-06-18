@@ -27,6 +27,8 @@ metrics:
   completed: "2026-06-17"
   tasks_completed: 2
   files_changed: 4
+
+requirements-completed: [PRESET-01, PRESET-02, PRESET-03]
 ---
 
 # Phase 26 Plan 01: Isolated Preset Apply Summary

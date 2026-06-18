@@ -12,18 +12,18 @@
 
 ### Isolated Preset Apply
 
-- [ ] **PRESET-01**: User can run `rig apply --device <id> --preset <id>` to apply one device's preset without triggering full scene setup
-- [ ] **PRESET-02**: When `--device` and `--preset` flags are given, apply skips all other devices
-- [ ] **PRESET-03**: `rig apply --device <id> --preset <id>` updates `state.json` for the targeted device only
+- [x] **PRESET-01**: User can run `rig apply --device <id> --preset <id>` to apply one device's preset without triggering full scene setup
+- [x] **PRESET-02**: When `--device` and `--preset` flags are given, apply skips all other devices
+- [x] **PRESET-03**: `rig apply --device <id> --preset <id>` updates `state.json` for the targeted device only
 
 ### Editor Mode
 
 - [x] **EDIT-01**: Device Protocol gains an `edit(preset_id, ctx)` method (or companion Protocol) — each plugin owns its interactive editing behavior
 - [x] **EDIT-02**: User can run `rig edit <device-id> <preset-id>` to enter editor mode for a device's preset
-- [ ] **EDIT-03**: During editor mode, CC-based plugins send live CC values to the device as values are changed interactively
+- [x] **EDIT-03**: During editor mode, CC-based plugins send live CC values to the device as values are changed interactively
 - [x] **EDIT-04**: When the user saves, editor mode writes updated preset values back to `rig.yaml`
 - [x] **EDIT-05**: When the user discards, `rig.yaml` is unchanged
-- [ ] **EDIT-06**: Analog plugin editor mode presents a prompt-per-control flow (no live MIDI — manual set); plugin owns this behavior
+- [x] **EDIT-06**: Analog plugin editor mode presents a prompt-per-control flow (no live MIDI — manual set); plugin owns this behavior
 
 ## Future Requirements
 
@@ -49,15 +49,15 @@
 |-------------|-------|--------|
 | IO-01 | Phase 25 | Complete |
 | IO-02 | Phase 25 | Complete |
-| PRESET-01 | Phase 26 | Pending |
-| PRESET-02 | Phase 26 | Pending |
-| PRESET-03 | Phase 26 | Pending |
+| PRESET-01 | Phase 26 | Complete |
+| PRESET-02 | Phase 26 | Complete |
+| PRESET-03 | Phase 26 | Complete |
 | EDIT-01 | Phase 27 | Complete |
 | EDIT-02 | Phase 27 | Complete |
 | EDIT-04 | Phase 27 | Complete |
 | EDIT-05 | Phase 27 | Complete |
-| EDIT-03 | Phase 28 | Pending |
-| EDIT-06 | Phase 28 | Pending |
+| EDIT-03 | Phase 28 | Complete |
+| EDIT-06 | Phase 28 | Complete |
 
 **Coverage:**
 
@@ -67,4 +67,4 @@
 
 ---
 *Requirements defined: 2026-06-17*
-*Last updated: 2026-06-17 — phase mappings added after roadmap creation*
+*Last updated: 2026-06-17 — v1.5 requirements all complete; checkboxes and traceability updated*

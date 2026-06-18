@@ -50,6 +50,8 @@ metrics:
   tasks_completed: 4
   files_created: 4
   files_modified: 9
+
+requirements-completed: [EDIT-01, EDIT-02, EDIT-04, EDIT-05]
 ---
 
 # Phase 27 Plan 01: EditorProtocol + YAML Writer + CLI Edit Summary
