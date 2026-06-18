@@ -9,4 +9,6 @@ build/
 .venv/
 *.egg/
 .DS_Store
+midi-manuals/
 .claude/settings.local.json
+.claude/worktrees/
