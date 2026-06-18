@@ -380,3 +380,107 @@ def test_all_plugin_devices_satisfy_preset_field_is_not_list_any() -> None:
     for cls in (AnalogDevice, ChaseBlissDevice, HXStompDevice, MC6Device):
         ann = cls.__annotations__.get("presets", "")
         assert "Any" not in str(ann), f"{cls.__name__}.presets should not be list[Any]"
+
+
+# ---------------------------------------------------------------------------
+# EditorProtocol tests
+# ---------------------------------------------------------------------------
+
+
+def test_editor_protocol_is_importable() -> None:
+    from rig.engine.plugin import EditorProtocol
+
+    assert EditorProtocol is not None
+
+
+def test_editor_protocol_is_runtime_checkable() -> None:
+    import typing
+
+    from rig.engine.plugin import EditorProtocol
+
+    assert issubclass(EditorProtocol, typing.Protocol)
+
+
+def test_editor_protocol_has_edit_method() -> None:
+    from rig.engine.plugin import EditorProtocol
+
+    assert hasattr(EditorProtocol, "edit")
+
+
+def test_editor_protocol_satisfied_by_class_with_edit_method() -> None:
+    from rig.engine.plugin import EditorProtocol
+
+    class GoodEditor:
+        def edit(self, preset_id: str, ctx: object) -> dict:
+            return {}
+
+    assert isinstance(GoodEditor(), EditorProtocol)
+
+
+def test_editor_protocol_not_satisfied_by_class_without_edit_method() -> None:
+    from rig.engine.plugin import EditorProtocol
+
+    class NoEdit:
+        def apply(self, ctx: object) -> object:
+            return None
+
+    assert not isinstance(NoEdit(), EditorProtocol)
+
+
+def test_device_protocol_has_no_edit_method() -> None:
+    """Device Protocol is unchanged — edit() must NOT be added to Device."""
+    from rig.engine.plugin import Device
+
+    assert not hasattr(Device, "edit"), "Device Protocol must not have an edit() method"
+
+
+# ---------------------------------------------------------------------------
+# EditContext tests
+# ---------------------------------------------------------------------------
+
+
+def test_edit_context_is_importable() -> None:
+    from rig.engine.plugin import EditContext
+
+    assert EditContext is not None
+
+
+def test_edit_context_is_dataclass() -> None:
+    from pydantic import BaseModel
+
+    from rig.engine.plugin import EditContext
+
+    assert dataclasses.is_dataclass(EditContext)
+    assert not isinstance(EditContext, type(BaseModel))
+
+
+def test_edit_context_is_not_pydantic_model() -> None:
+    from pydantic import BaseModel
+
+    from rig.engine.plugin import EditContext
+
+    assert not issubclass(EditContext, BaseModel)
+
+
+def test_edit_context_has_four_fields() -> None:
+    from rig.engine.plugin import EditContext
+
+    field_names = [f.name for f in dataclasses.fields(EditContext)]
+    assert field_names == ["config_path", "dry_run", "confirmation_io", "rig"]
+
+
+def test_edit_context_can_be_instantiated() -> None:
+    from pathlib import Path
+
+    from rig.engine.plugin import EditContext
+    from rig.engine.ports import RichConfirmationIO
+    from rig.models.rig import Rig
+
+    ctx = EditContext(
+        config_path=Path("."),
+        dry_run=False,
+        confirmation_io=RichConfirmationIO(),
+        rig=Rig(name="test", signal_chain=[], devices={}),
+    )
+    assert ctx.dry_run is False
+    assert ctx.config_path == Path(".")
