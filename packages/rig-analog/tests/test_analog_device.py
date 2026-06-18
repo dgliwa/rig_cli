@@ -53,3 +53,12 @@ def test_analog_device_config_is_analog_config_instance():
 
     device = AnalogDevice.from_raw_yaml({"id": "fuzz", "config": {"type": "manual"}})
     assert isinstance(device.config, AnalogConfig)
+
+
+def test_analog_device_does_not_implement_editor_protocol():
+    """AnalogDevice must NOT implement EditorProtocol in Phase 27 (D-09)."""
+    from rig.engine.plugin import EditorProtocol
+    from rig_analog.device import AnalogDevice
+
+    device = AnalogDevice.from_raw_yaml({"id": "reverb", "config": {"type": "manual"}})
+    assert not isinstance(device, EditorProtocol)

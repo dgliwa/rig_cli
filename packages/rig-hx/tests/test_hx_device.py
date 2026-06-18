@@ -54,3 +54,67 @@ def test_from_raw_yaml_invalid_midi_channel_raises():
 def test_config_is_hxstomp_config_instance():
     device = HXStompDevice.from_raw_yaml({"id": "hx", "config": {"type": "midi"}})
     assert isinstance(device.config, HXStompConfig)
+
+
+# ---------------------------------------------------------------------------
+# EditorProtocol skeleton tests
+# ---------------------------------------------------------------------------
+
+
+def _make_edit_ctx():
+    """Build a minimal EditContext for testing."""
+    from pathlib import Path
+
+    from rig.engine.plugin import EditContext
+    from rig.engine.ports import RichConfirmationIO
+    from rig.models.rig import Rig
+
+    return EditContext(
+        config_path=Path("."),
+        dry_run=False,
+        confirmation_io=RichConfirmationIO(),
+        rig=Rig(name="test", signal_chain=[], devices={}),
+    )
+
+
+def _make_hx_device():
+    """Create an HXStompDevice with one preset."""
+    return HXStompDevice.from_raw_yaml(
+        {
+            "id": "hx-stomp",
+            "name": "HX Stomp",
+            "type": "modeler",
+            "config": {"type": "midi", "midi_channel": 1},
+            "presets": [
+                {
+                    "id": "clean",
+                    "name": "Clean Tone",
+                    "preset_number": 1,
+                    "hlx_file": "hlx/clean.hlx",
+                }
+            ],
+        }
+    )
+
+
+def test_hx_stomp_device_satisfies_editor_protocol():
+    from rig.engine.plugin import EditorProtocol
+
+    device = _make_hx_device()
+    assert isinstance(device, EditorProtocol)
+
+
+def test_hx_stomp_device_edit_returns_preset_dict():
+    device = _make_hx_device()
+    ctx = _make_edit_ctx()
+    result = device.edit("clean", ctx)
+    assert isinstance(result, dict)
+    assert result["id"] == "clean"
+    assert result["preset_number"] == 1
+
+
+def test_hx_stomp_device_edit_raises_for_unknown_preset():
+    device = _make_hx_device()
+    ctx = _make_edit_ctx()
+    with pytest.raises(ValueError, match="not found"):
+        device.edit("nonexistent", ctx)
