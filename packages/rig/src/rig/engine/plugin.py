@@ -70,6 +70,7 @@ class SetupContext:
     midi: MidiManager | None = None
     connected_devices: set[str] = field(default_factory=set)
     config_path: str | None = None
+    target_scene: str | None = None
 
 
 @dataclass

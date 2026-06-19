@@ -118,10 +118,16 @@ logger = logging.getLogger(__name__)
 console = Console()
 
 
-def _detect_cba_setup_for_device(device: ChaseBlissDevice, state: RigState, rig: Rig) -> list[Any]:
+def _detect_cba_setup_for_device(
+    device: ChaseBlissDevice,
+    state: RigState,
+    rig: Rig,
+    target_preset_ids: set[str] | None = None,
+) -> list[Any]:
     """Detect which CBA setup actions are needed for this device.
 
     Checks state for channel establishment, saved presets, and scene registration.
+    When target_preset_ids is given, only builds presets in that set.
     """
     from rig_chasebliss.models import CbaSetupAction
 
@@ -136,6 +142,8 @@ def _detect_cba_setup_for_device(device: ChaseBlissDevice, state: RigState, rig:
     errors: list[str] = []
 
     for preset in [p for p in device.presets if hasattr(p, "preset_number")]:
+        if target_preset_ids is not None and preset.id not in target_preset_ids:
+            continue
         if not ds.presets_saved.get(preset.id):
             param_errors = validate_cc_params(preset.parameters, controls)
             for err in param_errors:
@@ -229,7 +237,14 @@ class ChaseBlissDevice(BaseModel):
         if ctx.rig is None:
             return SetupResult(state_modified=state_modified)
 
-        actions = _detect_cba_setup_for_device(self, ctx.state, ctx.rig)
+        target_preset_ids: set[str] | None = None
+        if ctx.target_scene is not None:
+            scene = ctx.rig.scenes.get(ctx.target_scene)
+            if scene is not None:
+                pid = scene.presets.get(self.id)
+                target_preset_ids = {pid} if pid else set()
+
+        actions = _detect_cba_setup_for_device(self, ctx.state, ctx.rig, target_preset_ids)
         if not actions:
             return SetupResult(state_modified=state_modified)
 

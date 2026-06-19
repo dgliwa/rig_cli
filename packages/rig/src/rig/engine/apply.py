@@ -77,6 +77,7 @@ def apply_plan(
             midi=midi,
             config_path=config_path,
             connected_devices=connected_devices,
+            target_scene=scene,
         )
         for _device_id, device in rig.devices.items():
             result = device.setup(setup_ctx)
