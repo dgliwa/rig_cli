@@ -54,9 +54,13 @@ def write_preset(
         console.print(f"[dim]Would write: {device_id}/{preset_id} with {updated_values}[/dim]")
         return
 
-    # Merge updated values in-place (preserves surrounding comments)
+    # Route each key: into parameters if it lives there, otherwise top-level
+    params = preset_dict.get("parameters") or {}
     for key, value in updated_values.items():
-        preset_dict[key] = value
+        if key in params:
+            preset_dict["parameters"][key] = value
+        else:
+            preset_dict[key] = value
 
     with config_path.open("w") as f:
         yaml.dump(data, f)
