@@ -13,6 +13,7 @@ from rig.config.yaml_writer import write_preset
 from rig.engine.plugin import EditContext, EditorProtocol
 from rig.engine.ports import RichConfirmationIO
 from rig.log_setup import setup_logging
+from rig.midi.adapter import MidiManager
 
 
 @app.command()
@@ -46,19 +47,24 @@ def edit(
         console.print(f"Device '{device_id}' does not support editing.")
         return
 
+    midi = MidiManager() if not dry_run else None
     ctx = EditContext(
         config_path=Path(config) / "rig.yaml",
         dry_run=dry_run,
         confirmation_io=RichConfirmationIO(),
         rig=rig,
-        midi=None,
+        midi=midi,
     )
 
-    updated_values = device.edit(preset_id, ctx)
+    try:
+        updated_values = device.edit(preset_id, ctx)
 
-    response = ctx.confirmation_io.prompt("Save changes? [y/N] ")
-    if response.lower() in ("y", "yes"):
-        write_preset(ctx.config_path, device_id, preset_id, updated_values, dry_run=dry_run)
-        console.print("[green]✓[/green] Preset saved.")
-    else:
-        console.print("Changes discarded.")
+        response = ctx.confirmation_io.prompt("Save changes? [y/N] ")
+        if response.lower() in ("y", "yes"):
+            write_preset(ctx.config_path, device_id, preset_id, updated_values, dry_run=dry_run)
+            console.print("[green]✓[/green] Preset saved.")
+        else:
+            console.print("Changes discarded.")
+    finally:
+        if midi is not None:
+            midi.disconnect_all()
