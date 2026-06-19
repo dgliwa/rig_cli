@@ -288,12 +288,13 @@ def test_chase_bliss_device_edit_raises_for_unknown_preset():
 
 
 def test_chase_bliss_edit_valid_entry_sends_cc():
-    from unittest.mock import MagicMock
+    from unittest.mock import MagicMock, patch
 
     midi_stub = MagicMock()
     device = _make_cba_device()
     ctx = _make_edit_ctx(responses=["mix 64", "done"], midi=midi_stub)
-    result = device.edit("shimmer", ctx)
+    with patch("rig.interaction.midi.prompt_midi_connect", return_value=("confirm", "test-port")):
+        result = device.edit("shimmer", ctx)
     midi_stub.send_control_change.assert_called_once()
     call_args = midi_stub.send_control_change.call_args[0]
     assert call_args[0] == "mood"
@@ -302,23 +303,25 @@ def test_chase_bliss_edit_valid_entry_sends_cc():
 
 
 def test_chase_bliss_edit_unknown_control_re_prompts():
-    from unittest.mock import MagicMock
+    from unittest.mock import MagicMock, patch
 
     midi_stub = MagicMock()
     device = _make_cba_device()
     ctx = _make_edit_ctx(responses=["bogus 64", "done"], midi=midi_stub)
-    result = device.edit("shimmer", ctx)
+    with patch("rig.interaction.midi.prompt_midi_connect", return_value=("confirm", "test-port")):
+        result = device.edit("shimmer", ctx)
     midi_stub.send_control_change.assert_not_called()
     assert "bogus" not in result
 
 
 def test_chase_bliss_edit_out_of_range_re_prompts():
-    from unittest.mock import MagicMock
+    from unittest.mock import MagicMock, patch
 
     midi_stub = MagicMock()
     device = _make_cba_device()
     ctx = _make_edit_ctx(responses=["mix 999", "done"], midi=midi_stub)
-    result = device.edit("shimmer", ctx)
+    with patch("rig.interaction.midi.prompt_midi_connect", return_value=("confirm", "test-port")):
+        result = device.edit("shimmer", ctx)
     midi_stub.send_control_change.assert_not_called()
     assert result.get("mix") != 999
 

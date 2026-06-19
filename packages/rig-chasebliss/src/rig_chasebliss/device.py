@@ -356,6 +356,14 @@ class ChaseBlissDevice(BaseModel):
         if preset is None:
             raise ValueError(f"Preset '{preset_id}' not found on device '{self.id}'")
 
+        if ctx.midi is not None:
+            from rig.interaction.midi import prompt_midi_connect
+
+            ch = self.config.midi_channel or 1
+            result, _ = prompt_midi_connect(self.id, ch, ctx.midi, None)
+            if result != "confirm":
+                return {}
+
         controls = get_controls("Chase Bliss Audio", self.config.model or "")
         active = [c for c in controls if c.midi_cc is not None]
 
