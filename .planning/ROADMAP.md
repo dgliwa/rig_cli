@@ -132,6 +132,7 @@ Plans:
 
 **Plans**: 1 plan
 Plans:
+
 - [x] 30-01-PLAN.md — Fix analog VERIFY assignment, apply auto-confirm, and plan display
 
 ### Phase 31: MC6 Clear SysEx Fix
@@ -362,7 +363,7 @@ Plans:
 | 29. Catalog Integrity | v1.6 | 1/1 | Complete   | 2026-06-22 |
 | 30. State Tracking Completeness | v1.6 | 1/1 | Complete | 2026-06-22 |
 | 31. MC6 Clear SysEx Fix | v1.6 | 0/1 | Pending | — |
-| 32. Per-Parameter Plan Diffs | v1.6 | 0/1 | Pending | — |
+| 32. Per-Parameter Plan Diffs | v1.6 | 1/1 | Complete   | 2026-06-22 |
 | 33. Apply-01/02 Completions | v1.6 | 0/1 | Pending | — |
 | 34. First-Class Scenes | v2.0 | 0/2 | Pending | — |
 | 35. State Schema Versioning | v2.0 | 0/1 | Pending | — |
