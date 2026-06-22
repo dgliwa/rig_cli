@@ -116,7 +116,8 @@
 **Plans**: 1 plan
 
 Plans:
-- [ ] 29-01-PLAN.md — Fix CC swap in catalog.py; add named constants; update both test files to reference constants
+
+- [x] 29-01-PLAN.md — Fix CC swap in catalog.py; add named constants; update both test files to reference constants
 
 ### Phase 30: State Tracking Completeness
 
@@ -356,7 +357,7 @@ Plans:
 | 26. Isolated Preset Apply | v1.5 | 1/1 | Complete   | 2026-06-17 |
 | 27. Editor Protocol, CLI Surface & YAML Writer | v1.5 | 1/1 | Complete   | 2026-06-18 |
 | 28. Editor Plugin Implementations | v1.5 | 1/1 | Complete | 2026-06-17 |
-| 29. Catalog Integrity | v1.6 | 0/1 | Pending | — |
+| 29. Catalog Integrity | v1.6 | 1/1 | Complete   | 2026-06-22 |
 | 30. State Tracking Completeness | v1.6 | 0/1 | Pending | — |
 | 31. MC6 Clear SysEx Fix | v1.6 | 0/1 | Pending | — |
 | 32. Per-Parameter Plan Diffs | v1.6 | 0/1 | Pending | — |

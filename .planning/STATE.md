@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: milestone
-status: Awaiting next milestone
-last_updated: "2026-06-18T03:08:25.896Z"
-last_activity: 2026-06-18 — Milestone v1.5 completed and archived
+milestone: v1.6
+milestone_name: — Correctness & State Reliability
+status: planning
+last_updated: "2026-06-22T12:00:32.892Z"
+last_activity: 2026-06-21 — v1.6 and v2.0 milestones planned from critical assessment of codebase
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 5
+  completed_plans: 5
   percent: 100
 ---
 
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 
 ## Current Position
 
-Phase: Milestone v1.5 complete
+Phase: v1.6 — Phase 29: Catalog Integrity (not started)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-18 — Milestone v1.5 completed and archived
+Status: Planning — phases 29-33 (v1.6) and 34-39 (v2.0) roadmapped; ready to plan Phase 29
+Last activity: 2026-06-21 — v1.6 and v2.0 milestones planned from critical assessment of codebase
 
 ## Performance Metrics
 
@@ -121,4 +121,7 @@ Last activity: 2026-06-18 — Milestone v1.5 completed and archived
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Run `/gsd-plan-phase 29` to create the Phase 29 (Catalog Integrity) plan — first thing that unblocks everything else
+- Phase 29 is the unlock: 2 test failures must be clean before v1.6 is credible
+- v1.6 goal: correctness and trustworthy state before sharing the tool with anyone
+- v2.0 goal: scene decoupling + PyPI + plugin authoring guide = shareable platform
