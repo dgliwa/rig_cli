@@ -445,3 +445,57 @@ devices:
         # No param name sub-lines expected — just assert no '→' in param context
         lines = [line for line in result.output.splitlines() if "→" in line]
         assert len(lines) == 0, f"HX Stomp should produce no param diff lines, got: {lines}"
+
+
+class TestPlanJsonParamDiff:
+    """PLAN-32: --format json includes param_diff field on every DeviceAction."""
+
+    def test_json_output_includes_param_diff_field(self, tmp_path: Path) -> None:
+        """param_diff key present on every device_action in JSON output."""
+        _write_minimal_digital_rig(tmp_path)
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path), "--format", "json"])
+        assert result.exit_code in (0, 2), f"Unexpected exit code: {result.exit_code}"
+        data = json.loads(result.output)
+        for scene in data["scenes"].values():
+            for action in scene["device_actions"]:
+                assert "param_diff" in action, (
+                    f"DeviceAction for '{action['device']}' missing 'param_diff' key in JSON output"
+                )
+
+    def test_json_param_diff_populated_for_analog_action(self, tmp_path: Path) -> None:
+        """Analog action with parameters yields populated param_diff list in JSON."""
+        _write_analog_rig_with_params(tmp_path)
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path), "--format", "json"])
+        data = json.loads(result.output)
+        scene = data["scenes"]["main"]
+        tumnus_action = next(a for a in scene["device_actions"] if a["device"] == "tumnus")
+        assert tumnus_action["status"] == "analog"
+        assert len(tumnus_action["param_diff"]) == 2
+        diff_names = {d["name"] for d in tumnus_action["param_diff"]}
+        assert "gain" in diff_names
+        assert "tone" in diff_names
+        gain_diff = next(d for d in tumnus_action["param_diff"] if d["name"] == "gain")
+        assert gain_diff["before"] is None
+        assert gain_diff["after"] == 8.0
+
+    def test_json_param_diff_empty_for_verify_action(self, tmp_path: Path) -> None:
+        """VERIFY actions always have empty param_diff in JSON output."""
+        _write_minimal_digital_rig(tmp_path)
+        _write_state_matching_rig(tmp_path)
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path), "--format", "json"])
+        data = json.loads(result.output)
+        for scene in data["scenes"].values():
+            for action in scene["device_actions"]:
+                if action["status"] == "verify":
+                    assert action["param_diff"] == [], (
+                        f"VERIFY action for '{action['device']}' must have empty param_diff"
+                    )
+
+    def test_json_param_diff_empty_for_hx_stomp(self, tmp_path: Path) -> None:
+        """HX Stomp configure actions always have empty param_diff in JSON output."""
+        _write_minimal_digital_rig(tmp_path)
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path), "--format", "json"])
+        data = json.loads(result.output)
+        scene = data["scenes"]["main"]
+        hx_action = next(a for a in scene["device_actions"] if a["device"] == "hx-stomp")
+        assert hx_action["param_diff"] == []
