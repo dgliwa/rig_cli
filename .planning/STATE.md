@@ -7,9 +7,9 @@ last_updated: "2026-06-22T12:02:34.471Z"
 last_activity: 2026-06-21 — v1.6 and v2.0 milestones planned from critical assessment of codebase
 progress:
   total_phases: 5
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 5
-  completed_plans: 5
+  completed_plans: 6
   percent: 100
 ---
 
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 
 ## Current Position
 
-Phase: v1.6 — Phase 30: State Tracking (not started)
+Phase: v1.6 — Phase 31: MC6 Clear SysEx Fix (not started)
 Plan: —
-Status: In progress — Phase 29 complete; ready to plan Phase 30
-Last activity: 2026-06-22 — Phase 29 (Catalog Integrity) complete; 367 tests pass; named CC constants added to CBA catalog
+Status: In progress — Phase 30 complete; ready to plan Phase 31
+Last activity: 2026-06-22 — Phase 30 (State Tracking Completeness) complete; 372 tests pass; analog VERIFY/ANALOG fix in compute.py, apply.py, plan.py
 
 ## Performance Metrics
 

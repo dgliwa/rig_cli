@@ -81,7 +81,7 @@
 <summary>🔴 v1.6 Correctness & State Reliability (Phases 29-33) — IN PROGRESS</summary>
 
 - [x] **Phase 29: Catalog Integrity** — fix wet_bypass/loop_bypass CC mismatch; establish catalog as the single source of truth with CI-enforced tests
-- [ ] **Phase 30: State Tracking Completeness** — `state.json` tracks actual preset changes per device, not just scene-level apply events (#22)
+- [x] **Phase 30: State Tracking Completeness** — `state.json` tracks actual preset changes per device, not just scene-level apply events (#22)
 - [ ] **Phase 31: MC6 Clear SysEx Fix** — emulate the "clear" message sent by MC6 web UI when clearing a preset slot (#17)
 - [ ] **Phase 32: Per-Parameter Plan Diffs (PLAN-01/02)** — `rig plan` shows before/after CC values and knob positions per device-action, not just "changed"
 - [ ] **Phase 33: Apply-01/02 Completions** — skip analog prompt when state already shows desired preset; `--device` flag applies single device across all scenes
@@ -132,7 +132,7 @@ Plans:
 
 **Plans**: 1 plan
 Plans:
-- [ ] 30-01-PLAN.md — Fix analog VERIFY assignment, apply auto-confirm, and plan display
+- [x] 30-01-PLAN.md — Fix analog VERIFY assignment, apply auto-confirm, and plan display
 
 ### Phase 31: MC6 Clear SysEx Fix
 
@@ -360,7 +360,7 @@ Plans:
 | 27. Editor Protocol, CLI Surface & YAML Writer | v1.5 | 1/1 | Complete   | 2026-06-18 |
 | 28. Editor Plugin Implementations | v1.5 | 1/1 | Complete | 2026-06-17 |
 | 29. Catalog Integrity | v1.6 | 1/1 | Complete   | 2026-06-22 |
-| 30. State Tracking Completeness | v1.6 | 0/1 | Pending | — |
+| 30. State Tracking Completeness | v1.6 | 1/1 | Complete | 2026-06-22 |
 | 31. MC6 Clear SysEx Fix | v1.6 | 0/1 | Pending | — |
 | 32. Per-Parameter Plan Diffs | v1.6 | 0/1 | Pending | — |
 | 33. Apply-01/02 Completions | v1.6 | 0/1 | Pending | — |

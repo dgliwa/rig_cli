@@ -59,11 +59,19 @@ A single command should bring the physical rig to the exact state described in t
 
 ### Active
 
-- [ ] **PKG-07**: Plugin authoring docs — how to write a new plugin package
-- [ ] **APPLY-01**: `rig apply` skips the manual knob prompt for an analog device when `state.json` already records that device in the desired preset
-- [ ] **APPLY-02**: `rig apply --device <id>` applies only the named device's actions across all scenes
+- [ ] **CAT-01**: CBA control catalog is the single authoritative source for CC numbers; tests derive from catalog constants, not duplicated literals; wet_bypass/loop_bypass CC numbers verified against Mood MkII MIDI spec
+- [ ] **STATE-01**: `state.json` tracks per-device `last_preset` accurately after every apply; `rig plan` uses this to suppress false-positive "changed" signals
+- [ ] **STATE-02**: `state.json` carries a `schema_version` field; `read_state()` migrates older files forward on load; missing version treated as v0
+- [ ] **MC6-01**: `rig apply` sends the correct SysEx sequence when clearing an MC6 switch slot — byte-for-byte match to what the MC6 web UI sends
 - [ ] **PLAN-01**: `rig plan` shows which specific CC values / knob positions changed for a device, not just that a scene is "changed"
 - [ ] **PLAN-02**: `rig plan` output per device-action includes before/after values for each changed parameter
+- [ ] **APPLY-01**: `rig apply` skips the manual knob prompt for an analog device when `state.json` already records that device in the desired preset
+- [ ] **APPLY-02**: `rig apply --device <id>` applies only the named device's actions across all scenes
+- [ ] **SCENE-01**: Scenes are defined at the top level of `rig.yaml`, not embedded in controller device config; a rig without a controller can define and apply scenes
+- [ ] **PKG-07**: Plugin authoring guide (`PLUGIN-AUTHORING.md`) covering Device Protocol, entry points, `from_raw_yaml`, setup/apply/edit lifecycle, with a minimal working example plugin skeleton
+- [ ] **PKG-08**: All 5 packages published to PyPI; GitHub Actions CI publishes on `v*` tags; `pip install rig rig-chasebliss` works from scratch
+- [ ] **PKG-09**: Reference third-party plugin (`rig-neuraldsp`) in its own repo demonstrating the full plugin authoring contract for Neural DSP Quad Cortex
+- [ ] **DOC-01**: Formal `rig.yaml` schema reference documenting every field, type, required/optional status, and validation rules per device type
 
 ### Out of Scope
 
