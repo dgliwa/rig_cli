@@ -151,6 +151,25 @@ class TestPlanVisualMarkers:
         result = runner.invoke(app, ["plan", "--config", str(tmp_path)])
         assert "⚠" in result.output, "Expected '⚠' marker for analog action"
 
+    def test_analog_verify_action_uses_checkmark_marker(self, tmp_path: Path) -> None:
+        """STATE-01: analog device already at correct preset displays ✓, not ⚠."""
+        _write_analog_rig(tmp_path)
+        import json
+
+        state_path = tmp_path / ".rig" / "state.json"
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        # Mark the scene as applied and the device as already at the right preset
+        state_path.write_text(
+            json.dumps({"devices": {"tumnus": {"last_preset": "edge"}}, "scenes": {"main": {}}})
+        )
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path), "--show-unchanged"])
+        assert "✓" in result.output, (
+            "Expected '✓' marker for analog device already at correct preset"
+        )
+        assert "⚠" not in result.output, (
+            "Expected no '⚠' marker for analog device already at correct preset"
+        )
+
 
 def _write_analog_rig(root: Path) -> None:
     """Write a minimal rig with one analog (manual) device.
