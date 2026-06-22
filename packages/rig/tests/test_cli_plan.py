@@ -280,3 +280,168 @@ devices:
         result = runner.invoke(app, ["plan", "--config", str(tmp_path)])
         assert "main" in result.output
         assert "alt" in result.output
+
+
+def _write_analog_rig_with_params(root: Path) -> None:
+    """Write an analog rig where the preset has named parameter values."""
+    (root / "rig.yaml").write_text(
+        """\
+name: analog-params-rig
+devices:
+  - id: tumnus
+    name: Tumnus
+    type: analog
+    config:
+      type: manual
+    presets:
+      - id: crunch
+        name: Crunch
+        values:
+          gain: 8.0
+          tone: 7.0
+  - id: mc6
+    name: MC6
+    type: controller
+    config:
+      type: controller
+      midi_channel: 1
+      scenes:
+        main:
+          presets:
+            tumnus: crunch
+"""
+    )
+
+
+def _write_cba_rig_with_params(root: Path) -> None:
+    """Write a Chase Bliss rig where the preset has named CC parameters."""
+    (root / "rig.yaml").write_text(
+        """\
+name: cba-params-rig
+devices:
+  - id: brothers
+    name: Brothers
+    type: digital
+    config:
+      type: chase_bliss
+      midi_channel: 3
+    presets:
+      - id: low-gain
+        name: Low Gain
+        preset_number: 4
+        parameters:
+          level: 0.8
+          reverb: 0.3
+      - id: high-gain
+        name: High Gain
+        preset_number: 5
+        parameters:
+          level: 0.9
+          reverb: 0.3
+  - id: mc6
+    name: MC6
+    type: controller
+    config:
+      type: controller
+      midi_channel: 1
+      scenes:
+        main:
+          presets:
+            brothers: high-gain
+"""
+    )
+
+
+class TestParamDiffRendering:
+    """PLAN-32: param_diff lines appear under ANALOG and CONFIGURE actions."""
+
+    def test_analog_param_diff_lines_shown_when_no_prior_state(self, tmp_path: Path) -> None:
+        """Analog action with no prior state shows '?' as before value."""
+        _write_analog_rig_with_params(tmp_path)
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path)])
+        assert "gain" in result.output, "Expected 'gain' in param_diff output"
+        assert "?" in result.output, "Expected '?' for unknown before value"
+        assert "8.0" in result.output, "Expected after value '8.0' in param_diff output"
+
+    def test_analog_param_diff_shows_changed_params_only(self, tmp_path: Path) -> None:
+        """Switching analog presets: only changed params appear; unchanged params omitted."""
+        (tmp_path / "rig.yaml").write_text(
+            """\
+name: analog-two-preset-rig
+devices:
+  - id: tumnus
+    name: Tumnus
+    type: analog
+    config:
+      type: manual
+    presets:
+      - id: edge
+        name: Edge of Breakup
+        values:
+          gain: 5.0
+          tone: 3.0
+      - id: crunch
+        name: Crunch
+        values:
+          gain: 8.0
+          tone: 3.0
+  - id: mc6
+    name: MC6
+    type: controller
+    config:
+      type: controller
+      midi_channel: 1
+      scenes:
+        main:
+          presets:
+            tumnus: crunch
+"""
+        )
+        state_path = tmp_path / ".rig" / "state.json"
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(
+            json.dumps({"devices": {"tumnus": {"last_preset": "edge"}}, "scenes": {}})
+        )
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path)])
+        assert "gain" in result.output, "Expected 'gain' param diff in output"
+        assert "5.0" in result.output, "Expected before value 5.0 in output"
+        assert "8.0" in result.output, "Expected after value 8.0 in output"
+        # tone unchanged — must not appear as a diff line
+        assert result.output.count("tone") == 0, "Unchanged param 'tone' should not appear"
+
+    def test_verify_action_has_no_param_diff_lines(self, tmp_path: Path) -> None:
+        """VERIFY actions must never show param_diff lines."""
+        _write_analog_rig_with_params(tmp_path)
+        state_path = tmp_path / ".rig" / "state.json"
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(
+            json.dumps({"devices": {"tumnus": {"last_preset": "crunch"}}, "scenes": {"main": {}}})
+        )
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path), "--show-unchanged"])
+        # The action is VERIFY — no param_diff lines should appear
+        assert "gain" not in result.output, "VERIFY action must not render param_diff lines"
+
+    def test_digital_param_diff_lines_shown_when_changed(self, tmp_path: Path) -> None:
+        """Chase Bliss preset change with one changed parameter shows that param diff."""
+        _write_cba_rig_with_params(tmp_path)
+        state_path = tmp_path / ".rig" / "state.json"
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(
+            json.dumps({"devices": {"brothers": {"last_preset": "low-gain"}}, "scenes": {}})
+        )
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path)])
+        assert "level" in result.output, "Expected 'level' in param_diff output"
+        assert "0.8" in result.output, "Expected before value 0.8"
+        assert "0.9" in result.output, "Expected after value 0.9"
+        # reverb unchanged — must not appear
+        assert "reverb" not in result.output, "Unchanged param 'reverb' should not appear"
+
+    def test_hx_stomp_configure_has_no_param_diff(self, tmp_path: Path) -> None:
+        """HX Stomp presets have no parameters; configure action shows no param_diff lines."""
+        _write_minimal_digital_rig(tmp_path)
+        result = runner.invoke(app, ["plan", "--config", str(tmp_path)])
+        # Only '~' marker should appear; no indented param lines
+        assert "~" in result.output, "Expected '~' for configure action"
+        # No param name sub-lines expected — just assert no '→' in param context
+        lines = [line for line in result.output.splitlines() if "→" in line]
+        assert len(lines) == 0, f"HX Stomp should produce no param diff lines, got: {lines}"

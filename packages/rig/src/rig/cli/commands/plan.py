@@ -100,6 +100,9 @@ def plan(
                 console.print(
                     f"    [yellow]⚠[/yellow] {action.device}: set to '{action.preset_name}' (manual)"
                 )
+                for diff in action.param_diff:
+                    before_str = "?" if diff.before is None else str(diff.before)
+                    console.print(f"      [dim]{diff.name}: {before_str} → {diff.after}[/dim]")
             elif action.status == ActionStatus.CONFIGURE:
                 configure_count += 1
                 pc_info = f" PC#{action.preset_number}" if action.preset_number else ""
@@ -107,6 +110,9 @@ def plan(
                 console.print(
                     f"    [cyan]~[/cyan] {action.device}:{pc_info} '{action.preset_name}'{ch_info}"
                 )
+                for diff in action.param_diff:
+                    before_str = "?" if diff.before is None else str(diff.before)
+                    console.print(f"      [dim]{diff.name}: {before_str} → {diff.after}[/dim]")
             elif action.status == ActionStatus.VERIFY:
                 already_set_count += 1
                 console.print(
