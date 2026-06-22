@@ -608,6 +608,83 @@ class TestDevicePluginRouting:
                 )
 
 
+class TestVerifyActionSkipped:
+    """STATE-01: VERIFY actions are not sent to device.apply()."""
+
+    def test_verify_action_does_not_call_device_apply(self, tmp_path):
+        """apply_plan must skip device.apply() for VERIFY-status actions."""
+        from unittest.mock import patch
+
+        from rig.engine.plan.models import ActionStatus
+        from rig_analog.device import AnalogDevice
+        from rig_analog.preset import AnalogPreset
+
+        # Build a rig with one analog device
+        analog = AnalogDevice(
+            id="tumnus",
+            type=DeviceType.ANALOG,
+            config={"type": "manual"},
+            presets=[
+                AnalogPreset(
+                    id="edge",
+                    pedal="tumnus",
+                    name="Edge of Breakup",
+                    values={"gain": 5.0},
+                )
+            ],
+        )
+        ctrl = FakeDevice(
+            id="mc6",
+            type=DeviceType.CONTROLLER,
+            config=SimpleNamespace(
+                scenes={"s1": {"presets": {"tumnus": "edge"}}},
+                type="controller",
+                midi_channel=1,
+                banks=[],
+            ),
+        )
+        rig = Rig(
+            name="test",
+            signal_chain=[],
+            devices={"tumnus": analog, "mc6": ctrl},
+        )
+
+        # Pre-populate state so tumnus already has the correct preset → VERIFY
+        _write_state_file(tmp_path, {"devices": {"tumnus": {"last_preset": "edge"}}, "scenes": {}})
+
+        plan = compute_plan(rig, root_path=str(tmp_path))
+        tum_action = [a for a in plan.scenes["s1"].device_actions if a.device == "tumnus"]
+        assert len(tum_action) == 1
+        assert tum_action[0].status == ActionStatus.VERIFY, (
+            "Precondition: analog matching state must produce VERIFY action"
+        )
+
+        apply_called = []
+
+        original_apply = AnalogDevice.apply
+
+        def patched_apply(self, ctx):
+            apply_called.append(self.id)
+            return original_apply(self, ctx)
+
+        state_adapter = InMemoryStateAdapter()
+        prompt_io = InMemoryPromptAdapter(default="confirm")
+
+        with patch.object(AnalogDevice, "apply", patched_apply):
+            apply_plan(
+                plan,
+                state_writer=state_adapter,
+                confirmation_io=prompt_io,
+                rig=rig,
+                config_path=str(tmp_path),
+                dry_run=False,
+            )
+
+        assert "tumnus" not in apply_called, (
+            "device.apply() must not be called for VERIFY-status actions (preset already correct)"
+        )
+
+
 class TestApplyPlanFallback:
     def test_raises_when_no_plan_and_no_rig(self):
         state_adapter = InMemoryStateAdapter()

@@ -334,6 +334,50 @@ class TestBeforeAfterFields:
         assert tum_action.after == "edge-of-breakup"
         assert tum_action.before is None
 
+    def test_analog_gets_verify_when_preset_already_matches_state(self, tmp_path):
+        """STATE-01: analog device with matching state gets VERIFY, not ANALOG."""
+        rig = _make_rig({"tumnus": "edge-of-breakup"})
+        state = tmp_path / ".rig" / "state.json"
+        state.parent.mkdir(parents=True)
+        state.write_text(
+            json.dumps({"devices": {"tumnus": {"last_preset": "edge-of-breakup"}}, "scenes": {}})
+        )
+        plan = compute_plan(rig, root_path=str(tmp_path))
+        tum_action = [a for a in plan.scenes["test-scene"].device_actions if a.device == "tumnus"][
+            0
+        ]
+        assert tum_action.status == "verify", (
+            f"Expected 'verify' for analog device with matching state, got '{tum_action.status}'"
+        )
+
+    def test_analog_gets_analog_when_preset_differs_from_state(self, tmp_path):
+        """STATE-01: analog device with different state keeps ANALOG (manual change required)."""
+        rig = _make_rig({"tumnus": "edge-of-breakup"})
+        state = tmp_path / ".rig" / "state.json"
+        state.parent.mkdir(parents=True)
+        state.write_text(
+            json.dumps({"devices": {"tumnus": {"last_preset": "crunch"}}, "scenes": {}})
+        )
+        plan = compute_plan(rig, root_path=str(tmp_path))
+        tum_action = [a for a in plan.scenes["test-scene"].device_actions if a.device == "tumnus"][
+            0
+        ]
+        assert tum_action.status == "analog", (
+            f"Expected 'analog' for analog device needing manual change, got '{tum_action.status}'"
+        )
+
+    def test_analog_with_no_state_gets_analog(self, tmp_path):
+        """STATE-01: analog device with no prior state record always requires manual set."""
+        rig = _make_rig({"tumnus": "edge-of-breakup"})
+        # No state.json at all — cold start
+        plan = compute_plan(rig, root_path=str(tmp_path))
+        tum_action = [a for a in plan.scenes["test-scene"].device_actions if a.device == "tumnus"][
+            0
+        ]
+        assert tum_action.status == "analog", (
+            f"Expected 'analog' for analog device with no state, got '{tum_action.status}'"
+        )
+
 
 class TestComputeDiff:
     def test_diff_unchanged_when_state_matches(self, tmp_path):

@@ -87,17 +87,18 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
             )
 
             if pedal.type == DeviceType.ANALOG:
+                analog_needs_change = actual_preset != preset_id
                 device_actions.append(
                     DeviceAction(
                         device=pedal_id,
                         device_type=DeviceType.ANALOG,
-                        status=ActionStatus.ANALOG,
+                        status=ActionStatus.ANALOG if analog_needs_change else ActionStatus.VERIFY,
                         preset_name=preset_id,
                         before=actual_preset,
                         after=preset_id,
                     )
                 )
-                if actual_preset != preset_id:
+                if analog_needs_change:
                     scene_has_changes = True
                     logger.debug("    → analog needs manual adjustment")
                 continue

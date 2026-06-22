@@ -7,7 +7,8 @@ from pydantic import BaseModel
 from rich.console import Console
 
 from rig.engine.plan import Plan
-from rig.engine.plugin import DeviceApplyContext, DeviceApplyResult, SetupContext
+from rig.engine.plan.models import ActionStatus, DeviceAction
+from rig.engine.plugin import DeviceApplyContext, DeviceApplyResult, DeviceType, SetupContext
 from rig.engine.ports import ConfirmationIO, RichConfirmationIO, StateWriter
 from rig.engine.state import RigState
 from rig.midi.adapter import MidiManager
@@ -111,7 +112,12 @@ def apply_plan(
         for action in sp.device_actions:
             device = rig.devices.get(action.device) if rig else None
 
-            if device is None:
+            if action.status == ActionStatus.VERIFY:
+                logger.debug("Device '%s': preset already correct — skipping apply", action.device)
+                action_result = DeviceApplyResult(
+                    device=action.device, status="skipped", preset=action.preset_name
+                )
+            elif device is None:
                 logger.warning("Device '%s' not found — skipping action", action.device)
                 action_result = DeviceApplyResult(
                     device=action.device, status="skipped", preset=action.preset_name
@@ -159,9 +165,6 @@ def apply_plan(
         controller = rig.controller
         if midi:
             console.print("\n[bold]Controller Programming Phase[/bold]")
-            from rig.engine.plan.models import ActionStatus, DeviceAction
-            from rig.engine.plugin import DeviceType
-
             controller_action = DeviceAction(
                 device=controller.id,
                 device_type=DeviceType.CONTROLLER,
@@ -206,9 +209,6 @@ def apply_device_preset(
     Validates device_id and preset_id against the rig model, calls setup() then apply()
     on the targeted device only, and writes state only for that device.
     """
-    from rig.engine.plan.models import ActionStatus, DeviceAction
-    from rig.engine.plugin import DeviceType
-
     if device_id not in rig.devices:
         raise ValueError(f"Device '{device_id}' not found in rig config")
     device = rig.devices[device_id]
