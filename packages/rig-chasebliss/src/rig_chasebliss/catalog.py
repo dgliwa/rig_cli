@@ -22,6 +22,10 @@ class Control(BaseModel):
     default: float | None = None
 
 
+MOOD_MKII_WET_BYPASS_CC: int = 102  # per Mood MkII MIDI Implementation
+MOOD_MKII_LOOP_BYPASS_CC: int = 103  # per Mood MkII MIDI Implementation
+
+
 MOOD_MKII_CONTROLS: list[Control] = [
     Control(name="time", type=ControlType.KNOB, midi_cc=14, min=0, max=127, default=64),
     Control(name="mix", type=ControlType.KNOB, midi_cc=15, min=0, max=127, default=64),
@@ -163,8 +167,22 @@ MOOD_MKII_CONTROLS: list[Control] = [
     Control(name="dip_r_latch", type=ControlType.DIPSWITCH, midi_cc=76, min=0, max=127, default=0),
     Control(name="dip_r_no_dub", type=ControlType.DIPSWITCH, midi_cc=77, min=0, max=127, default=0),
     Control(name="dip_r_smooth", type=ControlType.DIPSWITCH, midi_cc=78, min=0, max=127, default=0),
-    Control(name="wet_bypass", type=ControlType.SWITCH, midi_cc=102, min=0, max=127, default=None),
-    Control(name="loop_bypass", type=ControlType.SWITCH, midi_cc=103, min=0, max=127, default=None),
+    Control(
+        name="wet_bypass",
+        type=ControlType.SWITCH,
+        midi_cc=MOOD_MKII_WET_BYPASS_CC,
+        min=0,
+        max=127,
+        default=None,
+    ),
+    Control(
+        name="loop_bypass",
+        type=ControlType.SWITCH,
+        midi_cc=MOOD_MKII_LOOP_BYPASS_CC,
+        min=0,
+        max=127,
+        default=None,
+    ),
     Control(name="freeze", type=ControlType.SWITCH, midi_cc=105, min=0, max=127, default=None),
     Control(
         name="loop_overdub", type=ControlType.SWITCH, midi_cc=106, min=0, max=127, default=None

@@ -3,7 +3,13 @@ from pathlib import Path
 from rig.config.loader import load_rig
 from rig.engine.plugin import DeviceType
 from rig.models.rig import Rig
-from rig_chasebliss.catalog import MOOD_MKII_CONTROLS, Control, ControlType
+from rig_chasebliss.catalog import (
+    MOOD_MKII_CONTROLS,
+    MOOD_MKII_LOOP_BYPASS_CC,
+    MOOD_MKII_WET_BYPASS_CC,
+    Control,
+    ControlType,
+)
 from rig_chasebliss.device import ChaseBlissConfig, ChaseBlissDevice, _get_cc_params
 from rig_chasebliss.preset import DigitalPreset
 from rig_hx.device import HXStompDevice
@@ -22,8 +28,8 @@ class TestMoodMkiiCatalog:
         by_name = {c.name: c for c in MOOD_MKII_CONTROLS}
         assert by_name["time"].midi_cc == 14
         assert by_name["mix"].midi_cc == 15
-        assert by_name["wet_bypass"].midi_cc == 102
-        assert by_name["loop_bypass"].midi_cc == 103
+        assert by_name["wet_bypass"].midi_cc == MOOD_MKII_WET_BYPASS_CC
+        assert by_name["loop_bypass"].midi_cc == MOOD_MKII_LOOP_BYPASS_CC
 
     def test_dip_banks_complete(self):
         l_bank = [c for c in MOOD_MKII_CONTROLS if c.name.startswith("dip_l_")]

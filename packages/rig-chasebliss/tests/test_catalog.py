@@ -1,6 +1,8 @@
 from rig_chasebliss.catalog import (
     BROTHERS_AM_CONTROLS,
     MOOD_MKII_CONTROLS,
+    MOOD_MKII_LOOP_BYPASS_CC,
+    MOOD_MKII_WET_BYPASS_CC,
     WOMBTONE_MKII_CONTROLS,
     Control,
     ControlType,
@@ -25,12 +27,12 @@ def test_control_default_field_accepts_zero():
 
 def test_mood_cc102_named_wet_bypass():
     ccs = {c.midi_cc: c for c in MOOD_MKII_CONTROLS}
-    assert ccs[102].name == "wet_bypass"
+    assert ccs[MOOD_MKII_WET_BYPASS_CC].name == "wet_bypass"
 
 
 def test_mood_cc103_named_loop_bypass():
     ccs = {c.midi_cc: c for c in MOOD_MKII_CONTROLS}
-    assert ccs[103].name == "loop_bypass"
+    assert ccs[MOOD_MKII_LOOP_BYPASS_CC].name == "loop_bypass"
 
 
 def test_mood_switch_controls_have_default_none():
