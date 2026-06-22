@@ -14,6 +14,12 @@ class ActionStatus(StrEnum):
     ANALOG = "analog"
 
 
+class ParamDiff(BaseModel):
+    name: str
+    before: float | str | bool | None
+    after: float | str | bool
+
+
 class DeviceAction(BaseModel):
     device: str
     device_type: DeviceType
@@ -24,6 +30,7 @@ class DeviceAction(BaseModel):
     instructions: list[str] = []
     before: str | None = None
     after: str | None = None
+    param_diff: list[ParamDiff] = []
 
 
 class ScenePlan(BaseModel):
