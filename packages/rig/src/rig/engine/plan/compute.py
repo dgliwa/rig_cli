@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Literal
 
-from rig.engine.plan.models import ActionStatus, DeviceAction, Plan, ScenePlan
+from rig.engine.plan.models import ActionStatus, DeviceAction, ParamDiff, Plan, ScenePlan
 from rig.engine.plugin import DeviceType
 from rig.engine.state import DeviceState, RigState, read_state
 from rig.models.graph import DeviceGraph
@@ -20,6 +20,37 @@ def _get_preset_number(rig: Rig, pedal_id: str, preset_id: str) -> int | None:
         if hasattr(p, "preset_number") and p.id == preset_id:
             return p.preset_number
     return None
+
+
+def _find_preset(rig: Rig, pedal_id: str, preset_id: str | None) -> object | None:
+    if preset_id is None:
+        return None
+    device = rig.devices.get(pedal_id)
+    if device is None:
+        return None
+    return next((p for p in device.presets if p.id == preset_id), None)
+
+
+def _compute_param_diff(before_preset: object | None, after_preset: object) -> list[ParamDiff]:
+    after_params: dict[str, float | str | bool] = {}
+    if hasattr(after_preset, "values"):
+        after_params = after_preset.values
+    elif hasattr(after_preset, "parameters"):
+        after_params = after_preset.parameters
+    if not after_params:
+        return []
+    before_params: dict[str, float | str | bool] = {}
+    if before_preset is not None:
+        if hasattr(before_preset, "values"):
+            before_params = before_preset.values
+        elif hasattr(before_preset, "parameters"):
+            before_params = before_preset.parameters
+    diffs: list[ParamDiff] = []
+    for key, after_val in after_params.items():
+        before_val = before_params.get(key)
+        if before_preset is None or before_val != after_val:
+            diffs.append(ParamDiff(name=key, before=before_val, after=after_val))
+    return diffs
 
 
 def _detect_missing_refs(rig: Rig) -> list[str]:
@@ -88,14 +119,23 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
 
             if pedal.type == DeviceType.ANALOG:
                 analog_needs_change = actual_preset != preset_id
+                analog_status = ActionStatus.ANALOG if analog_needs_change else ActionStatus.VERIFY
+                after_preset = _find_preset(rig, pedal_id, preset_id)
+                before_preset = _find_preset(rig, pedal_id, actual_preset)
+                param_diff = (
+                    _compute_param_diff(before_preset, after_preset)
+                    if analog_needs_change and after_preset is not None
+                    else []
+                )
                 device_actions.append(
                     DeviceAction(
                         device=pedal_id,
                         device_type=DeviceType.ANALOG,
-                        status=ActionStatus.ANALOG if analog_needs_change else ActionStatus.VERIFY,
+                        status=analog_status,
                         preset_name=preset_id,
                         before=actual_preset,
                         after=preset_id,
+                        param_diff=param_diff,
                     )
                 )
                 if analog_needs_change:
@@ -113,6 +153,13 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
             else:
                 logger.debug("    → already correct")
 
+            after_preset = _find_preset(rig, pedal_id, preset_id)
+            before_preset = _find_preset(rig, pedal_id, actual_preset)
+            param_diff = (
+                _compute_param_diff(before_preset, after_preset)
+                if needs_config and after_preset is not None
+                else []
+            )
             device_actions.append(
                 DeviceAction(
                     device=pedal_id,
@@ -123,6 +170,7 @@ def compute_plan(rig: Rig, root_path: str | None = None) -> Plan:
                     midi_channel=getattr(pedal.config, "midi_channel", None),
                     before=actual_preset,
                     after=preset_id,
+                    param_diff=param_diff,
                 )
             )
 

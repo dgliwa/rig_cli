@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 from rig.engine.diff import compute_diff
 from rig.engine.plan import compute_plan
+from rig.engine.plan.models import ParamDiff
 from rig.engine.plugin import DeviceType
 from rig.models.rig import Rig
 from rig_analog.preset import AnalogPreset
@@ -451,6 +452,212 @@ def _make_ordered_rig() -> Rig:
         ],
         devices={"hx-stomp": hx, "polytune": tuner, "mc6": ctrl},
     )
+
+
+def _make_analog_rig_with_presets(presets: list, scene_preset_id: str) -> Rig:
+    """Rig with an analog device that has explicit preset objects and a scene reference."""
+    tum = FakeDevice(
+        id="tumnus",
+        type=DeviceType.ANALOG,
+        config={"type": "manual"},
+        presets=presets,
+    )
+    ctrl = FakeDevice(
+        id="mc6",
+        type=DeviceType.CONTROLLER,
+        config=SimpleNamespace(
+            scenes={"test-scene": {"presets": {"tumnus": scene_preset_id}}},
+            type="controller",
+            midi_channel=1,
+            banks=[],
+        ),
+    )
+    return Rig(
+        name="test",
+        signal_chain=[],
+        devices={"tumnus": tum, "mc6": ctrl},
+    )
+
+
+def _make_digital_rig_with_presets(presets: list, scene_preset_id: str) -> Rig:
+    """Rig with a digital (Chase Bliss) device with explicit preset objects."""
+    bro = FakeDevice(
+        id="brothers",
+        type=DeviceType.DIGITAL,
+        config=ChaseBlissConfig(midi_channel=3),
+        presets=presets,
+    )
+    ctrl = FakeDevice(
+        id="mc6",
+        type=DeviceType.CONTROLLER,
+        config=SimpleNamespace(
+            scenes={"test-scene": {"presets": {"brothers": scene_preset_id}}},
+            type="controller",
+            midi_channel=1,
+            banks=[],
+        ),
+    )
+    return Rig(
+        name="test",
+        signal_chain=[],
+        devices={"brothers": bro, "mc6": ctrl},
+    )
+
+
+class TestParamDiff:
+    def test_analog_param_diff_populated_when_no_prior_state(self):
+        """PLAN-32-01: analog preset with no prior state yields param_diff with before=None."""
+        presets = [
+            AnalogPreset(
+                id="crunch",
+                pedal="tumnus",
+                name="Crunch",
+                values={"gain": 8.0, "tone": 7.0},
+            )
+        ]
+        rig = _make_analog_rig_with_presets(presets, "crunch")
+        plan = compute_plan(rig)
+        tum_action = [a for a in plan.scenes["test-scene"].device_actions if a.device == "tumnus"][
+            0
+        ]
+        assert tum_action.status == "analog"
+        assert len(tum_action.param_diff) == 2
+        diff_map = {d.name: d for d in tum_action.param_diff}
+        assert diff_map["gain"].before is None
+        assert diff_map["gain"].after == 8.0
+        assert diff_map["tone"].before is None
+        assert diff_map["tone"].after == 7.0
+
+    def test_analog_param_diff_shows_changed_params_only(self, tmp_path):
+        """PLAN-32-02: only changed parameters appear in param_diff when switching presets."""
+        presets = [
+            AnalogPreset(
+                id="edge",
+                pedal="tumnus",
+                name="Edge of Breakup",
+                values={"gain": 5.0, "tone": 3.0},
+            ),
+            AnalogPreset(
+                id="crunch",
+                pedal="tumnus",
+                name="Crunch",
+                values={"gain": 8.0, "tone": 3.0},
+            ),
+        ]
+        rig = _make_analog_rig_with_presets(presets, "crunch")
+        state = tmp_path / ".rig" / "state.json"
+        state.parent.mkdir(parents=True)
+        state.write_text(json.dumps({"devices": {"tumnus": {"last_preset": "edge"}}, "scenes": {}}))
+        plan = compute_plan(rig, root_path=str(tmp_path))
+        tum_action = [a for a in plan.scenes["test-scene"].device_actions if a.device == "tumnus"][
+            0
+        ]
+        assert tum_action.status == "analog"
+        # Only gain changed (5.0 → 8.0); tone unchanged (3.0 == 3.0)
+        assert len(tum_action.param_diff) == 1
+        assert tum_action.param_diff[0].name == "gain"
+        assert tum_action.param_diff[0].before == 5.0
+        assert tum_action.param_diff[0].after == 8.0
+
+    def test_analog_verify_action_has_empty_param_diff(self, tmp_path):
+        """PLAN-32-01 truth: VERIFY actions never have param_diff lines."""
+        presets = [
+            AnalogPreset(
+                id="edge",
+                pedal="tumnus",
+                name="Edge of Breakup",
+                values={"gain": 5.0},
+            )
+        ]
+        rig = _make_analog_rig_with_presets(presets, "edge")
+        state = tmp_path / ".rig" / "state.json"
+        state.parent.mkdir(parents=True)
+        state.write_text(
+            json.dumps(
+                {"devices": {"tumnus": {"last_preset": "edge"}}, "scenes": {"test-scene": {}}}
+            )
+        )
+        plan = compute_plan(rig, root_path=str(tmp_path))
+        tum_action = [a for a in plan.scenes["test-scene"].device_actions if a.device == "tumnus"][
+            0
+        ]
+        assert tum_action.status == "verify"
+        assert tum_action.param_diff == []
+
+    def test_digital_param_diff_populated_when_no_prior_state(self):
+        """PLAN-32-03: digital (Chase Bliss) preset with no prior state yields param_diff."""
+        presets = [
+            DigitalPreset(
+                id="low-gain",
+                pedal="brothers",
+                name="Low Gain",
+                preset_number=4,
+                parameters={"level": 0.8, "tone": 0.5},
+            )
+        ]
+        rig = _make_digital_rig_with_presets(presets, "low-gain")
+        plan = compute_plan(rig)
+        bro_action = [
+            a for a in plan.scenes["test-scene"].device_actions if a.device == "brothers"
+        ][0]
+        assert bro_action.status == "configure"
+        assert len(bro_action.param_diff) == 2
+        diff_map = {d.name: d for d in bro_action.param_diff}
+        assert diff_map["level"].before is None
+        assert diff_map["level"].after == 0.8
+
+    def test_digital_param_diff_shows_changed_params_only(self, tmp_path):
+        """PLAN-32-04: only changed CC parameters appear when switching Chase Bliss presets."""
+        presets = [
+            DigitalPreset(
+                id="low-gain",
+                pedal="brothers",
+                name="Low Gain",
+                preset_number=4,
+                parameters={"level": 0.5, "reverb": 0.3},
+            ),
+            DigitalPreset(
+                id="high-gain",
+                pedal="brothers",
+                name="High Gain",
+                preset_number=5,
+                parameters={"level": 0.9, "reverb": 0.3},
+            ),
+        ]
+        rig = _make_digital_rig_with_presets(presets, "high-gain")
+        state = tmp_path / ".rig" / "state.json"
+        state.parent.mkdir(parents=True)
+        state.write_text(
+            json.dumps({"devices": {"brothers": {"last_preset": "low-gain"}}, "scenes": {}})
+        )
+        plan = compute_plan(rig, root_path=str(tmp_path))
+        bro_action = [
+            a for a in plan.scenes["test-scene"].device_actions if a.device == "brothers"
+        ][0]
+        assert bro_action.status == "configure"
+        # Only level changed (0.5 → 0.9); reverb unchanged
+        assert len(bro_action.param_diff) == 1
+        assert bro_action.param_diff[0].name == "level"
+        assert bro_action.param_diff[0].before == 0.5
+        assert bro_action.param_diff[0].after == 0.9
+
+    def test_hx_stomp_has_no_param_diff(self):
+        """PLAN-32-01: HX Stomp presets produce empty param_diff (no parameters field)."""
+        rig = _make_rig()
+        plan = compute_plan(rig)
+        hx_action = [a for a in plan.scenes["test-scene"].device_actions if a.device == "hx-stomp"][
+            0
+        ]
+        assert hx_action.param_diff == []
+
+    def test_param_diff_is_pydantic_model(self):
+        """ParamDiff is serializable as a Pydantic model."""
+        diff = ParamDiff(name="gain", before=None, after=8.0)
+        assert diff.name == "gain"
+        assert diff.before is None
+        assert diff.after == 8.0
+        data = diff.model_dump()
+        assert data == {"name": "gain", "before": None, "after": 8.0}
 
 
 class TestDeviceOrdering:
