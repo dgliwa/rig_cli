@@ -82,3 +82,11 @@ def test_get_controls_brothers_returns_nonempty():
 
 def test_get_controls_unknown_returns_empty_list():
     assert get_controls("unknown", "pedal") == []
+
+
+def test_mood_wet_bypass_cc_value_is_102():
+    assert MOOD_MKII_WET_BYPASS_CC == 102
+
+
+def test_mood_loop_bypass_cc_value_is_103():
+    assert MOOD_MKII_LOOP_BYPASS_CC == 103
