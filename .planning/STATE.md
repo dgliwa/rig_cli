@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 
 ## Current Position
 
-Phase: v1.6 — Phase 31: MC6 Clear SysEx Fix (not started)
+Phase: v1.6 — Phase 32: Per-Parameter Plan Diffs (complete)
 Plan: —
-Status: In progress — Phase 30 complete; ready to plan Phase 31
-Last activity: 2026-06-22 — Phase 30 (State Tracking Completeness) complete; 372 tests pass; analog VERIFY/ANALOG fix in compute.py, apply.py, plan.py
+Status: In progress — Phase 32 complete; ready to plan Phase 33
+Last activity: 2026-06-22 — Phase 32 (Per-Parameter Plan Diffs) complete; 305 tests pass; ParamDiff model, compute diffs, CLI rendering
 
 ## Performance Metrics
 

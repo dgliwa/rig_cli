@@ -83,7 +83,7 @@
 - [x] **Phase 29: Catalog Integrity** — fix wet_bypass/loop_bypass CC mismatch; establish catalog as the single source of truth with CI-enforced tests
 - [x] **Phase 30: State Tracking Completeness** — `state.json` tracks actual preset changes per device, not just scene-level apply events (#22)
 - [ ] **Phase 31: MC6 Clear SysEx Fix** — emulate the "clear" message sent by MC6 web UI when clearing a preset slot (#17)
-- [ ] **Phase 32: Per-Parameter Plan Diffs (PLAN-01/02)** — `rig plan` shows before/after CC values and knob positions per device-action, not just "changed"
+- [x] **Phase 32: Per-Parameter Plan Diffs (PLAN-01/02)** — `rig plan` shows before/after CC values and knob positions per device-action, not just "changed"
 - [ ] **Phase 33: Apply-01/02 Completions** — skip analog prompt when state already shows desired preset; `--device` flag applies single device across all scenes
 
 </details>
