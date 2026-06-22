@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: — Correctness & State Reliability
 status: planning
-last_updated: "2026-06-22T12:00:32.892Z"
+last_updated: "2026-06-22T12:02:34.471Z"
 last_activity: 2026-06-21 — v1.6 and v2.0 milestones planned from critical assessment of codebase
 progress:
   total_phases: 5
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 
 ## Current Position
 
-Phase: v1.6 — Phase 29: Catalog Integrity (not started)
+Phase: v1.6 — Phase 30: State Tracking (not started)
 Plan: —
-Status: Planning — phases 29-33 (v1.6) and 34-39 (v2.0) roadmapped; ready to plan Phase 29
-Last activity: 2026-06-21 — v1.6 and v2.0 milestones planned from critical assessment of codebase
+Status: In progress — Phase 29 complete; ready to plan Phase 30
+Last activity: 2026-06-22 — Phase 29 (Catalog Integrity) complete; 367 tests pass; named CC constants added to CBA catalog
 
 ## Performance Metrics
 
