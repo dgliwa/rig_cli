@@ -131,6 +131,8 @@ Plans:
   3. Applying the same scene twice does not re-prompt for analog devices whose state already matches
 
 **Plans**: 1 plan
+Plans:
+- [ ] 30-01-PLAN.md — Fix analog VERIFY assignment, apply auto-confirm, and plan display
 
 ### Phase 31: MC6 Clear SysEx Fix
 
