@@ -684,6 +684,104 @@ class TestVerifyActionSkipped:
             "device.apply() must not be called for VERIFY-status actions (preset already correct)"
         )
 
+    def test_same_scene_applied_twice_no_reprompt_on_second_apply(self, tmp_path):
+        """STATE-01 criterion 3: applying the same scene twice must never prompt analog device on second apply."""
+        from rig.engine.plan.models import ActionStatus
+        from rig_analog.device import AnalogDevice
+        from rig_analog.preset import AnalogPreset
+
+        analog = AnalogDevice(
+            id="tumnus",
+            type=DeviceType.ANALOG,
+            config={"type": "manual"},
+            presets=[
+                AnalogPreset(
+                    id="edge",
+                    pedal="tumnus",
+                    name="Edge of Breakup",
+                    values={"gain": 5.0},
+                )
+            ],
+        )
+        ctrl = FakeDevice(
+            id="mc6",
+            type=DeviceType.CONTROLLER,
+            config=SimpleNamespace(
+                scenes={"s1": {"presets": {"tumnus": "edge"}}},
+                type="controller",
+                midi_channel=1,
+                banks=[],
+            ),
+        )
+        rig = Rig(
+            name="test",
+            signal_chain=[],
+            devices={"tumnus": analog, "mc6": ctrl},
+        )
+
+        # --- First apply: state is empty, so tumnus gets an APPLY action and a prompt ---
+        apply_called_first = []
+        original_apply = AnalogDevice.apply
+
+        def tracking_apply(self, ctx):
+            apply_called_first.append(self.id)
+            return original_apply(self, ctx)
+
+        state_adapter_first = InMemoryStateAdapter()
+        prompt_io_first = InMemoryPromptAdapter(default="confirm")
+
+        plan_first = compute_plan(rig, root_path=str(tmp_path))
+
+        with patch.object(AnalogDevice, "apply", tracking_apply):
+            apply_plan(
+                plan_first,
+                state_writer=state_adapter_first,
+                confirmation_io=prompt_io_first,
+                rig=rig,
+                config_path=str(tmp_path),
+                dry_run=False,
+            )
+
+        # First apply must have called device.apply() (prompted the user)
+        assert "tumnus" in apply_called_first, (
+            "Precondition: first apply should call device.apply() when state is empty"
+        )
+
+        # Write state to disk so second compute_plan() picks it up
+        _write_state_file(tmp_path, {"devices": {"tumnus": {"last_preset": "edge"}}, "scenes": {}})
+
+        # --- Second apply: state now matches, so tumnus must produce VERIFY → no prompt ---
+        plan_second = compute_plan(rig, root_path=str(tmp_path))
+        tum_action = [a for a in plan_second.scenes["s1"].device_actions if a.device == "tumnus"]
+        assert len(tum_action) == 1
+        assert tum_action[0].status == ActionStatus.VERIFY, (
+            "Precondition: after first apply, second plan must produce VERIFY for analog device"
+        )
+
+        apply_called_second = []
+
+        def tracking_apply_second(self, ctx):
+            apply_called_second.append(self.id)
+            return original_apply(self, ctx)
+
+        state_adapter_second = InMemoryStateAdapter()
+        prompt_io_second = InMemoryPromptAdapter(default="confirm")
+
+        with patch.object(AnalogDevice, "apply", tracking_apply_second):
+            apply_plan(
+                plan_second,
+                state_writer=state_adapter_second,
+                confirmation_io=prompt_io_second,
+                rig=rig,
+                config_path=str(tmp_path),
+                dry_run=False,
+            )
+
+        assert "tumnus" not in apply_called_second, (
+            "STATE-01 criterion 3: applying the same scene twice must not re-prompt "
+            "analog device whose state already matches"
+        )
+
 
 class TestApplyPlanFallback:
     def test_raises_when_no_plan_and_no_rig(self):
