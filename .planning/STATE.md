@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: — Correctness & State Reliability
 status: executing
-last_updated: "2026-06-22T21:51:23.790Z"
-last_activity: 2026-06-22 — Phase 30 (State Tracking Completeness) complete; 372 tests pass; analog VERIFY/ANALOG fix in compute.py, apply.py, plan.py
+last_updated: "2026-06-23T01:54:05.887Z"
+last_activity: 2026-06-22 — Phase 31 (MC6 Clear SysEx Fix) complete; 392 tests pass; clear_preset_messages defaults to save=True for flash persistence
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 7
-  completed_plans: 7
+  total_phases: 8
+  completed_phases: 8
+  total_plans: 8
+  completed_plans: 8
   percent: 100
 ---
 
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 
 ## Current Position
 
-Phase: v1.6 — Phase 32: Per-Parameter Plan Diffs (complete)
-Plan: —
-Status: In progress — Phase 32 complete; ready to plan Phase 33
-Last activity: 2026-06-22 — Phase 32 (Per-Parameter Plan Diffs) complete; 305 tests pass; ParamDiff model, compute diffs, CLI rendering
+Phase: v1.6 — Phase 31: MC6 Clear SysEx Fix (complete)
+Plan: 31-01 (complete)
+Status: In progress — Phase 31 complete; 392 tests pass
+Last activity: 2026-06-22 — Phase 31 (MC6 Clear SysEx Fix) complete; clear_preset_messages defaults to save=True for flash persistence
 
 ## Performance Metrics
 
