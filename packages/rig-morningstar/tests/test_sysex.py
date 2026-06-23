@@ -47,6 +47,14 @@ class TestClearPresetMessages:
             assert msg[0] == 0xF0
             assert msg[-1] == 0xF7
 
+    def test_default_saves_to_flash(self):
+        for msg in clear_preset_messages(0):
+            assert msg[11] == 0x7F  # Op6 = save to flash
+
+    def test_explicit_no_save(self):
+        for msg in clear_preset_messages(0, save=False):
+            assert msg[11] == 0x00  # Op6 = RAM only
+
 
 class TestBankDown:
     def test_returns_valid_sysex(self):

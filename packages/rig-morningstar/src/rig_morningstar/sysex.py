@@ -76,8 +76,12 @@ def update_preset_pc(
     return _build(0x04, preset_idx, msg_slot, 0x01, 0x7F if save else 0x00, 0x00, 0x00, payload)
 
 
-def clear_preset_messages(preset_idx: int, save: bool = False) -> list[list[int]]:
-    """04h/00h — Set all 16 message slots on a preset to NOTHING, returning one message per slot."""
+def clear_preset_messages(preset_idx: int, save: bool = True) -> list[list[int]]:
+    """04h/00h — Set all 16 message slots on a preset to NOTHING, returning one message per slot.
+
+    save=True (default): Op6=0x7F writes to flash, matching MC6 web UI behaviour.
+    save=False: Op6=0x00 keeps change in RAM only (lost on power cycle).
+    """
     save_byte = 0x7F if save else 0x00
     return [_build(0x04, preset_idx, slot, 0x00, save_byte, 0x00, 0x00, []) for slot in range(16)]
 

@@ -87,6 +87,10 @@ def test_clear_preset_messages_slot_sequence():
         assert msg[8] == 0x02  # preset_idx
         assert msg[9] == slot  # msg_slot increments
         assert msg[10] == 0x00  # msgType = NOTHING
-        assert (
-            msg[11] == 0x00
-        )  # save flag (default False — avoids MC6 bank navigation on rapid clears)
+        assert msg[11] == 0x7F  # save flag (default True — writes to flash)
+
+
+def test_clear_preset_messages_no_save():
+    msgs = clear_preset_messages(0, save=False)
+    for msg in msgs:
+        assert msg[11] == 0x00  # save flag off — RAM only
