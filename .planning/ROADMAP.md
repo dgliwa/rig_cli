@@ -8,7 +8,7 @@
 - ✅ **v1.3 Chase Bliss Pedal Support** — Phases 14-19 (shipped 2026-06-10)
 - ✅ **v1.4 Architecture & Type Integrity** — Phases 20-24 (shipped 2026-06-17)
 - ✅ **v1.5 Interactive Preset Management** — Phases 25-28 (shipped 2026-06-17)
-- 🔴 **v1.6 Correctness & State Reliability** — Phases 29-33 (in progress)
+- ✅ **v1.6 Correctness & State Reliability** — Phases 29-33 (shipped 2026-06-24)
 - ⬜ **v2.0 Platform Foundations** — Phases 34-39 (planned)
 
 ## Phases
@@ -67,31 +67,30 @@
 
 </details>
 
-<details open>
+<details>
 <summary>✅ v1.5 Interactive Preset Management (Phases 25-28) — SHIPPED 2026-06-17</summary>
 
-- [x] **Phase 25: I/O Parity** - Thread ConfirmationIO through AnalogApplier; update tests to use InMemoryPromptAdapter — Completed 2026-06-17
-- [x] **Phase 26: Isolated Preset Apply** - `rig apply --device <id> --preset <id>` applies one device's preset without full scene setup — Completed 2026-06-17
-- [x] **Phase 27: Editor Protocol, CLI Surface & YAML Writer** - `rig edit` command, save/discard lifecycle, and rig.yaml preset writer — Completed 2026-06-17
-- [x] **Phase 28: Editor Plugin Implementations** - CC-based live MIDI editing (CBA/MIDI/HX) and analog prompt-per-control flow — Completed 2026-06-17
-
-</details>
-
-<details open>
-<summary>🔴 v1.6 Correctness & State Reliability (Phases 29-33) — IN PROGRESS</summary>
-
-- [x] **Phase 29: Catalog Integrity** — fix wet_bypass/loop_bypass CC mismatch; establish catalog as the single source of truth with CI-enforced tests
-- [x] **Phase 30: State Tracking Completeness** — `state.json` tracks actual preset changes per device, not just scene-level apply events (#22)
-- [x] **Phase 31: MC6 Clear SysEx Fix** — emulate the "clear" message sent by MC6 web UI when clearing a preset slot (#17)
-- [x] **Phase 32: Per-Parameter Plan Diffs (PLAN-01/02)** — `rig plan` shows before/after CC values and knob positions per device-action, not just "changed"
-- [x] **Phase 33: Apply-01/02 Completions** — skip analog prompt when state already shows desired preset; `--device` flag applies single device across all scenes
+- [x] Phase 25: I/O Parity — Thread ConfirmationIO through AnalogApplier; update tests to use InMemoryPromptAdapter (1/1 plans) — completed 2026-06-17
+- [x] Phase 26: Isolated Preset Apply — `rig apply --device <id> --preset <id>` applies one device's preset without full scene setup (1/1 plans) — completed 2026-06-17
+- [x] Phase 27: Editor Protocol, CLI Surface & YAML Writer — `rig edit` command, save/discard lifecycle, and rig.yaml preset writer (1/1 plans) — completed 2026-06-18
+- [x] Phase 28: Editor Plugin Implementations — CC-based live MIDI editing (CBA/MIDI/HX) and analog prompt-per-control flow (1/1 plans) — completed 2026-06-17
 
 </details>
 
 <details>
+<summary>✅ v1.6 Correctness & State Reliability (Phases 29-33) — SHIPPED 2026-06-24</summary>
+
+- [x] Phase 29: Catalog Integrity — fix wet_bypass/loop_bypass CC mismatch; named constants; catalog as single source of truth (1/1 plans) — completed 2026-06-22
+- [x] Phase 30: State Tracking Completeness — `state.json` tracks actual preset changes per device; `rig plan` suppresses false-positive CHANGED (1/1 plans) — completed 2026-06-22
+- [x] Phase 31: MC6 Clear SysEx Fix — `clear_preset_messages()` defaults to `save=True` for flash persistence, matching MC6 web UI (1/1 plans) — completed 2026-06-22
+- [x] Phase 32: Per-Parameter Plan Diffs — `rig plan` shows before/after CC values and knob positions per device-action (1/1 plans) — completed 2026-06-22
+- [x] Phase 33.1: Apply-01/02 Completions — skip analog prompt when state matches; `--device` alone applies cross-scene (1/1 plans) — completed 2026-06-24
+
+</details>
+
+<details open>
 <summary>⬜ v2.0 Platform Foundations (Phases 34-39) — PLANNED</summary>
 
-- [x] **Phase 33.1: Phase 33: Apply-01/02 Completions**
 - [ ] **Phase 34: First-Class Scenes** — decouple scenes from controller device config; scenes defined at top level in `rig.yaml`; rigs without a controller can have scenes
 - [ ] **Phase 35: State Schema Versioning** — `state.json` carries `schema_version`; migration on load; silent field additions no longer silently corrupt plan diffs
 - [ ] **Phase 36: Plugin Authoring Guide (PKG-07)** — `PLUGIN-AUTHORING.md` covering Device Protocol, entry points, `from_raw_yaml`, setup/apply/edit lifecycle; example minimal plugin skeleton committed to repo
@@ -102,79 +101,6 @@
 </details>
 
 ## Phase Details
-
-### Phase 29: Catalog Integrity
-
-**Goal**: The CBA control catalog is the single authoritative source for CC numbers; all tests derive expectations from the catalog, not hard-coded magic numbers
-**Depends on**: —
-**Requirements**: CAT-01
-**Success Criteria** (what must be TRUE):
-
-  1. `make test` passes with 0 failures — the wet_bypass/loop_bypass CC mismatch is resolved
-  2. Test assertions reference catalog constants, not duplicated literal CC numbers
-  3. The correct CC value (102 or 103) is verified against the official Mood MkII MIDI spec
-
-**Plans**: 1 plan
-
-Plans:
-
-- [x] 29-01-PLAN.md — Fix CC swap in catalog.py; add named constants; update both test files to reference constants
-
-### Phase 30: State Tracking Completeness
-
-**Goal**: `state.json` accurately reflects what preset is active on each device after every apply; `rig plan` diffs reflect actual device state rather than scene-level snapshots
-**Depends on**: Phase 29
-**Requirements**: STATE-01
-**Success Criteria** (what must be TRUE):
-
-  1. After `rig apply`, each device's `last_preset` in `state.json` matches the preset that was applied
-  2. `rig plan` reports "unchanged" for a device when `state.json` already records the desired preset — no false positives
-  3. Applying the same scene twice does not re-prompt for analog devices whose state already matches
-
-**Plans**: 1 plan
-Plans:
-
-- [x] 30-01-PLAN.md — Fix analog VERIFY assignment, apply auto-confirm, and plan display
-
-### Phase 31: MC6 Clear SysEx Fix
-
-**Goal**: `rig apply` sends the correct SysEx sequence when clearing an MC6 switch slot — matching what the MC6 web UI sends
-**Depends on**: Phase 29
-**Requirements**: MC6-01
-**Success Criteria** (what must be TRUE):
-
-  1. Captured SysEx from MC6 web UI "clear" action is documented and reproduced in `rig-morningstar`
-  2. `rig apply` clearing a switch slot sends the identical byte sequence
-  3. Existing MC6 SysEx tests updated to cover the clear case
-
-**Plans**: 1 plan
-
-### Phase 32: Per-Parameter Plan Diffs
-
-**Goal**: `rig plan` output shows the specific CC values or knob positions that will change, not just a "changed" label at the scene level
-**Depends on**: Phase 30
-**Requirements**: PLAN-01, PLAN-02
-**Success Criteria** (what must be TRUE):
-
-  1. `rig plan` output per device-action lists each parameter with `before:` and `after:` values when changed
-  2. Parameters that are unchanged within a "changed" scene are not listed
-  3. Analog devices list knob/switch names and positions, not CC numbers
-  4. JSON output (`--format json`) includes the parameter diff structure
-
-**Plans**: 1 plan
-
-### Phase 33: Apply-01/02 Completions
-
-**Goal**: Apply skips analog prompts for devices already in the desired state; `--device <id>` applies a single device across all scenes without a `--preset` flag
-**Depends on**: Phase 30
-**Requirements**: APPLY-01, APPLY-02
-**Success Criteria** (what must be TRUE):
-
-  1. `rig apply` with an analog device whose state matches the scene preset skips the manual prompt
-  2. `rig apply --device <id>` applies that device's preset for every scene in the plan without touching other devices
-  3. Both behaviors have tests using `InMemoryPromptAdapter`
-
-**Plans**: 1 plan
 
 ### Phase 34: First-Class Scenes
 
@@ -259,76 +185,6 @@ Plans:
 
 **Plans**: 2 plans
 
-### Phase 25: I/O Parity
-
-**Goal**: Analog device prompts flow through the same ConfirmationIO abstraction as all other prompts — no raw `input()` calls remain in any applier
-**Depends on**: Phase 24 (ConfirmationIO Protocol and InMemoryPromptAdapter already exist in v1.4)
-**Requirements**: IO-01, IO-02
-**Success Criteria** (what must be TRUE):
-
-  1. Running `rig apply` with an analog device never calls `builtins.input` directly — all prompts go through `ConfirmationIO.prompt()`
-  2. AnalogApplier tests pass without monkeypatching `builtins.input` — they instantiate `InMemoryPromptAdapter` and pass it through context
-  3. The test suite passes with no stdin-capture flags required for analog tests
-
-**Plans**: 1 plan
-
-Plans:
-
-- [x] 25-01-PLAN.md — Thread ConfirmationIO through AnalogDevice.apply(), delete prompt_analog(), migrate 3 tests
-
-### Phase 26: Isolated Preset Apply
-
-**Goal**: Users can apply a single device's preset without triggering full scene setup — useful for mid-session tweaks and targeted reapplies
-**Depends on**: Phase 25
-**Requirements**: PRESET-01, PRESET-02, PRESET-03
-**Success Criteria** (what must be TRUE):
-
-  1. User can run `rig apply --device <id> --preset <id>` and only that device is activated — all other devices are skipped
-  2. After a targeted apply, `state.json` reflects the updated preset for the targeted device only — other device states are unchanged
-  3. Running `rig apply --device <id> --preset <id>` with an unknown device or preset ID produces a clear error message
-  4. Running `rig apply` without `--device`/`--preset` flags behaves exactly as before (no regression)
-
-**Plans**: 1 plan
-
-Plans:
-
-- [ ] 25-01-PLAN.md — Thread ConfirmationIO through AnalogDevice.apply(), delete prompt_analog(), migrate 3 tests
-
-### Phase 27: Editor Protocol, CLI Surface & YAML Writer
-
-**Goal**: Users can enter editor mode for a device's preset via `rig edit`, and the save/discard lifecycle writes changes back to rig.yaml atomically
-**Depends on**: Phase 26
-**Requirements**: EDIT-01, EDIT-02, EDIT-04, EDIT-05
-**Success Criteria** (what must be TRUE):
-
-  1. `rig edit <device-id> <preset-id>` launches editor mode for the named preset — the command exists and routes correctly
-  2. When the user confirms a save, the updated preset values are written back to `rig.yaml` and can be loaded by `rig validate` without error
-  3. When the user discards, `rig.yaml` is bit-for-bit identical to its state before `rig edit` was run
-  4. The Device Protocol (or companion EditorProtocol) declares `edit(preset_id, ctx)` — plugins can implement it without touching core
-
-**Plans**: 1 plan
-
-Plans:
-
-- [ ] 25-01-PLAN.md — Thread ConfirmationIO through AnalogDevice.apply(), delete prompt_analog(), migrate 3 tests
-
-### Phase 28: Editor Plugin Implementations
-
-**Goal**: Each device plugin delivers its own interactive editing behavior — CC-based plugins stream live values; analog plugin presents a prompt-per-control flow
-**Depends on**: Phase 27
-**Requirements**: EDIT-03, EDIT-06
-**Success Criteria** (what must be TRUE):
-
-  1. During CBA/MIDI editor mode, changing a control value immediately sends the corresponding CC message to the device — the user hears the change live
-  2. Analog plugin editor mode walks the user through each control with a prompt — no MIDI is sent (manual set); the plugin owns this loop entirely
-  3. After any plugin's editor session saves, `rig validate` confirms the written values are valid preset parameters
-
-**Plans**: 1 plan
-
-Plans:
-
-- [x] 28-01-PLAN.md — CBA live editor (CC send), Analog key-value editor, HX stub, EditContext.midi field
-
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -357,15 +213,15 @@ Plans:
 | 22. Retire the Legacy Device Model | v1.4 | 1/1 | Complete | 2026-06-15 |
 | 23. ApplyContext Consolidation & Test Capture Fixes | v1.4 | 1/1 | Complete | 2026-06-16 |
 | 24. Close v1.4 gaps: Phase 21 verification, MC6 preset typing, QUAL-01 DeviceAction | v1.4 | 1/1 | Complete | 2026-06-17 |
-| 25. I/O Parity | v1.5 | 1/1 | Complete   | 2026-06-17 |
-| 26. Isolated Preset Apply | v1.5 | 1/1 | Complete   | 2026-06-17 |
-| 27. Editor Protocol, CLI Surface & YAML Writer | v1.5 | 1/1 | Complete   | 2026-06-18 |
+| 25. I/O Parity | v1.5 | 1/1 | Complete | 2026-06-17 |
+| 26. Isolated Preset Apply | v1.5 | 1/1 | Complete | 2026-06-17 |
+| 27. Editor Protocol, CLI Surface & YAML Writer | v1.5 | 1/1 | Complete | 2026-06-18 |
 | 28. Editor Plugin Implementations | v1.5 | 1/1 | Complete | 2026-06-17 |
-| 29. Catalog Integrity | v1.6 | 1/1 | Complete   | 2026-06-22 |
+| 29. Catalog Integrity | v1.6 | 1/1 | Complete | 2026-06-22 |
 | 30. State Tracking Completeness | v1.6 | 1/1 | Complete | 2026-06-22 |
 | 31. MC6 Clear SysEx Fix | v1.6 | 1/1 | Complete | 2026-06-22 |
-| 32. Per-Parameter Plan Diffs | v1.6 | 1/1 | Complete   | 2026-06-22 |
-| 33. Apply-01/02 Completions | v1.6 | 0/1 | Pending | — |
+| 32. Per-Parameter Plan Diffs | v1.6 | 1/1 | Complete | 2026-06-22 |
+| 33.1. Apply-01/02 Completions | v1.6 | 1/1 | Complete | 2026-06-24 |
 | 34. First-Class Scenes | v2.0 | 0/2 | Pending | — |
 | 35. State Schema Versioning | v2.0 | 0/1 | Pending | — |
 | 36. Plugin Authoring Guide | v2.0 | 0/1 | Pending | — |
@@ -373,18 +229,10 @@ Plans:
 | 38. YAML Config Schema Documentation | v2.0 | 0/1 | Pending | — |
 | 39. Reference Third-Party Plugin (rig-neuraldsp) | v2.0 | 0/2 | Pending | — |
 
-## Next Milestone: v1.6 — Correctness & State Reliability
-
-**Goal:** Fix all known correctness issues before the codebase is shared with anyone. The test suite must pass clean; `rig plan` must be trustworthy; the MC6 must behave correctly.
-
-**Phases:** 29 (Catalog Integrity) → 30 (State Tracking) → 31 (MC6 Clear) → 32 (Per-Parameter Diffs) → 33 (Apply completions)
-
-**After v1.6:** v2.0 Platform Foundations — scene decoupling, state schema versioning, plugin authoring guide, PyPI publishing, YAML schema docs, reference third-party plugin (rig-neuraldsp).
-
 ## Current State
 
-Phases 1–28 shipped across v1.0–v1.5 (6 milestones). v1.6 is next — 5 phases planned (29-33).
+Phases 1–33.1 shipped across v1.0–v1.6 (7 milestones). Next: v2.0 Platform Foundations — 6 phases planned (34-39).
 
-**Milestone v1.5 shipped 2026-06-17:** 4 phases (25-28), 4 plans, 2,261 LOC Python in `packages/rig/src/`.
+**Milestone v1.6 shipped 2026-06-24:** 5 phases (29-33.1), 5 plans, ~10,961 LOC Python, 399 tests pass, 0 failures.
 
-**Known issues entering v1.6:** 2 test failures (wet_bypass CC mismatch in catalog); `state.json` does not track preset-level changes; MC6 clear SysEx sends wrong bytes; `rig plan` shows "changed" without parameter detail.
+**Next milestone v2.0:** scene decoupling, state schema versioning, plugin authoring guide, PyPI publishing, YAML schema docs, reference third-party plugin (rig-neuraldsp).

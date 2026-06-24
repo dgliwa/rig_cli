@@ -1,5 +1,24 @@
 # Milestones
 
+## v1.6 Correctness & State Reliability (Shipped: 2026-06-24)
+
+**Phases completed:** 5 phases (29-33.1), 5 plans
+**Files changed:** 82 files, 9,772 insertions / 100 deletions
+**Total Python LOC:** ~10,961 (packages/)
+**Timeline:** 2026-06-17 → 2026-06-24 (7 days)
+**Test suite at close:** 399 passed, 0 failures
+
+**Key accomplishments:**
+
+- Fixed Mood MkII CC swap (`wet_bypass=102`, `loop_bypass=103`); named catalog constants replace magic numbers in all tests — CAT-01 satisfied
+- Fixed `state.json` per-device `last_preset` tracking after every apply; `rig plan` now shows VERIFY (not CHANGED) for already-applied presets — STATE-01 satisfied
+- Fixed MC6 clear SysEx: `clear_preset_messages()` defaults to `save=True` (flash persist), matching MC6 web UI byte-for-byte — MC6-01 satisfied
+- Added `ParamDiff` model: `rig plan` shows `gain: 5.0 → 8.0` per control, cold-start shows `?: 8.0`; JSON includes full diff structure — PLAN-01, PLAN-02 satisfied
+- Analog apply skips manual prompt when state already matches desired preset; `--device <id>` applies cross-scene without `--preset` — APPLY-01, APPLY-02 satisfied
+- Post-close blocker fix: MC6 controller-only apply now persists to `state.json` (commit a098afb)
+
+---
+
 ## v1.5 milestone (Shipped: 2026-06-18)
 
 **Phases completed:** 4 phases, 4 plans, 7 tasks

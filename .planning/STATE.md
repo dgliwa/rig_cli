@@ -1,33 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: — Correctness & State Reliability
-status: executing
+milestone: v2.0
+milestone_name: Platform Foundations
+status: planning
 last_updated: "2026-06-24T00:00:00.000Z"
-last_activity: 2026-06-24 — Phase 33.1 (Apply-01/02 Completions) complete; 399 tests pass
+last_activity: 2026-06-24 — v1.6 milestone complete; archived
 progress:
-  total_phases: 9
-  completed_phases: 9
-  total_plans: 9
-  completed_plans: 9
-  percent: 100
+  total_phases: 6
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-17)
+See: .planning/PROJECT.md (updated 2026-06-24)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** v1.6 milestone complete — all 9 phases done
+**Current focus:** v2.0 Platform Foundations — planning next milestone
 
 ## Current Position
 
-Phase: v1.6 — Phase 33.1: Apply-01/02 Completions (complete)
-Plan: 33.1-01 (complete)
-Status: Complete — all v1.6 phases done; 399 tests pass
-Last activity: 2026-06-24 — Phase 33.1 (Apply-01/02 Completions) complete; VERIFY branch prints "already set"; --device alone routes to apply_plan with device_filter
+Phase: v1.6 archived — v2.0 not yet started
+Status: v1.6 shipped 2026-06-24; run `/gsd-new-milestone` to begin v2.0
+Last activity: 2026-06-24 — v1.6 milestone complete (5 phases, 5 plans, 399 tests)
 
 ## Performance Metrics
 
@@ -125,7 +124,6 @@ Last activity: 2026-06-24 — Phase 33.1 (Apply-01/02 Completions) complete; VER
 
 ## Operator Next Steps
 
-- Run `/gsd-plan-phase 29` to create the Phase 29 (Catalog Integrity) plan — first thing that unblocks everything else
-- Phase 29 is the unlock: 2 test failures must be clean before v1.6 is credible
-- v1.6 goal: correctness and trustworthy state before sharing the tool with anyone
+- Run `/gsd-new-milestone` to define v2.0 Platform Foundations requirements and roadmap
 - v2.0 goal: scene decoupling + PyPI + plugin authoring guide = shareable platform
+- Phase 34 (First-Class Scenes) unlocks Phase 36 (Plugin Authoring Guide) and Phase 38 (YAML Schema Docs) — start there

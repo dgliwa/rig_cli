@@ -56,18 +56,17 @@ A single command should bring the physical rig to the exact state described in t
 - ✓ **CBA Live Editor** — `ChaseBlissDevice.edit()` sends live CC on each valid `<control> <value>` entry; unknown control/out-of-range re-prompts without advancing — v1.5
 - ✓ **Analog Key-Value Editor** — `AnalogDevice.edit()` implements `EditorProtocol` with no-MIDI key-entry loop; validates against existing keys only — v1.5
 - ✓ **`EditContext.midi` field** — `MidiManager | None = None` for CC-based plugins; `edit.py` passes `midi=None` explicitly — v1.5
+- ✓ **CAT-01: Catalog as single source of truth** — Mood MkII CC swap fixed (`wet_bypass=102`, `loop_bypass=103`); named constants `MOOD_MKII_WET_BYPASS_CC/LOOP_BYPASS_CC` exported; all test assertions reference catalog, not literals — v1.6
+- ✓ **STATE-01: Per-device state tracking** — `last_preset` written to `state.json` per device after every apply; `rig plan` reports VERIFY (not CHANGED) for already-applied presets; VERIFY-status actions skip device.apply() entirely — v1.6
+- ✓ **MC6-01: Clear SysEx flash persistence** — `clear_preset_messages()` defaults to `save=True` (0x7F byte), matching MC6 web UI byte-for-byte; power-cycle regression eliminated — v1.6
+- ✓ **PLAN-01/02: Per-parameter plan diffs** — `ParamDiff(name, before, after)` model on `DeviceAction.param_diff`; `rig plan` shows `gain: 5.0 → 8.0` per control; cold-start shows `?: 8.0`; JSON output includes full diff structure; unchanged params suppressed — v1.6
+- ✓ **APPLY-01: Skip analog prompt for matched state** — VERIFY-status analog actions print `✓ device: already set to 'preset'` and return without calling device.apply() or showing a prompt — v1.6
+- ✓ **APPLY-02: Cross-scene device-only apply** — `apply_plan(device_filter=...)` skips non-matching devices; `rig apply --device <id>` applies that device across all scenes; controller phase gated when device_filter set — v1.6
 
 ### Active
 
-- [ ] **CAT-01**: CBA control catalog is the single authoritative source for CC numbers; tests derive from catalog constants, not duplicated literals; wet_bypass/loop_bypass CC numbers verified against Mood MkII MIDI spec
-- [ ] **STATE-01**: `state.json` tracks per-device `last_preset` accurately after every apply; `rig plan` uses this to suppress false-positive "changed" signals
-- [ ] **STATE-02**: `state.json` carries a `schema_version` field; `read_state()` migrates older files forward on load; missing version treated as v0
-- [ ] **MC6-01**: `rig apply` sends the correct SysEx sequence when clearing an MC6 switch slot — byte-for-byte match to what the MC6 web UI sends
-- [ ] **PLAN-01**: `rig plan` shows which specific CC values / knob positions changed for a device, not just that a scene is "changed"
-- [ ] **PLAN-02**: `rig plan` output per device-action includes before/after values for each changed parameter
-- [ ] **APPLY-01**: `rig apply` skips the manual knob prompt for an analog device when `state.json` already records that device in the desired preset
-- [ ] **APPLY-02**: `rig apply --device <id>` applies only the named device's actions across all scenes
 - [ ] **SCENE-01**: Scenes are defined at the top level of `rig.yaml`, not embedded in controller device config; a rig without a controller can define and apply scenes
+- [ ] **STATE-02**: `state.json` carries a `schema_version` field; `read_state()` migrates older files forward on load; missing version treated as v0
 - [ ] **PKG-07**: Plugin authoring guide (`PLUGIN-AUTHORING.md`) covering Device Protocol, entry points, `from_raw_yaml`, setup/apply/edit lifecycle, with a minimal working example plugin skeleton
 - [ ] **PKG-08**: All 5 packages published to PyPI; GitHub Actions CI publishes on `v*` tags; `pip install rig rig-chasebliss` works from scratch
 - [ ] **PKG-09**: Reference third-party plugin (`rig-neuraldsp`) in its own repo demonstrating the full plugin authoring contract for Neural DSP Quad Cortex
@@ -83,29 +82,26 @@ A single command should bring the physical rig to the exact state described in t
 | HX MIDI channel configurability (#4) | Current hardcoded channel works — defer |
 | Complex MC6 workflows (next page, MIDI clock, etc.) (#6) | Low-priority — defer |
 | Module-level READMEs (#9) | Nice to have, not blocking |
-| MC6 clear message emulation (#17) | Deferred bug fix |
+| MC6 clear message emulation (#17) | ✓ Shipped in v1.6 (Phase 31) |
 | Default preset values (#19) | Low-priority tech task |
 | UI (#18) | Speculative — not planned |
 | CI independent package publishing | Low-priority infra — local `uv` workflow sufficient for now |
 
-## Next Milestone: v1.6 — TBD
+## Next Milestone: v2.0 — Platform Foundations
 
-**Goal:** TBD — ready for `/gsd-new-milestone` to define requirements and roadmap.
+**Goal:** Scene decoupling + PyPI publishing + plugin authoring guide = a shareable platform. The codebase is now correct and reliable (v1.6); v2.0 makes it extensible and distributable.
 
-**Candidate areas:**
-- HX Stomp interactive editing (Phase 28 intentionally left as stub)
-- Plugin authoring docs (`PKG-07`)
-- `rig plan` per-parameter diff (`PLAN-01`, `PLAN-02`)
-- `rig apply --device <id>` single-device scene apply (`APPLY-02`)
+**Phases:** 34 (First-Class Scenes) → 35 (State Schema Versioning) → 36 (Plugin Authoring Guide) → 37 (PyPI Publishing + CI) → 38 (YAML Config Schema Docs) → 39 (Reference Third-Party Plugin)
 
 ## Current State
 
-Phases 1–28 shipped across v1.0–v1.5 (6 milestones). All milestones complete. Next milestone TBD.
+Phases 1–33.1 shipped across v1.0–v1.6 (7 milestones). Next milestone: v2.0 Platform Foundations.
 
-**Milestone v1.5 shipped 2026-06-17:** 4 phases (25-28), 4 plans, 2,261 LOC Python in `packages/rig/src/`. ConfirmationIO threaded through AnalogDevice; `--device`/`--preset` flags on `rig apply` for isolated preset apply; `rig edit` command with EditorProtocol and ruamel.yaml round-trip write-back; CBA live CC-send editor loop; analog key-value editor. 367 tests pass, 0 failures.
+**Milestone v1.6 shipped 2026-06-24:** 5 phases (29-33.1), 5 plans, 399 tests pass. Fixed CC catalog mismatch, per-device state tracking, MC6 clear SysEx flash persistence, per-parameter plan diffs, analog apply skip for matched state, and cross-scene device-only apply.
 
 ## Context
 
+- **v1.6 shipped 2026-06-24**: 5 phases (29–33.1), 5 plans, ~10,961 LOC across all packages. 399 tests pass.
 - **v1.5 shipped 2026-06-17**: 4 phases (25–28), 4 plans, 2,261 LOC in `packages/rig/src/`. 367 tests pass.
 - **v1.4 shipped 2026-06-17**: 5 phases (20–24), 5 plans, 8,344 LOC Python across all packages
 - **v1.3 shipped 2026-06-10**: 6 phases (14–19), 6 plans, 1,023 LOC in `rig_chasebliss/` package
@@ -166,6 +162,12 @@ Phases 1–28 shipped across v1.0–v1.5 (6 milestones). All milestones complete
 | Validation order: D-04 → D-05 → D-06 before MidiManager() | Pre-MIDI validation ensures no port opened on error; security mitigation T-26-01/03 | ✓ Good — v1.5 |
 | EditContext fields ordered matching DeviceApplyContext | Consistency; config_path, dry_run, confirmation_io, rig, then midi | ✓ Good — v1.5 |
 | EditContext.midi as optional last field | CC-based plugins need it; analog/hx don't; None default keeps backward compat | ✓ Good — v1.5 |
+| Catalog constants at module level (not class-level) | Constants like `MOOD_MKII_WET_BYPASS_CC` are test-only aids; YAML remains the runtime truth; module-level keeps them importable without instantiation | ✓ Good — v1.6 |
+| `ActionStatus.VERIFY` unified across all device types | No device-type-specific status; all devices use the same `VERIFY` status when state matches — simpler rendering and apply logic | ✓ Good — v1.6 |
+| `clear_preset_messages()` defaults `save=True` | Aligns with sibling SysEx functions and MC6 web UI; RAM-only is the explicit opt-in, not the default; eliminates power-cycle regression | ✓ Good — v1.6 |
+| `ParamDiff` on `DeviceAction`, not a separate data structure | Param diffs are a property of the action, not a separate query; zero overhead for HX/no-change devices (empty list by default) | ✓ Good — v1.6 |
+| `device_filter` param on `apply_plan()` (not a new engine function) | Single entry point with optional filter is simpler than `apply_device()` alongside `apply_plan()`; gate on `action.device != device_filter` is readable | ✓ Good — v1.6 |
+| Phase 33.1 inserted for Apply-01/02 (not reusing Phase 33 slot) | Phase 33 original plan was stale; creating 33.1 preserves clean planning artifact history without overwriting the original 33 research docs | ✓ Good — v1.6 |
 
 ## Evolution
 
@@ -185,4 +187,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-17 — v1.5 milestone complete*
+*Last updated: 2026-06-24 — v1.6 milestone complete*
