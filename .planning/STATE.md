@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: — Correctness & State Reliability
 status: executing
-last_updated: "2026-06-23T01:54:05.887Z"
-last_activity: 2026-06-22 — Phase 31 (MC6 Clear SysEx Fix) complete; 392 tests pass; clear_preset_messages defaults to save=True for flash persistence
+last_updated: "2026-06-24T00:00:00.000Z"
+last_activity: 2026-06-24 — Phase 33.1 (Apply-01/02 Completions) complete; 399 tests pass
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 8
-  completed_plans: 8
+  total_phases: 9
+  completed_phases: 9
+  total_plans: 9
+  completed_plans: 9
   percent: 100
 ---
 
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-17)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** Phase 28 complete — milestone finished
+**Current focus:** v1.6 milestone complete — all 9 phases done
 
 ## Current Position
 
-Phase: v1.6 — Phase 31: MC6 Clear SysEx Fix (complete)
-Plan: 31-01 (complete)
-Status: In progress — Phase 31 complete; 392 tests pass
-Last activity: 2026-06-22 — Phase 31 (MC6 Clear SysEx Fix) complete; clear_preset_messages defaults to save=True for flash persistence
+Phase: v1.6 — Phase 33.1: Apply-01/02 Completions (complete)
+Plan: 33.1-01 (complete)
+Status: Complete — all v1.6 phases done; 399 tests pass
+Last activity: 2026-06-24 — Phase 33.1 (Apply-01/02 Completions) complete; VERIFY branch prints "already set"; --device alone routes to apply_plan with device_filter
 
 ## Performance Metrics
 
@@ -94,6 +94,10 @@ Last activity: 2026-06-22 — Phase 31 (MC6 Clear SysEx Fix) complete; clear_pre
 - **EDIT-03/06 in their own phase (Phase 28)** — plugin implementations depend on Phase 27's Protocol and CLI frame being stable; isolating them makes the blast radius of plugin-side changes smaller and keeps each plugin's behavior independently verifiable
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 33.1 inserted after Phase 33 (URGENT): Phase 33: Apply-01/02 Completions
 
 ### Milestones
 
