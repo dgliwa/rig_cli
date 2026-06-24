@@ -43,6 +43,7 @@ def apply_plan(
     dry_run: bool = False,
     scene: str | None = None,
     midi: MidiManager | None = None,
+    device_filter: str | None = None,
 ) -> ApplyResult:
     if plan is None:
         if rig is None:
@@ -110,10 +111,15 @@ def apply_plan(
         cancelled = False
 
         for action in sp.device_actions:
+            if device_filter and action.device != device_filter:
+                continue
             device = rig.devices.get(action.device) if rig else None
 
             if action.status == ActionStatus.VERIFY:
                 logger.debug("Device '%s': preset already correct — skipping apply", action.device)
+                console.print(
+                    f"  [green]✓[/green] {action.device}: already set to '{action.preset_name}'"
+                )
                 action_result = DeviceApplyResult(
                     device=action.device, status="skipped", preset=action.preset_name
                 )
@@ -161,7 +167,7 @@ def apply_plan(
         )
 
     # --- Phase 2: Controller programming ---
-    if rig and rig.controller and not scene:
+    if rig and rig.controller and not scene and not device_filter:
         controller = rig.controller
         if midi:
             console.print("\n[bold]Controller Programming Phase[/bold]")

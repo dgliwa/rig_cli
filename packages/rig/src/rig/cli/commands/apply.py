@@ -40,9 +40,9 @@ def apply(
         console.print("[red]✗[/red] --scene cannot be combined with --device/--preset")
         raise typer.Exit(1)
 
-    # D-05: --device and --preset must be used together
-    if bool(device) != bool(preset):
-        console.print("[red]✗[/red] --device and --preset must be used together")
+    # D-05: --preset requires --device
+    if preset and not device:
+        console.print("[red]✗[/red] --preset requires --device")
         raise typer.Exit(1)
 
     # D-06: existence validation before MIDI port is opened
@@ -53,6 +53,10 @@ def apply(
         target_device = rig.devices[device]
         if not any(p.id == preset for p in target_device.presets):
             console.print(f"[red]✗[/red] Preset '{preset}' not found on device '{device}'")
+            raise typer.Exit(1)
+    elif device:
+        if device not in rig.devices:
+            console.print(f"[red]✗[/red] Device '{device}' not found in rig config")
             raise typer.Exit(1)
 
     midi = MidiManager()
@@ -70,6 +74,18 @@ def apply(
                 config_path=config_path,
                 dry_run=dry_run,
                 midi=midi,
+            )
+        elif device:
+            result = compute_plan(rig, root_path=config_path)
+            apply_plan(
+                result,
+                state_writer=state_writer,
+                rig=rig,
+                config_path=config_path,
+                dry_run=dry_run,
+                scene=scene,
+                midi=midi,
+                device_filter=device,
             )
         else:
             result = compute_plan(rig, root_path=config_path)

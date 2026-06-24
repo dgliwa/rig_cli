@@ -814,3 +814,225 @@ class TestApplyPlanFallback:
             dry_run=True,
         )
         assert result.status == "no_changes"
+
+
+class TestVerifyDisplay:
+    """APPLY-01: VERIFY branch prints 'already set' message to console."""
+
+    def test_verify_action_prints_already_set(self, tmp_path, capsys):
+        """apply_plan must print 'already set' when a device is already at the desired preset."""
+        from rig_analog.device import AnalogDevice
+        from rig_analog.preset import AnalogPreset
+
+        analog = AnalogDevice(
+            id="tumnus",
+            type=DeviceType.ANALOG,
+            config={"type": "manual"},
+            presets=[
+                AnalogPreset(
+                    id="edge", pedal="tumnus", name="Edge of Breakup", values={"gain": 5.0}
+                )
+            ],
+        )
+        ctrl = FakeDevice(
+            id="mc6",
+            type=DeviceType.CONTROLLER,
+            config=SimpleNamespace(
+                scenes={"s1": {"presets": {"tumnus": "edge"}}},
+                type="controller",
+                midi_channel=1,
+                banks=[],
+            ),
+        )
+        rig = Rig(name="test", signal_chain=[], devices={"tumnus": analog, "mc6": ctrl})
+
+        _write_state_file(tmp_path, {"devices": {"tumnus": {"last_preset": "edge"}}, "scenes": {}})
+        plan = compute_plan(rig, root_path=str(tmp_path))
+        state_adapter = InMemoryStateAdapter()
+        prompt_io = InMemoryPromptAdapter(default="confirm")
+
+        apply_plan(
+            plan,
+            state_writer=state_adapter,
+            confirmation_io=prompt_io,
+            rig=rig,
+            config_path=str(tmp_path),
+            dry_run=False,
+        )
+
+        captured = capsys.readouterr()
+        assert "already set" in captured.out
+        assert "tumnus" in captured.out
+        assert "edge" in captured.out
+
+    def test_verify_action_does_not_call_prompt(self, tmp_path):
+        """Prompt adapter must not be called when a device is already at the desired preset."""
+        from rig_analog.device import AnalogDevice
+        from rig_analog.preset import AnalogPreset
+
+        analog = AnalogDevice(
+            id="tumnus",
+            type=DeviceType.ANALOG,
+            config={"type": "manual"},
+            presets=[
+                AnalogPreset(
+                    id="edge", pedal="tumnus", name="Edge of Breakup", values={"gain": 5.0}
+                )
+            ],
+        )
+        ctrl = FakeDevice(
+            id="mc6",
+            type=DeviceType.CONTROLLER,
+            config=SimpleNamespace(
+                scenes={"s1": {"presets": {"tumnus": "edge"}}},
+                type="controller",
+                midi_channel=1,
+                banks=[],
+            ),
+        )
+        rig = Rig(name="test", signal_chain=[], devices={"tumnus": analog, "mc6": ctrl})
+
+        _write_state_file(tmp_path, {"devices": {"tumnus": {"last_preset": "edge"}}, "scenes": {}})
+        plan = compute_plan(rig, root_path=str(tmp_path))
+
+        call_log: list[str] = []
+
+        class TrackingPromptAdapter(InMemoryPromptAdapter):
+            def prompt_device(
+                self, device, preset_name, preset_number, midi_channel, midi_connected
+            ):
+                call_log.append(device)
+                return super().prompt_device(
+                    device, preset_name, preset_number, midi_channel, midi_connected
+                )
+
+        state_adapter = InMemoryStateAdapter()
+        prompt_io = TrackingPromptAdapter(default="confirm")
+
+        apply_plan(
+            plan,
+            state_writer=state_adapter,
+            confirmation_io=prompt_io,
+            rig=rig,
+            config_path=str(tmp_path),
+            dry_run=False,
+        )
+
+        assert "tumnus" not in call_log, (
+            "Prompt must not be shown when device is already at correct preset"
+        )
+
+
+class TestDeviceFilterApply:
+    """APPLY-02: apply_plan with device_filter applies only the named device across all scenes."""
+
+    def _make_two_device_rig(self) -> tuple[Rig, FakeDevice]:
+        from rig_analog.device import AnalogDevice
+        from rig_analog.preset import AnalogPreset
+
+        klon = AnalogDevice(
+            id="klon",
+            type=DeviceType.ANALOG,
+            config={"type": "manual"},
+            presets=[AnalogPreset(id="clean", pedal="klon", name="Clean", values={})],
+        )
+        brothers = AnalogDevice(
+            id="brothers",
+            type=DeviceType.ANALOG,
+            config={"type": "manual"},
+            presets=[AnalogPreset(id="lo-gain", pedal="brothers", name="Lo Gain", values={})],
+        )
+        ctrl = FakeDevice(
+            id="mc6",
+            type=DeviceType.CONTROLLER,
+            config=SimpleNamespace(
+                scenes={
+                    "s1": {"presets": {"klon": "clean", "brothers": "lo-gain"}},
+                    "s2": {"presets": {"klon": "clean", "brothers": "lo-gain"}},
+                },
+                type="controller",
+                midi_channel=1,
+                banks=[],
+            ),
+        )
+        rig = Rig(
+            name="test",
+            signal_chain=[],
+            devices={"klon": klon, "brothers": brothers, "mc6": ctrl},
+        )
+        return rig, ctrl
+
+    def test_device_filter_applies_only_named_device(self, tmp_path):
+        """apply_plan with device_filter only writes state for the named device."""
+        rig, _ = self._make_two_device_rig()
+        state_adapter = InMemoryStateAdapter()
+        prompt_io = InMemoryPromptAdapter(default="confirm")
+
+        result = compute_plan(rig, root_path=str(tmp_path))
+        apply_plan(
+            result,
+            state_writer=state_adapter,
+            confirmation_io=prompt_io,
+            rig=rig,
+            config_path=str(tmp_path),
+            dry_run=False,
+            device_filter="klon",
+        )
+
+        state = state_adapter.state
+        assert "klon" in state.devices
+        assert "brothers" not in state.devices, (
+            "device_filter must not write state for other devices"
+        )
+
+    def test_device_filter_across_multiple_scenes(self, tmp_path):
+        """device_filter applies the named device's action across all scenes in the plan."""
+        rig, _ = self._make_two_device_rig()
+        state_adapter = InMemoryStateAdapter()
+        prompt_io = InMemoryPromptAdapter(default="confirm")
+
+        result = compute_plan(rig, root_path=str(tmp_path))
+        apply_plan(
+            result,
+            state_writer=state_adapter,
+            confirmation_io=prompt_io,
+            rig=rig,
+            config_path=str(tmp_path),
+            dry_run=False,
+            device_filter="klon",
+        )
+
+        assert "klon" in state_adapter.state.devices, (
+            "klon state must be written after filtered apply"
+        )
+
+    def test_device_filter_does_not_run_controller_phase(self, tmp_path):
+        """Controller programming phase is skipped when device_filter is set."""
+        from unittest.mock import patch
+
+        rig, ctrl = self._make_two_device_rig()
+        state_adapter = InMemoryStateAdapter()
+        prompt_io = InMemoryPromptAdapter(default="confirm")
+
+        result = compute_plan(rig, root_path=str(tmp_path))
+        controller_apply_calls: list[str] = []
+        original_apply = type(ctrl).apply
+
+        def tracking_apply(self, ctx):
+            controller_apply_calls.append(self.id)
+            return original_apply(self, ctx)
+
+        with patch.object(type(ctrl), "apply", tracking_apply):
+            apply_plan(
+                result,
+                state_writer=state_adapter,
+                confirmation_io=prompt_io,
+                rig=rig,
+                config_path=str(tmp_path),
+                dry_run=False,
+                device_filter="klon",
+            )
+
+        assert "mc6" not in controller_apply_calls, (
+            "Controller apply must not run when device_filter is set"
+        )
