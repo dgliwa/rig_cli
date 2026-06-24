@@ -48,7 +48,7 @@ created: 2026-06-23
 
 ## Wave 0 Requirements
 
-*Existing infrastructure covers all phase requirements.*
+*Wave 0 not required. Existing test infrastructure fully covered all phase requirements; no new test setup tasks were needed before plan execution. `wave_0_complete: false` reflects that no Wave 0 tasks ran — not a gap.*
 
 ---
 
