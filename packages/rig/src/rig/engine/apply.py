@@ -187,8 +187,8 @@ def apply_plan(
                 connected_devices=connected_devices,
                 config_path=config_path,
             )
-            controller.apply(controller_ctx)
-            if controller.id in state.devices:
+            controller_result = controller.apply(controller_ctx)
+            if controller_result.status == "confirmed":
                 state_modified = True
 
     if config_path and not dry_run and state_modified:
