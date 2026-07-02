@@ -28,3 +28,12 @@ def test_config_is_mc6_config_instance():
 def test_from_raw_yaml_invalid_banks_type_raises():
     with pytest.raises(ValidationError):
         MC6Device.from_raw_yaml({"id": "mc6", "config": {"type": "controller", "banks": "bad"}})
+
+
+def test_mc6_config_has_no_scenes_field():
+    assert "scenes" not in MC6Config.model_fields
+
+
+def test_mc6_config_rejects_scenes_key():
+    with pytest.raises(ValidationError):
+        MC6Config(type="controller", scenes={"lead": {}}, banks=[])
