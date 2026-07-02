@@ -19,6 +19,10 @@ BASE_RIG_YAML = """\
 name: test-rig
 description: A test rig
 midi_channel: 1
+scenes:
+  billy-clean:
+    presets:
+      brothers: low-gain
 devices:
   - id: brothers
     name: Brothers
@@ -51,10 +55,6 @@ devices:
     config:
       type: controller
       midi_channel: 1
-      scenes:
-        billy-clean:
-          presets:
-            brothers: low-gain
       banks: []
 """
 
@@ -88,7 +88,7 @@ class TestLoadRig:
         assert len(tumnus.presets) == 1
         assert tumnus.presets[0].values["Gain"] == 3.5
 
-    def test_loads_scenes_from_controller(self, rig_dir):
+    def test_loads_scenes_from_top_level(self, rig_dir):
         config = load_rig(str(rig_dir))
         assert "billy-clean" in config.scenes
         assert config.scenes["billy-clean"].presets["brothers"] == "low-gain"
@@ -173,7 +173,7 @@ devices:
         assert config.controller is not None
         assert config.controller.id == "mc6"
 
-    def test_scenes_accessible_via_controller(self, rig_dir):
+    def test_scenes_accessible_via_top_level_key(self, rig_dir):
         config = load_rig(str(rig_dir))
         assert "billy-clean" in config.scenes
 
@@ -261,3 +261,56 @@ devices:
 
 
 # ---------------------------------------------------------------------------
+
+
+class TestTopLevelScenes:
+    """Loader reads scenes from the top-level scenes: key (D-03)."""
+
+    def test_loader_preserves_scene_tempo(self, tmp_path):
+        """A top-level scene with tempo: survives the loader round-trip."""
+        yaml = """\
+name: tempo-rig
+scenes:
+  s:
+    tempo: 120
+    presets:
+      brothers: low-gain
+devices:
+  - id: brothers
+    name: Brothers
+    type: digital
+    config:
+      type: midi
+      midi_channel: 3
+    presets:
+      - id: low-gain
+        name: Low Gain
+        preset_number: 4
+"""
+        path = tmp_path / "rig.yaml"
+        path.write_text(yaml)
+        config = load_rig(str(tmp_path))
+        assert config.scenes["s"].tempo == 120
+
+    def test_loader_rejects_scenes_in_controller_config(self, tmp_path):
+        """A rig.yaml with scenes: under controller config raises ConfigError, not raw pydantic."""
+        from rig.config.errors import ConfigError
+
+        yaml = """\
+name: stale-rig
+devices:
+  - id: mc6
+    name: MC6
+    type: controller
+    config:
+      type: controller
+      scenes:
+        lead:
+          presets:
+            hx-stomp: lead
+      banks: []
+"""
+        path = tmp_path / "rig.yaml"
+        path.write_text(yaml)
+        with pytest.raises(ConfigError):
+            load_rig(str(tmp_path))
