@@ -1,20 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v2.0
-milestone_name: Platform Foundations
-current_phase: 34
-current_phase_name: first-class-scenes
-status: executing
-stopped_at: Phase 34 Plan 01 complete — 34-01-SUMMARY.md created
-last_updated: "2026-07-02T04:17:10Z"
-last_activity: 2026-07-02
-last_activity_desc: Phase 34 Plan 01 complete (406 tests, Rig.scenes as real Pydantic field)
+milestone_name: milestone
+status: completed
+stopped_at: Phase 34 context gathered
+last_updated: "2026-07-02T12:56:29.287Z"
+last_activity: 2026-07-02 -- Phase 34 marked complete
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 6
-  completed_plans: 5
-  percent: 73
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
@@ -24,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-24)
 
 **Core value:** A single command brings the physical rig to the exact state described in the config repo — no guessing, no manual knob-hunting.
-**Current focus:** v2.0 Platform Foundations — planning next milestone
+**Current focus:** Phase 34 — first-class-scenes
 
 ## Current Position
 
-Phase: 34 (first-class-scenes) — EXECUTING
-Plan: 2 of 2 (Plan 01 complete)
-Status: Phase 34 Plan 01 complete; ready for Plan 02
-Last activity: 2026-07-02 — Phase 34 Plan 01 complete (406 tests, Rig.scenes as real Pydantic field)
+Phase: 34 — COMPLETE
+Plan: 1 of 2
+Status: Phase 34 complete
+Last activity: 2026-07-02 -- Phase 34 marked complete
 
 ## Performance Metrics
 
@@ -67,17 +64,11 @@ Last activity: 2026-07-02 — Phase 34 Plan 01 complete (406 tests, Rig.scenes a
 
 ## Decisions
 
-### Phase 34 decisions (Plan 01)
-
-- **Hard cutover (D-01): scenes under controller config now raises ConfigError immediately** — no fallback; gradual migration would leave the codebase in a partial state
-- **MC6Config gets explicit midi_channel field when extra=forbid** — all YAML keys must be declared fields; `midi_channel: 1` is a legitimate key in rig.yaml
-- **Plain-dict ordering sufficient for Rig.scenes** — no OrderedDict needed per CONTEXT.md Claude's Discretion
-
 ### Phase 10 decisions
 
 - **Device list order = signal chain** — no separate signal-chain.yaml; the devices list position defines chain order
 - **Presets inline** — each device entry carries its own presets; parsed to correct model type
-- **Scenes now at top-level rig.yaml key** — D-01/D-03: scenes are independent of controller devices; `Rig.scenes` is a real Pydantic field populated by the loader
+- **Scenes extracted from controller config** — controller holds scenes with bank/switch; loader extracts `presets`/`description`/`tags` to `Scene` model; controller-specific fields stay in device config
 - **`config.type` is the entry point key** — plugin dispatch uses `config.type` (e.g. `"midi"`, `"chase_bliss"`), while device-level `type` is the `DeviceType` enum (`"digital"`, `"analog"`, `"modeler"`, `"controller"`)
 - **`composes` is optional controller metadata** — validated against device IDs; not used for graph ordering (yet)
 

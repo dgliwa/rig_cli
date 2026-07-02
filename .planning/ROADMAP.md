@@ -91,7 +91,7 @@
 <details open>
 <summary>⬜ v2.0 Platform Foundations (Phases 34-39) — PLANNED</summary>
 
-- [ ] **Phase 34: First-Class Scenes** — decouple scenes from controller device config; scenes defined at top level in `rig.yaml`; rigs without a controller can have scenes
+- [x] **Phase 34: First-Class Scenes** — decouple scenes from controller device config; scenes defined at top level in `rig.yaml`; rigs without a controller can have scenes
 - [ ] **Phase 35: State Schema Versioning** — `state.json` carries `schema_version`; migration on load; silent field additions no longer silently corrupt plan diffs
 - [ ] **Phase 36: Plugin Authoring Guide (PKG-07)** — `PLUGIN-AUTHORING.md` covering Device Protocol, entry points, `from_raw_yaml`, setup/apply/edit lifecycle; example minimal plugin skeleton committed to repo
 - [ ] **Phase 37: PyPI Publishing + CI** — GitHub Actions workflow publishes all 5 packages to PyPI on tag; version matrix; `pip install rig rig-chasebliss` works
@@ -118,11 +118,11 @@
 **Plans**: 2 plans
 **Wave 1**
 
-- [ ] 34-01-PLAN.md — Core model + schema migration: Rig.scenes as a field, MC6Config hard cutover (D-01–D-04)
+- [x] 34-01-PLAN.md — Core model + schema migration: Rig.scenes as a field, MC6Config hard cutover (D-01–D-04)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 34-02-PLAN.md — Controller-less apply coverage (D-05) + cleanup
+- [x] 34-02-PLAN.md — Controller-less apply coverage (D-05) + cleanup
 
 ### Phase 35: State Schema Versioning
 
@@ -229,7 +229,7 @@
 | 31. MC6 Clear SysEx Fix | v1.6 | 1/1 | Complete | 2026-06-22 |
 | 32. Per-Parameter Plan Diffs | v1.6 | 1/1 | Complete | 2026-06-22 |
 | 33.1. Apply-01/02 Completions | v1.6 | 1/1 | Complete | 2026-06-24 |
-| 34. First-Class Scenes | v2.0 | 0/2 | Pending | — |
+| 34. First-Class Scenes | v2.0 | 2/2 | Complete | 2026-07-02 |
 | 35. State Schema Versioning | v2.0 | 0/1 | Pending | — |
 | 36. Plugin Authoring Guide | v2.0 | 0/1 | Pending | — |
 | 37. PyPI Publishing + CI | v2.0 | 0/1 | Pending | — |
