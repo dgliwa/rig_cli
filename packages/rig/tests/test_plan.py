@@ -6,6 +6,7 @@ from rig.engine.plan import compute_plan
 from rig.engine.plan.models import ParamDiff
 from rig.engine.plugin import DeviceType
 from rig.models.rig import Rig
+from rig.models.scene import Scene
 from rig_analog.preset import AnalogPreset
 from rig_chasebliss.device import ChaseBlissConfig
 from rig_chasebliss.preset import DigitalPreset
@@ -39,17 +40,13 @@ def _make_rig(scene_presets: dict | None = None) -> Rig:
     ctrl = FakeDevice(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config=SimpleNamespace(
-            scenes={"test-scene": {"presets": scene_presets}},
-            type="controller",
-            midi_channel=1,
-            banks=[],
-        ),
+        config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
     )
     return Rig(
         name="test",
         signal_chain=["hx-stomp"],
         devices={"hx-stomp": hx, "brothers": bro, "tumnus": tum, "mc6": ctrl},
+        scenes={"test-scene": Scene(name="test-scene", presets=scene_presets)},
     )
 
 
@@ -174,6 +171,7 @@ def _make_rig_with_extra_preset() -> Rig:
         name="test",
         signal_chain=["hx-stomp"],
         devices={"hx-stomp": hx, "brothers": bro, "tumnus": tum, "mc6": ctrl},
+        scenes={"test-scene": Scene(name="test-scene", presets={"hx-stomp": "clean-edge"})},
     )
 
 
@@ -437,12 +435,7 @@ def _make_ordered_rig() -> Rig:
     ctrl = FakeDevice(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config=SimpleNamespace(
-            scenes={"test-scene": {"presets": {"polytune": "mute", "hx-stomp": "clean-edge"}}},
-            type="controller",
-            midi_channel=1,
-            banks=[],
-        ),
+        config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
     )
     return Rig(
         name="test",
@@ -451,6 +444,11 @@ def _make_ordered_rig() -> Rig:
             "hx-stomp",
         ],
         devices={"hx-stomp": hx, "polytune": tuner, "mc6": ctrl},
+        scenes={
+            "test-scene": Scene(
+                name="test-scene", presets={"polytune": "mute", "hx-stomp": "clean-edge"}
+            )
+        },
     )
 
 
@@ -465,17 +463,13 @@ def _make_analog_rig_with_presets(presets: list, scene_preset_id: str) -> Rig:
     ctrl = FakeDevice(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config=SimpleNamespace(
-            scenes={"test-scene": {"presets": {"tumnus": scene_preset_id}}},
-            type="controller",
-            midi_channel=1,
-            banks=[],
-        ),
+        config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
     )
     return Rig(
         name="test",
         signal_chain=[],
         devices={"tumnus": tum, "mc6": ctrl},
+        scenes={"test-scene": Scene(name="test-scene", presets={"tumnus": scene_preset_id})},
     )
 
 
@@ -490,17 +484,13 @@ def _make_digital_rig_with_presets(presets: list, scene_preset_id: str) -> Rig:
     ctrl = FakeDevice(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config=SimpleNamespace(
-            scenes={"test-scene": {"presets": {"brothers": scene_preset_id}}},
-            type="controller",
-            midi_channel=1,
-            banks=[],
-        ),
+        config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
     )
     return Rig(
         name="test",
         signal_chain=[],
         devices={"brothers": bro, "mc6": ctrl},
+        scenes={"test-scene": Scene(name="test-scene", presets={"brothers": scene_preset_id})},
     )
 
 
@@ -705,19 +695,18 @@ class TestDeviceOrdering:
         ctrl = FakeDevice(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config=SimpleNamespace(
-                scenes={
-                    "test-scene": {"presets": {"brothers": "low-gain", "hx-stomp": "clean-edge"}}
-                },
-                type="controller",
-                midi_channel=1,
-                banks=[],
-            ),
+            config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
         )
         rig = Rig(
             name="test",
             signal_chain=["hx-stomp"],
             devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
+            scenes={
+                "test-scene": Scene(
+                    name="test-scene",
+                    presets={"brothers": "low-gain", "hx-stomp": "clean-edge"},
+                )
+            },
         )
         plan = compute_plan(rig)
         actions = plan.scenes["test-scene"].device_actions

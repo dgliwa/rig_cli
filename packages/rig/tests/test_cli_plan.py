@@ -20,11 +20,15 @@ runner = CliRunner()
 def _write_minimal_digital_rig(root: Path) -> None:
     """Write a minimal rig with one digital device, one controller, and one scene.
 
-    Uses the new single-file rig.yaml schema (Phase 10).
+    Uses the new single-file rig.yaml schema (v2.0+) with top-level scenes:.
     """
     (root / "rig.yaml").write_text(
         """\
 name: test-rig
+scenes:
+  main:
+    presets:
+      hx-stomp: clean
 devices:
   - id: hx-stomp
     name: HX Stomp XL
@@ -43,10 +47,6 @@ devices:
     config:
       type: controller
       midi_channel: 1
-      scenes:
-        main:
-          presets:
-            hx-stomp: clean
 """
     )
 
@@ -98,11 +98,15 @@ class TestPlanSummaryLine:
 def _write_cba_rig(root: Path) -> None:
     """Write a minimal rig with one Chase Bliss device (no prior state).
 
-    Uses the new single-file rig.yaml schema (Phase 10).
+    Uses the new single-file rig.yaml schema (v2.0+ with top-level scenes:).
     """
     (root / "rig.yaml").write_text(
         """\
 name: cba-test-rig
+scenes:
+  main:
+    presets:
+      brothers: low-gain
 devices:
   - id: brothers
     name: Brothers
@@ -120,10 +124,6 @@ devices:
     config:
       type: controller
       midi_channel: 1
-      scenes:
-        main:
-          presets:
-            brothers: low-gain
 """
     )
 
@@ -174,11 +174,15 @@ class TestPlanVisualMarkers:
 def _write_analog_rig(root: Path) -> None:
     """Write a minimal rig with one analog (manual) device.
 
-    Uses the new single-file rig.yaml schema (Phase 10).
+    Uses the new single-file rig.yaml schema (v2.0+ with top-level scenes:).
     """
     (root / "rig.yaml").write_text(
         """\
 name: analog-test-rig
+scenes:
+  main:
+    presets:
+      tumnus: edge
 devices:
   - id: tumnus
     name: Tumnus
@@ -196,10 +200,6 @@ devices:
     config:
       type: controller
       midi_channel: 1
-      scenes:
-        main:
-          presets:
-            tumnus: edge
 """
     )
 
@@ -230,11 +230,18 @@ class TestSceneFilter:
     def _write_two_scene_rig(self, root: Path) -> None:
         """Write a rig with two scenes: main and alt.
 
-        Uses the new single-file rig.yaml schema (Phase 10).
+        Uses the new single-file rig.yaml schema (v2.0+ with top-level scenes:).
         """
         (root / "rig.yaml").write_text(
             """\
 name: two-scene-rig
+scenes:
+  main:
+    presets:
+      hx-stomp: clean
+  alt:
+    presets:
+      hx-stomp: drive
 devices:
   - id: hx-stomp
     name: HX Stomp XL
@@ -257,13 +264,6 @@ devices:
     config:
       type: controller
       midi_channel: 1
-      scenes:
-        main:
-          presets:
-            hx-stomp: clean
-        alt:
-          presets:
-            hx-stomp: drive
 """
         )
 
@@ -287,6 +287,10 @@ def _write_analog_rig_with_params(root: Path) -> None:
     (root / "rig.yaml").write_text(
         """\
 name: analog-params-rig
+scenes:
+  main:
+    presets:
+      tumnus: crunch
 devices:
   - id: tumnus
     name: Tumnus
@@ -305,10 +309,6 @@ devices:
     config:
       type: controller
       midi_channel: 1
-      scenes:
-        main:
-          presets:
-            tumnus: crunch
 """
     )
 
@@ -318,6 +318,10 @@ def _write_cba_rig_with_params(root: Path) -> None:
     (root / "rig.yaml").write_text(
         """\
 name: cba-params-rig
+scenes:
+  main:
+    presets:
+      brothers: high-gain
 devices:
   - id: brothers
     name: Brothers
@@ -344,10 +348,6 @@ devices:
     config:
       type: controller
       midi_channel: 1
-      scenes:
-        main:
-          presets:
-            brothers: high-gain
 """
     )
 
@@ -368,6 +368,10 @@ class TestParamDiffRendering:
         (tmp_path / "rig.yaml").write_text(
             """\
 name: analog-two-preset-rig
+scenes:
+  main:
+    presets:
+      tumnus: crunch
 devices:
   - id: tumnus
     name: Tumnus
@@ -391,10 +395,6 @@ devices:
     config:
       type: controller
       midi_channel: 1
-      scenes:
-        main:
-          presets:
-            tumnus: crunch
 """
         )
         state_path = tmp_path / ".rig" / "state.json"

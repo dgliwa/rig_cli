@@ -10,6 +10,7 @@ from rig.engine.apply import ApplyResult, apply_plan
 from rig.engine.plan import compute_plan
 from rig.engine.plugin import DeviceType
 from rig.models.rig import Rig
+from rig.models.scene import Scene
 from rig_chasebliss.device import ChaseBlissConfig, ChaseBlissDevice
 from rig_chasebliss.preset import DigitalPreset
 from rig_hx.device import HXStompDevice
@@ -49,17 +50,18 @@ def _make_config() -> Rig:
     ctrl = FakeDevice(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config=SimpleNamespace(
-            scenes={"test-scene": {"presets": {"hx-stomp": "clean-edge", "brothers": "low-gain"}}},
-            type="controller",
-            midi_channel=1,
-            banks=[],
-        ),
+        config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
     )
     return Rig(
         name="test",
         signal_chain=["hx-stomp"],
         devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
+        scenes={
+            "test-scene": Scene(
+                name="test-scene",
+                presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
+            )
+        },
     )
 
 
@@ -539,19 +541,18 @@ class TestDevicePluginRouting:
         ctrl = FakeDevice(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config=SimpleNamespace(
-                scenes={
-                    "test-scene": {"presets": {"hx-stomp": "clean-edge", "brothers": "low-gain"}}
-                },
-                type="controller",
-                midi_channel=1,
-                banks=[],
-            ),
+            config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
         )
         return Rig(
             name="test",
             signal_chain=["hx-stomp"],
             devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
+            scenes={
+                "test-scene": Scene(
+                    name="test-scene",
+                    presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
+                )
+            },
         )
 
     def test_device_apply_called_for_scene_action(self, tmp_path):
@@ -636,17 +637,13 @@ class TestVerifyActionSkipped:
         ctrl = FakeDevice(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config=SimpleNamespace(
-                scenes={"s1": {"presets": {"tumnus": "edge"}}},
-                type="controller",
-                midi_channel=1,
-                banks=[],
-            ),
+            config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
         )
         rig = Rig(
             name="test",
             signal_chain=[],
             devices={"tumnus": analog, "mc6": ctrl},
+            scenes={"s1": Scene(name="s1", presets={"tumnus": "edge"})},
         )
 
         # Pre-populate state so tumnus already has the correct preset → VERIFY
@@ -706,17 +703,13 @@ class TestVerifyActionSkipped:
         ctrl = FakeDevice(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config=SimpleNamespace(
-                scenes={"s1": {"presets": {"tumnus": "edge"}}},
-                type="controller",
-                midi_channel=1,
-                banks=[],
-            ),
+            config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
         )
         rig = Rig(
             name="test",
             signal_chain=[],
             devices={"tumnus": analog, "mc6": ctrl},
+            scenes={"s1": Scene(name="s1", presets={"tumnus": "edge"})},
         )
 
         # --- First apply: state is empty, so tumnus gets an APPLY action and a prompt ---
@@ -837,14 +830,14 @@ class TestVerifyDisplay:
         ctrl = FakeDevice(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config=SimpleNamespace(
-                scenes={"s1": {"presets": {"tumnus": "edge"}}},
-                type="controller",
-                midi_channel=1,
-                banks=[],
-            ),
+            config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
         )
-        rig = Rig(name="test", signal_chain=[], devices={"tumnus": analog, "mc6": ctrl})
+        rig = Rig(
+            name="test",
+            signal_chain=[],
+            devices={"tumnus": analog, "mc6": ctrl},
+            scenes={"s1": Scene(name="s1", presets={"tumnus": "edge"})},
+        )
 
         _write_state_file(tmp_path, {"devices": {"tumnus": {"last_preset": "edge"}}, "scenes": {}})
         plan = compute_plan(rig, root_path=str(tmp_path))
@@ -883,14 +876,14 @@ class TestVerifyDisplay:
         ctrl = FakeDevice(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config=SimpleNamespace(
-                scenes={"s1": {"presets": {"tumnus": "edge"}}},
-                type="controller",
-                midi_channel=1,
-                banks=[],
-            ),
+            config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
         )
-        rig = Rig(name="test", signal_chain=[], devices={"tumnus": analog, "mc6": ctrl})
+        rig = Rig(
+            name="test",
+            signal_chain=[],
+            devices={"tumnus": analog, "mc6": ctrl},
+            scenes={"s1": Scene(name="s1", presets={"tumnus": "edge"})},
+        )
 
         _write_state_file(tmp_path, {"devices": {"tumnus": {"last_preset": "edge"}}, "scenes": {}})
         plan = compute_plan(rig, root_path=str(tmp_path))
@@ -945,20 +938,16 @@ class TestDeviceFilterApply:
         ctrl = FakeDevice(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config=SimpleNamespace(
-                scenes={
-                    "s1": {"presets": {"klon": "clean", "brothers": "lo-gain"}},
-                    "s2": {"presets": {"klon": "clean", "brothers": "lo-gain"}},
-                },
-                type="controller",
-                midi_channel=1,
-                banks=[],
-            ),
+            config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
         )
         rig = Rig(
             name="test",
             signal_chain=[],
             devices={"klon": klon, "brothers": brothers, "mc6": ctrl},
+            scenes={
+                "s1": Scene(name="s1", presets={"klon": "clean", "brothers": "lo-gain"}),
+                "s2": Scene(name="s2", presets={"klon": "clean", "brothers": "lo-gain"}),
+            },
         )
         return rig, ctrl
 
