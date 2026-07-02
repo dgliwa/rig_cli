@@ -1,14 +1,11 @@
 ---
 gsd_state_version: 1.0
 milestone: v2.0
-milestone_name: Platform Foundations
-current_phase: 6
-current_phase_name: v2.0 not yet started
-status: planning
+milestone_name: milestone
+status: v1.6 shipped 2026-06-24; run `/gsd-new-milestone` to begin v2.0
 stopped_at: Phase 34 context gathered
-last_updated: "2026-07-02T02:36:23.588Z"
-last_activity: 2026-06-24
-last_activity_desc: v1.6 milestone complete (5 phases, 5 plans, 399 tests)
+last_updated: "2026-07-02T03:08:32.284Z"
+last_activity: 2026-06-24 — v1.6 milestone complete (5 phases, 5 plans, 399 tests)
 progress:
   total_phases: 5
   completed_phases: 4
