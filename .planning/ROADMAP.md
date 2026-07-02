@@ -116,6 +116,8 @@
   5. Existing sample fixtures and tests updated; no regressions
 
 **Plans**: 2 plans
+- [ ] 34-01-PLAN.md — Core model + schema migration: Rig.scenes as a field, MC6Config hard cutover (D-01–D-04)
+- [ ] 34-02-PLAN.md — Controller-less apply coverage (D-05) + cleanup
 
 ### Phase 35: State Schema Versioning
 
