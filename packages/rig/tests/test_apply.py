@@ -1025,3 +1025,78 @@ class TestDeviceFilterApply:
         assert "mc6" not in controller_apply_calls, (
             "Controller apply must not run when device_filter is set"
         )
+
+
+class TestControllerlessApply:
+    """D-05: apply_plan applies device presets when rig has scenes but no CONTROLLER device."""
+
+    def _make_controllerless_rig(self) -> Rig:
+        from rig.models.scene import Scene
+        from rig_hx.device import HXStompDevice
+        from rig_hx.preset import HXStompPreset
+
+        hx = HXStompDevice(
+            id="hx-stomp",
+            type=DeviceType.MODELER,
+            config={"type": "midi", "midi_channel": 1},
+            presets=[
+                HXStompPreset(
+                    id="clean-edge",
+                    name="Clean Edge",
+                    preset_number=12,
+                    hlx_file="hlx/clean-edge.hlx",
+                )
+            ],
+        )
+        return Rig(
+            name="controllerless",
+            signal_chain=["hx-stomp"],
+            devices={"hx-stomp": hx},
+            scenes={"s": Scene(name="s", presets={"hx-stomp": "clean-edge"})},
+        )
+
+    def test_apply_scene_without_controller_device_skips_controller_phase(self, tmp_path):
+        """A rig with scenes but no CONTROLLER device applies device presets and skips MC6 programming (D-05)."""
+        rig = self._make_controllerless_rig()
+
+        assert rig.controller is None, "Precondition: rig must have no controller device"
+
+        plan = compute_plan(rig, root_path=str(tmp_path))
+        state_adapter = InMemoryStateAdapter()
+        prompt_io = InMemoryPromptAdapter(default="confirm")
+
+        with (
+            patch("rig.midi.adapter.mido.get_output_names", return_value=["USB Interface"]),
+            patch("rig.midi.adapter.mido.open_output", return_value=MagicMock()),
+            patch("rig.interaction.midi.prompt_midi_connect", _fake_midi_connect),
+        ):
+            from rig.midi.adapter import MidiManager
+
+            midi = MidiManager()
+            result = apply_plan(
+                plan,
+                state_writer=state_adapter,
+                confirmation_io=prompt_io,
+                rig=rig,
+                config_path=str(tmp_path),
+                dry_run=False,
+                midi=midi,
+            )
+            midi.disconnect_all()
+
+        # (a) result is not cancelled and scene appears in result.scenes
+        assert result.status != "cancelled", "Apply must not be cancelled for a controllerless rig"
+        scene_names = [sr.scene for sr in result.scenes]
+        assert "s" in scene_names, "Scene 's' must appear in apply result.scenes"
+
+        # (b) device preset was applied — state written for hx-stomp
+        state = state_adapter.state
+        assert "hx-stomp" in state.devices, "hx-stomp device state must be written after apply"
+
+        # (c) controller is None — Phase 2 (controller programming) was never entered
+        assert rig.controller is None, (
+            "Controller must remain None — no controller programming phase should run"
+        )
+        assert "s" in state.scenes, (
+            "Scene 's' must be recorded in state after device preset confirmed"
+        )
