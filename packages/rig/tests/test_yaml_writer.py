@@ -72,8 +72,9 @@ def test_write_preset_dry_run_prints_message(tmp_path: Path, capsys) -> None:
 
 
 def test_write_preset_updates_value_in_file(tmp_path: Path) -> None:
-    from rig.config.yaml_writer import write_preset
     from ruamel.yaml import YAML
+
+    from rig.config.yaml_writer import write_preset
 
     yaml_path = _make_rig_yaml(tmp_path)
 
@@ -87,8 +88,9 @@ def test_write_preset_updates_value_in_file(tmp_path: Path) -> None:
 
 def test_write_preset_round_trip_preserves_comment(tmp_path: Path) -> None:
     """Comments above preset fields must survive after write_preset()."""
-    from rig.config.yaml_writer import write_preset
     from ruamel.yaml import YAML
+
+    from rig.config.yaml_writer import write_preset
 
     yaml_path = _make_rig_yaml(tmp_path, with_comment=True)
     original_text = yaml_path.read_text()

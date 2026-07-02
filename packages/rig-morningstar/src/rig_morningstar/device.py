@@ -111,9 +111,7 @@ class MC6Device(BaseModel):
                     ctx.midi.send_sysex(self.id, update_preset_name(preset_idx, scene_name))
 
                     rig = ctx.rig
-                    scene_obj = (
-                        rig.scenes.get(scene_name) if rig and hasattr(rig, "scenes") else None
-                    )
+                    scene_obj = rig.scenes.get(scene_name) if rig else None
                     if scene_obj:
                         msg_slot = 0
                         for pedal_id, preset_id in scene_obj.presets.items():
