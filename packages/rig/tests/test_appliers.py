@@ -194,6 +194,7 @@ class TestChaseBlissApplierSetup:
 
         from rig.engine.plugin import DeviceType
         from rig.models.rig import Rig
+        from rig.models.scene import Scene
         from rig_chasebliss.device import (
             ChaseBlissConfig,
             ChaseBlissDevice,
@@ -214,17 +215,13 @@ class TestChaseBlissApplierSetup:
         ctrl = FakeDevice(
             id="mc6",
             type=DeviceType.CONTROLLER,
-            config=SimpleNamespace(
-                scenes={"scene-a": {"presets": {"cba-mood": "shimmer"}}},
-                type="controller",
-                midi_channel=1,
-                banks=[],
-            ),
+            config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
         )
         rig = Rig(
             name="test",
             signal_chain=["cba-mood"],
             devices={"cba-mood": bro, "mc6": ctrl},
+            scenes={"scene-a": Scene(name="scene-a", presets={"cba-mood": "shimmer"})},
         )
         state = RigState()
 

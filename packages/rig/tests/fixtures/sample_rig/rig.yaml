@@ -1,5 +1,12 @@
 name: sample-rig
 description: Reference fixture for Mood + HX Stomp + MC6 setup
+scenes:
+  lead:
+    description: Lead tone with Mood shimmer delay
+    presets:
+      hx-stomp: lead
+      mood: preset-1
+    tags: [lead]
 devices:
   - id: mood
     name: MOOD MKII
@@ -41,13 +48,6 @@ devices:
     config:
       type: controller
       midi_channel: 1
-      scenes:
-        lead:
-          description: Lead tone with Mood shimmer delay
-          presets:
-            hx-stomp: lead
-            mood: preset-1
-          tags: [lead]
       banks:
         - bank: 1
           name: Bank 1

@@ -1,8 +1,12 @@
 """Rig config loader — reads a single rig.yaml and produces a Rig model.
 
-The new single-file schema (v1.2+):
+The single-file schema (v2.0+):
   name: sample-rig
   description: ...
+  scenes:
+    lead:
+      presets: {hx-stomp: lead, mood: preset-1}
+      tempo: 120
   devices:
     - id: mood
       type: chase_bliss
@@ -16,14 +20,12 @@ The new single-file schema (v1.2+):
       type: controller
       config:
         type: controller
-        scenes:
-          lead:
-            presets: {hx-stomp: lead, mood: preset-1}
+        midi_channel: 1
         banks: [...]
 
-Device list order defines the signal chain. Scenes live inside the controller
-device's config. Device construction is dispatched to plugins via entry points
-keyed on ``config.type``.
+Scenes are a top-level key in rig.yaml (not nested under any device config).
+Device list order defines the signal chain. Device construction is dispatched
+to plugins via entry points keyed on ``config.type``.
 """
 
 from __future__ import annotations
@@ -32,11 +34,13 @@ import logging
 from pathlib import Path
 from typing import Any
 
+import pydantic
 import yaml
 
 from rig.config.errors import FileNotFoundError_, MissingReferenceError, ParseError, ValidationError
 from rig.engine.plugin_registry import get_registry
 from rig.models.rig import Rig
+from rig.models.scene import Scene
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +75,11 @@ def _parse_device(data: dict) -> Any:
     Dispatches to the model class registered for the config type, then
     delegates all parsing (config coercion, preset construction, etc.)
     to the plugin's own ``from_raw_yaml`` classmethod.
+
+    Wraps pydantic.ValidationError in a clean rig.config.errors.ValidationError
+    so callers see a ConfigError (not a raw Pydantic traceback). This is the
+    enforcement point for extra="forbid" on device configs — a stale scenes:
+    key under an MC6 controller config will be caught here.
     """
     config_data = data.get("config") or {}
     config_type = config_data.get("type") if isinstance(config_data, dict) else None
@@ -79,7 +88,10 @@ def _parse_device(data: dict) -> Any:
         raise ValidationError(
             f"Unknown device config type '{config_type}' — is the plugin registered?"
         )
-    return model_class.from_raw_yaml(data)
+    try:
+        return model_class.from_raw_yaml(data)
+    except pydantic.ValidationError as e:
+        raise ValidationError(str(e)) from e
 
 
 def _validate_references(rig: Rig):
@@ -142,6 +154,19 @@ def load_rig(root_path: str) -> Rig:
     rig_description = data.get("description")
     rig_midi_channel = data.get("midi_channel")
 
+    # Parse top-level scenes: key — scenes are independent of any device config
+    raw_scenes: dict[str, Any] = data.get("scenes") or {}
+    scenes: dict[str, Scene] = {}
+    for scene_name, scene_data in raw_scenes.items():
+        if isinstance(scene_data, dict):
+            scenes[scene_name] = Scene(
+                name=scene_name,
+                description=scene_data.get("description"),
+                tempo=scene_data.get("tempo"),
+                presets=scene_data.get("presets", {}),
+                tags=scene_data.get("tags", []),
+            )
+
     # Parse devices list — order defines signal chain
     device_list: list[dict] = data.get("devices", [])
     devices: dict[str, Any] = {}
@@ -158,6 +183,7 @@ def load_rig(root_path: str) -> Rig:
         midi_channel=rig_midi_channel,
         signal_chain=signal_chain,
         devices=devices,
+        scenes=scenes,
     )
 
     _validate_references(rig)

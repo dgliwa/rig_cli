@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from rig.engine.diff import compute_diff, format_diff
 from rig.engine.plugin import DeviceType
 from rig.models.rig import Rig
+from rig.models.scene import Scene
 from rig_chasebliss.device import ChaseBlissConfig
 from rig_chasebliss.preset import DigitalPreset
 from rig_hx.preset import HXStompPreset
@@ -33,17 +34,18 @@ def _make_rig() -> Rig:
     ctrl = FakeDevice(
         id="mc6",
         type=DeviceType.CONTROLLER,
-        config=SimpleNamespace(
-            scenes={"test-scene": {"presets": {"hx-stomp": "clean-edge", "brothers": "low-gain"}}},
-            type="controller",
-            midi_channel=1,
-            banks=[],
-        ),
+        config=SimpleNamespace(type="controller", midi_channel=1, banks=[]),
     )
     return Rig(
         name="test",
         signal_chain=["hx-stomp"],
         devices={"hx-stomp": hx, "brothers": bro, "mc6": ctrl},
+        scenes={
+            "test-scene": Scene(
+                name="test-scene",
+                presets={"hx-stomp": "clean-edge", "brothers": "low-gain"},
+            )
+        },
     )
 
 

@@ -80,9 +80,9 @@ class TestSceneModel:
         assert scene.tempo == 118
 
 
-def _make_controller_device(scenes: dict | None = None) -> FakeDevice:
-    """Helper: build a FakeDevice with DeviceType.CONTROLLER."""
-    cfg = SimpleNamespace(scenes=scenes or {}, type="controller", midi_channel=1, banks=[])
+def _make_controller_device() -> FakeDevice:
+    """Helper: build a FakeDevice with DeviceType.CONTROLLER (no scenes — scenes belong on Rig)."""
+    cfg = SimpleNamespace(type="controller", midi_channel=1, banks=[])
     return FakeDevice(id="mc6", type=DeviceType.CONTROLLER, config=cfg)
 
 
@@ -96,13 +96,32 @@ class TestRigConfig:
         config = Rig(name="Test", signal_chain=[])
         assert config.name == "Test"
 
-    def test_rig_scenes_returns_empty_when_no_controller(self):
+    def test_rig_scenes_is_pydantic_field(self):
+        assert "scenes" in Rig.model_fields
+
+    def test_rig_scenes_constructor_accepts_scene_dict(self):
+        scene = Scene(name="s", presets={"hx-stomp": "x"})
+        rig = Rig(name="t", scenes={"s": scene})
+        assert rig.scenes["s"].presets == {"hx-stomp": "x"}
+
+    def test_rig_scenes_empty_by_default(self):
+        rig = Rig(name="t")
+        assert rig.scenes == {}
+
+    def test_rig_controller_is_not_pydantic_field_but_scenes_is(self):
+        """scenes is a real field; controller remains a property (not in model_fields)."""
+        assert "controller" not in Rig.model_fields
+        assert "scenes" in Rig.model_fields
+
+    def test_rig_scenes_empty_when_no_controller_and_no_scenes_arg(self):
         rig = Rig(name="Test", signal_chain=[], devices={})
         assert rig.scenes == {}
 
-    def test_rig_scenes_returns_controller_config_scenes(self):
-        ctrl = _make_controller_device(scenes={"test": {"presets": {"hx-stomp": "x"}}})
-        rig = Rig(name="Test", signal_chain=[], devices={"mc6": ctrl})
+    def test_rig_scenes_via_constructor_not_controller_config(self):
+        """Scenes come from Rig(scenes=...) constructor, not controller device config."""
+        ctrl = _make_controller_device()
+        scene = Scene(name="test", presets={"hx-stomp": "x"})
+        rig = Rig(name="Test", signal_chain=[], devices={"mc6": ctrl}, scenes={"test": scene})
         assert rig.scenes["test"].name == "test"
         assert rig.scenes["test"].presets == {"hx-stomp": "x"}
 
@@ -116,10 +135,6 @@ class TestRigConfig:
         assert rig.controller is not None
         assert rig.controller.id == "mc6"
         assert rig.controller.type == DeviceType.CONTROLLER
-
-    def test_rig_controller_and_scenes_are_not_pydantic_fields(self):
-        assert "controller" not in Rig.model_fields
-        assert "scenes" not in Rig.model_fields
 
 
 class TestApplyOrder:
