@@ -92,11 +92,10 @@
 <summary>⬜ v2.0 Platform Foundations (Phases 34-39) — PLANNED</summary>
 
 - [x] **Phase 34: First-Class Scenes** — decouple scenes from controller device config; scenes defined at top level in `rig.yaml`; rigs without a controller can have scenes
-- [ ] **Phase 35: State Schema Versioning** — `state.json` carries `schema_version`; migration on load; silent field additions no longer silently corrupt plan diffs
-- [ ] **Phase 36: Plugin Authoring Guide (PKG-07)** — `PLUGIN-AUTHORING.md` covering Device Protocol, entry points, `from_raw_yaml`, setup/apply/edit lifecycle; example minimal plugin skeleton committed to repo
-- [ ] **Phase 37: PyPI Publishing + CI** — GitHub Actions workflow publishes all 5 packages to PyPI on tag; version matrix; `pip install rig rig-chasebliss` works
-- [ ] **Phase 38: YAML Config Schema Documentation** — formal `rig.yaml` reference: every key, type, required/optional, validation rules, example snippets
-- [ ] **Phase 39: Reference Third-Party Plugin (rig-neuraldsp)** — stub Neural DSP Quad Cortex plugin that demonstrates the full plugin contract; lives in its own repo; linked from authoring guide as "hello world"
+- [ ] **Phase 35: Plugin Authoring Guide (PKG-07)** — `PLUGIN-AUTHORING.md` covering Device Protocol, entry points, `from_raw_yaml`, setup/apply/edit lifecycle; example minimal plugin skeleton committed to repo
+- [ ] **Phase 36: PyPI Publishing + CI** — GitHub Actions workflow publishes all 5 packages to PyPI on tag; version matrix; `pip install rig rig-chasebliss` works
+- [ ] **Phase 37: YAML Config Schema Documentation** — formal `rig.yaml` reference: every key, type, required/optional, validation rules, example snippets
+- [ ] **Phase 38: Reference Third-Party Plugin (rig-neuraldsp)** — stub Neural DSP Quad Cortex plugin that demonstrates the full plugin contract; lives in its own repo; linked from authoring guide as "hello world"
 
 </details>
 
@@ -124,21 +123,7 @@
 
 - [x] 34-02-PLAN.md — Controller-less apply coverage (D-05) + cleanup
 
-### Phase 35: State Schema Versioning
-
-**Goal**: `state.json` carries a schema version field; the loader migrates older state files forward on read; new fields added to `DeviceState` do not silently corrupt plan diffs
-**Depends on**: Phase 30
-**Requirements**: STATE-02
-**Success Criteria** (what must be TRUE):
-
-  1. `state.json` written by `rig apply` includes `"schema_version": 1`
-  2. `read_state()` detects missing/older schema version and applies a migration function before returning `RigState`
-  3. A state file with no `schema_version` field (legacy) loads without error and is treated as version 0
-  4. Tests cover: fresh file, version-0 legacy file, current version file
-
-**Plans**: 1 plan
-
-### Phase 36: Plugin Authoring Guide
+### Phase 35: Plugin Authoring Guide
 
 **Goal**: A third party can write and publish a `rig-mypedal` plugin without reading the core source — the guide is the complete contract
 **Depends on**: Phase 34 (scene decoupling stabilizes the contract)
@@ -151,10 +136,10 @@
 
 **Plans**: 1 plan
 
-### Phase 37: PyPI Publishing + CI
+### Phase 36: PyPI Publishing + CI
 
 **Goal**: All 5 packages are published to PyPI; a GitHub Actions workflow publishes on git tag; `pip install rig rig-chasebliss` works from scratch
-**Depends on**: Phase 36
+**Depends on**: Phase 35
 **Requirements**: PKG-08
 **Success Criteria** (what must be TRUE):
 
@@ -165,7 +150,7 @@
 
 **Plans**: 1 plan
 
-### Phase 38: YAML Config Schema Documentation
+### Phase 37: YAML Config Schema Documentation
 
 **Goal**: Every key in `rig.yaml` is documented with type, required/optional status, validation rules, and an example; a newcomer can build a valid config from the doc alone
 **Depends on**: Phase 34 (scene schema stable)
@@ -178,10 +163,10 @@
 
 **Plans**: 1 plan
 
-### Phase 39: Reference Third-Party Plugin (rig-neuraldsp)
+### Phase 38: Reference Third-Party Plugin (rig-neuraldsp)
 
 **Goal**: A minimal Neural DSP Quad Cortex plugin in its own repo demonstrates the full plugin authoring contract and serves as a "hello world" for third-party authors
-**Depends on**: Phase 36, Phase 37
+**Depends on**: Phase 35, Phase 37
 **Requirements**: PKG-09
 **Success Criteria** (what must be TRUE):
 
@@ -230,11 +215,10 @@
 | 32. Per-Parameter Plan Diffs | v1.6 | 1/1 | Complete | 2026-06-22 |
 | 33.1. Apply-01/02 Completions | v1.6 | 1/1 | Complete | 2026-06-24 |
 | 34. First-Class Scenes | v2.0 | 2/2 | Complete | 2026-07-02 |
-| 35. State Schema Versioning | v2.0 | 0/1 | Pending | — |
-| 36. Plugin Authoring Guide | v2.0 | 0/1 | Pending | — |
-| 37. PyPI Publishing + CI | v2.0 | 0/1 | Pending | — |
-| 38. YAML Config Schema Documentation | v2.0 | 0/1 | Pending | — |
-| 39. Reference Third-Party Plugin (rig-neuraldsp) | v2.0 | 0/2 | Pending | — |
+| 35. Plugin Authoring Guide | v2.0 | 0/1 | Pending | — |
+| 36. PyPI Publishing + CI | v2.0 | 0/1 | Pending | — |
+| 37. YAML Config Schema Documentation | v2.0 | 0/1 | Pending | — |
+| 38. Reference Third-Party Plugin (rig-neuraldsp) | v2.0 | 0/2 | Pending | — |
 
 ## Current State
 
